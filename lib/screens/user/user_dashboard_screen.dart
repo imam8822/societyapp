@@ -1,0 +1,374 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import '../../core/constants.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/data_providers.dart';
+import '../../widgets/shared_widgets.dart';
+
+class UserDashboardScreen extends ConsumerWidget {
+  const UserDashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final dashAsync = ref.watch(userDashboardProvider);
+    final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final now = DateTime.now();
+
+    return Scaffold(
+      backgroundColor: AppTheme.bgGrey,
+      appBar: AppBar(
+        title: const Text('My Society'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout_rounded),
+            onPressed: () async {
+              await ref.read(authProvider.notifier).logout();
+              if (context.mounted) context.go('/login');
+            },
+          ),
+        ],
+      ),
+      body: dashAsync.when(
+        loading: () =>
+            const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+        error: (e, _) => ErrorRetry(
+            message: e.toString(),
+            onRetry: () => ref.invalidate(userDashboardProvider)),
+        data: (dash) => RefreshIndicator(
+          color: AppTheme.primary,
+          onRefresh: () async => ref.invalidate(userDashboardProvider),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              // ── Greeting ──────────────────────
+              Text('Hello, ${dash.fullName.split(' ').first} 👋',
+                  style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.textDark)),
+              const SizedBox(height: 4),
+              Text(DateFormat('MMMM yyyy').format(now),
+                  style: const TextStyle(
+                      fontSize: 14, color: AppTheme.textGrey)),
+              const SizedBox(height: 20),
+
+              // ── Total Invested card ──────────────
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppTheme.primary, Color(0xFF2ECC71)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Total Invested',
+                        style: TextStyle(
+                            color: Colors.white70, fontSize: 14)),
+                    const SizedBox(height: 8),
+                    Text(fmt.format(dash.totalInvested),
+                        style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 34,
+                            fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        _pill('${dash.totalContributions} months paid'),
+                        const SizedBox(width: 8),
+                        _pill(dash.currentMonthPaid
+                            ? '✓ This month paid'
+                            : '! This month pending'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // ── Pay This Month ──────────────────
+              if (!dash.currentMonthPaid)
+                _PayNowBanner(month: now.month, year: now.year),
+
+              const SizedBox(height: 16),
+
+              // ── Active Loan ─────────────────────
+              if (dash.activeLoan != null) ...[
+                const SectionHeader(title: 'Active Loan'),
+                const SizedBox(height: 10),
+                _LoanCard(loan: dash.activeLoan!),
+                const SizedBox(height: 16),
+              ],
+
+              // ── Quick Actions ───────────────────
+              const SectionHeader(title: 'Quick Actions'),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ActionTile(
+                      icon: Icons.history_rounded,
+                      label: 'History',
+                      onTap: () => context.push('/contributions'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ActionTile(
+                      icon: Icons.account_balance_rounded,
+                      label: dash.activeLoan == null
+                          ? 'Apply Loan'
+                          : 'Loan Status',
+                      onTap: () => context.push(
+                          dash.activeLoan == null
+                              ? '/loan/apply'
+                              : '/loan/status'),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // ── Recent Contributions ────────────
+              SectionHeader(
+                title: 'Recent Contributions',
+                actionLabel: 'View All',
+                onAction: () => context.push('/contributions'),
+              ),
+              const SizedBox(height: 10),
+              if (dash.recentContributions.isEmpty)
+                const EmptyState(
+                    icon: Icons.receipt_long_outlined,
+                    title: 'No contributions yet')
+              else
+                ...dash.recentContributions.map((c) => _ContributionTile(c: c)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pill(String text) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+        decoration: BoxDecoration(
+          color: Colors.white24,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(text,
+            style: const TextStyle(color: Colors.white, fontSize: 12)),
+      );
+}
+
+class _PayNowBanner extends StatelessWidget {
+  final int month;
+  final int year;
+  const _PayNowBanner({required this.month, required this.year});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => context.push('/pay'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF7ED),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFED7AA)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF97316).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(Icons.payment_rounded,
+                  color: Color(0xFFF97316), size: 22),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Monthly contribution pending',
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textDark,
+                          fontSize: 14)),
+                  SizedBox(height: 2),
+                  Text('Tap to pay ₹500 via UPI',
+                      style:
+                          TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppTheme.textGrey),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LoanCard extends StatelessWidget {
+  final loan;
+  const _LoanCard({required this.loan});
+
+  @override
+  Widget build(BuildContext context) {
+    final fmt = NumberFormat.currency(
+        locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    return GestureDetector(
+      onTap: () => context.push('/loan/status'),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.divider),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(fmt.format(loan.requestedAmount),
+                      style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textDark)),
+                  const SizedBox(height: 4),
+                  Text(loan.purpose,
+                      style: const TextStyle(
+                          color: AppTheme.textGrey, fontSize: 13)),
+                  if (loan.repaymentDueDate != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                        'Due: ${DateFormat('d MMM yyyy').format(loan.repaymentDueDate!)}',
+                        style: const TextStyle(
+                            color: AppTheme.warning,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500)),
+                  ]
+                ],
+              ),
+            ),
+            StatusBadge(status: loan.status),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _ActionTile(
+      {required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: AppTheme.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.divider),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, color: AppTheme.primary, size: 26),
+            const SizedBox(height: 8),
+            Text(label,
+                style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textDark)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ContributionTile extends StatelessWidget {
+  final c;
+  const _ContributionTile({required this.c});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppTheme.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppTheme.divider),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: c.isVerified
+                  ? const Color(0xFFDCFCE7)
+                  : const Color(0xFFFEF9C3),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(
+              c.isVerified
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.schedule_rounded,
+              color: c.isVerified
+                  ? const Color(0xFF16A34A)
+                  : const Color(0xFFCA8A04),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(c.monthName,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: AppTheme.textDark)),
+                Text(c.mode,
+                    style: const TextStyle(
+                        color: AppTheme.textGrey, fontSize: 12)),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text('₹${c.amount.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textDark)),
+              StatusBadge(status: c.isVerified ? 'Verified' : 'Pending'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
