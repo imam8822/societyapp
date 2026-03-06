@@ -55,6 +55,11 @@ class UserApi {
     final res = await ApiClient.instance.get('/users/eligible-guarantors');
     return (res.data as List).map((e) => UserSummary.fromJson(e)).toList();
   }
+
+  static Future<List<UserDropdownItem>> getAllForReferral() async {
+    final res = await ApiClient.instance.get('/users/all-for-referral');
+    return (res.data as List).map((e) => UserDropdownItem.fromJson(e)).toList();
+  }
 }
 
 // ─────────────────────────────────────────────

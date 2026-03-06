@@ -37,9 +37,9 @@ class PaymentToken {
         token: j['token'],
         month: j['month'],
         year: j['year'],
-        amount: (j['amount'] as num).toDouble(),
+        amount: (j['amount'] as num?)?.toDouble() ?? 0,
         penaltyAmount: (j['penaltyAmount'] as num?)?.toDouble() ?? 0,
-        totalAmount: (j['totalAmount'] as num?)?.toDouble() ?? (j['amount'] as num).toDouble(),
+        totalAmount: (j['totalAmount'] as num?)?.toDouble() ?? (j['amount'] as num?)?.toDouble() ?? 0,
         coveredMonths: j['coveredMonths'],
         expiresAt: DateTime.parse(j['expiresAt']),
         isUsed: j['isUsed'],
@@ -110,7 +110,7 @@ class PendingScreenshot {
         token: j['token'],
         month: j['month'],
         year: j['year'],
-        amount: (j['amount'] as num).toDouble(),
+        amount: (j['amount'] as num?)?.toDouble() ?? 0,
         screenshotUrl: j['screenshotUrl'],
         ocrStatus: j['ocrStatus'],
         ocrExtractedText: j['ocrExtractedText'],
@@ -136,19 +136,32 @@ class SocietySettings {
   final String upiId;
   final String upiDisplayName;
   final double monthlyContributionAmount;
+  final double penaltyPerMissedMonth;
+  final String? logoBase64;
+  final DateTime? updatedAt;
+  final String? updatedByName;
 
   SocietySettings({
     required this.societyName,
     required this.upiId,
     required this.upiDisplayName,
     required this.monthlyContributionAmount,
+    required this.penaltyPerMissedMonth,
+    this.logoBase64,
+    this.updatedAt,
+    this.updatedByName,
   });
 
   factory SocietySettings.fromJson(Map<String, dynamic> j) => SocietySettings(
-        societyName: j['societyName'],
-        upiId: j['upiId'],
-        upiDisplayName: j['upiDisplayName'],
+        societyName: j['societyName'] ?? '',
+        upiId: j['upiId'] ?? '',
+        upiDisplayName: j['upiDisplayName'] ?? '',
         monthlyContributionAmount:
-            (j['monthlyContributionAmount'] as num).toDouble(),
+            (j['monthlyContributionAmount'] as num?)?.toDouble() ?? 500,
+        penaltyPerMissedMonth:
+            (j['penaltyPerMissedMonth'] as num?)?.toDouble() ?? 50,
+        logoBase64: j['logoBase64'],
+        updatedAt: j['updatedAt'] != null ? DateTime.parse(j['updatedAt']) : null,
+        updatedByName: j['updatedByName'],
       );
 }

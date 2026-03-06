@@ -59,7 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     color: AppTheme.primary,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Icon(Icons.savings_rounded,
+                  child: const Icon(Icons.currency_rupee,
                       color: Colors.white, size: 30),
                 ),
                 const SizedBox(height: 28),

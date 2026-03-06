@@ -60,24 +60,26 @@ class AdminDashboardScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Total Pool Collected',
-                        style:
-                            TextStyle(color: Colors.white70, fontSize: 14)),
-                    const SizedBox(height: 8),
-                    Text(fmt.format(dash.totalPoolAmount),
-                        style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 34,
-                            fontWeight: FontWeight.w700)),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _pill('${dash.activeMembers} active members'),
-                        const SizedBox(width: 8),
-                        _pill(
-                            '${dash.currentMonthPaidCount}/${dash.activeMembers} paid this month'),
-                      ],
-                    ),
+                    Row(children: [
+                      const SizedBox(width: 8),
+                      _pill('${dash.currentMonthPaidCount}/${dash.activeMembers} paid this month'),
+                    ]),
+                    const SizedBox(height: 16),
+                    // 2 financial values — Disbursed removed (shown in Overview)
+                    Row(children: [
+                      Expanded(child: _FinanceCard(
+                        label: 'Total Collected',
+                        value: fmt.format(dash.totalCollected),
+                        icon: Icons.currency_rupee_rounded, // ← rupee icon
+                      )),
+                      const SizedBox(width: 10),
+                      Expanded(child: _FinanceCard(
+                        label: 'Balance',
+                        value: fmt.format(dash.balance),
+                        icon: Icons.account_balance_wallet_rounded,
+                        valueColor: Colors.greenAccent.shade200,
+                      )),
+                    ]),
                   ],
                 ),
               ),
@@ -139,10 +141,11 @@ class AdminDashboardScreen extends ConsumerWidget {
                     icon: Icons.account_balance_rounded,
                     iconColor: const Color(0xFF2563EB),
                   ),
+                  // Total Disbursed removed — already visible in green section
                   StatCard(
                     label: 'Total Disbursed',
                     value: fmt.format(dash.totalDisbursed),
-                    icon: Icons.outbox_rounded,
+                    icon: Icons.currency_rupee_rounded, // ← rupee icon
                     iconColor: AppTheme.warning,
                   ),
                   StatCard(
@@ -160,24 +163,16 @@ class AdminDashboardScreen extends ConsumerWidget {
               const SizedBox(height: 10),
               ...[
                 _NavTile(
-                  icon: Icons.people_rounded,
-                  label: 'Members',
-                  subtitle: '${dash.totalMembers} total',
-                  onTap: () => context.push('/admin/members'),
-                ),
-                _NavTile(
                   icon: Icons.account_balance_rounded,
                   label: 'Loans',
-                  subtitle:
-                      '${dash.pendingLoanApplications} pending',
+                  subtitle: '${dash.pendingLoanApplications} pending',
                   badge: dash.pendingLoanApplications,
                   onTap: () => context.push('/admin/loans'),
                 ),
                 _NavTile(
                   icon: Icons.image_search_rounded,
                   label: 'Screenshot Reviews',
-                  subtitle:
-                      '${dash.pendingScreenshotReviews} pending',
+                  subtitle: '${dash.pendingScreenshotReviews} pending',
                   badge: dash.pendingScreenshotReviews,
                   onTap: () => context.push('/admin/screenshots'),
                 ),
@@ -325,4 +320,26 @@ class _NavTile extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FinanceCard extends StatelessWidget {
+  final String label, value;
+  final IconData icon;
+  final Color? valueColor;
+  const _FinanceCard({required this.label, required this.value, required this.icon, this.valueColor});
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Icon(icon, color: Colors.white60, size: 16),
+      const SizedBox(height: 4),
+      Text(value,
+          style: TextStyle(
+              color: valueColor ?? Colors.white,
+              fontSize: 15,
+              fontWeight: FontWeight.w700)),
+      Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
+    ],
+  );
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:image_picker/image_picker.dart';
 import '../../core/api/api_services.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants.dart';
@@ -778,6 +780,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _upiNameCtrl = TextEditingController();
   bool _loading = false;
   bool _saving = false;
+  SocietySettings? _settings;
+  String? _logoBase64;       // current logo from DB
+  bool _logoChanged = false; // user picked a new logo
 
   @override
   void initState() {
@@ -785,10 +790,34 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _loadSettings();
   }
 
+  String _formatDate(DateTime dt) {
+    final local = dt.toLocal();
+    final months = ['Jan','Feb','Mar','Apr','May','Jun',
+                    'Jul','Aug','Sep','Oct','Nov','Dec'];
+    final h = local.hour.toString().padLeft(2, '0');
+    final m = local.minute.toString().padLeft(2, '0');
+    return '${local.day} ${months[local.month - 1]} ${local.year}, $h:$m';
+  }
+
+  Future<void> _pickLogo() async {
+    final picker = ImagePicker();
+    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
+    final base64Str = 'data:image/png;base64,${base64Encode(bytes)}';
+    setState(() { _logoBase64 = base64Str; _logoChanged = true; });
+  }
+
+  void _removeLogo() {
+    setState(() { _logoBase64 = null; _logoChanged = true; });
+  }
+
   Future<void> _loadSettings() async {
     setState(() => _loading = true);
     try {
       final s = await SettingsApi.getSettings();
+      _settings = s;
+      _logoBase64 = s.logoBase64;
       _nameCtrl.text = s.societyName;
       _upiCtrl.text = s.upiId;
       _upiNameCtrl.text = s.upiDisplayName;
@@ -805,11 +834,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _save() async {
     setState(() => _saving = true);
     try {
-      await SettingsApi.updateSettings({
+      final payload = <String, dynamic>{
         'societyName': _nameCtrl.text.trim(),
         'upiId': _upiCtrl.text.trim(),
         'upiDisplayName': _upiNameCtrl.text.trim(),
-      });
+        if (_logoChanged) 'logoBase64': _logoBase64,
+      };
+      await SettingsApi.updateSettings(payload);
+      setState(() => _logoChanged = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Settings saved!')));
@@ -837,6 +869,106 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
+                  // ── Society Logo ────────────────────────────
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.divider),
+                    ),
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                      const Text('SOCIETY LOGO',
+                          style: TextStyle(fontWeight: FontWeight.w600,
+                              color: AppTheme.textGrey, fontSize: 12, letterSpacing: 0.5)),
+                      const SizedBox(height: 16),
+                      Row(children: [
+                        // Logo preview
+                        GestureDetector(
+                          onTap: _pickLogo,
+                          child: Container(
+                            width: 80, height: 80,
+                            decoration: BoxDecoration(
+                              color: AppTheme.bgGrey,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppTheme.divider, width: 1.5),
+                            ),
+                            child: _logoBase64 != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(11),
+                                    child: Image.memory(
+                                      base64Decode(_logoBase64!.contains(',')
+                                          ? _logoBase64!.split(',')[1]
+                                          : _logoBase64!),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : const Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(Icons.add_photo_alternate_outlined,
+                                          color: AppTheme.textGrey, size: 28),
+                                      SizedBox(height: 4),
+                                      Text('Add Logo',
+                                          style: TextStyle(
+                                              fontSize: 10, color: AppTheme.textGrey)),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            const Text('Society Logo',
+                                style: TextStyle(fontWeight: FontWeight.w600,
+                                    fontSize: 14, color: AppTheme.textDark)),
+                            const SizedBox(height: 4),
+                            const Text('Shown on member dashboard and receipts.\nJPG or PNG, max 2MB.',
+                                style: TextStyle(fontSize: 12, color: AppTheme.textGrey)),
+                            const SizedBox(height: 10),
+                            Row(children: [
+                              OutlinedButton.icon(
+                                onPressed: _pickLogo,
+                                icon: const Icon(Icons.upload_rounded, size: 16),
+                                label: Text(_logoBase64 != null ? 'Change' : 'Upload'),
+                                style: OutlinedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  textStyle: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                              if (_logoBase64 != null) ...[
+                                const SizedBox(width: 8),
+                                OutlinedButton.icon(
+                                  onPressed: _removeLogo,
+                                  icon: const Icon(Icons.delete_outline, size: 16),
+                                  label: const Text('Remove'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    textStyle: const TextStyle(fontSize: 12),
+                                    foregroundColor: AppTheme.error,
+                                    side: const BorderSide(color: AppTheme.error),
+                                  ),
+                                ),
+                              ],
+                            ]),
+                          ]),
+                        ),
+                      ]),
+                      if (_logoChanged)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10),
+                          child: Row(children: [
+                            const Icon(Icons.info_outline, size: 14, color: AppTheme.warning),
+                            const SizedBox(width: 6),
+                            Text(
+                              _logoBase64 != null ? 'New logo selected — save to apply.' : 'Logo will be removed on save.',
+                              style: const TextStyle(fontSize: 12, color: AppTheme.warning),
+                            ),
+                          ]),
+                        ),
+                    ]),
+                  ),
+                  const SizedBox(height: 14),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
@@ -907,6 +1039,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
+                  // Last updated info
+                  if (_settings?.updatedAt != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.divider),
+                      ),
+                      child: Row(children: [
+                        const Icon(Icons.history_rounded, size: 16, color: AppTheme.textGrey),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
+                              children: [
+                                const TextSpan(text: 'Last updated by '),
+                                TextSpan(
+                                  text: _settings!.updatedByName ?? 'Unknown',
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.w600, color: AppTheme.textDark),
+                                ),
+                                TextSpan(
+                                  text: ' on ${_formatDate(_settings!.updatedAt!)}',
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ]),
+                    ),
+                  const SizedBox(height: 14),
                   ElevatedButton(
                     onPressed: _saving ? null : _save,
                     child: const Text('Save Settings'),

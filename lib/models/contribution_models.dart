@@ -35,7 +35,7 @@ class Contribution {
         id: j['id'],
         userId: j['userId'],
         userName: j['userName'],
-        amount: (j['amount'] as num).toDouble(),
+        amount: (j['amount'] as num?)?.toDouble() ?? 0,
         month: j['month'],
         year: j['year'],
         mode: j['mode'],
@@ -115,7 +115,7 @@ class MonthlyReport {
         totalMembers: j['totalMembers'],
         paidCount: j['paidCount'],
         unpaidCount: j['unpaidCount'],
-        totalCollected: (j['totalCollected'] as num).toDouble(),
+        totalCollected: (j['totalCollected'] as num?)?.toDouble() ?? 0,
         contributions: (j['contributions'] as List)
             .map((e) => Contribution.fromJson(e))
             .toList(),
@@ -137,7 +137,7 @@ class YearlyReport {
 
   factory YearlyReport.fromJson(Map<String, dynamic> j) => YearlyReport(
         year: j['year'],
-        totalCollected: (j['totalCollected'] as num).toDouble(),
+        totalCollected: (j['totalCollected'] as num?)?.toDouble() ?? 0,
         totalMembers: j['totalMembers'],
         memberRows: (j['memberRows'] as List)
             .map((e) => MemberYearlyRow.fromJson(e))
@@ -166,7 +166,7 @@ class MemberYearlyRow {
         userId: j['userId'],
         fullName: j['fullName'],
         phone: j['phone'],
-        totalSaved: (j['totalSaved'] as num).toDouble(),
+        totalSaved: (j['totalSaved'] as num?)?.toDouble() ?? 0,
         monthsPaid: j['monthsPaid'],
         monthlyStatus: (j['monthlyStatus'] as Map<String, dynamic>)
             .map((k, v) => MapEntry(int.parse(k), v as bool)),
