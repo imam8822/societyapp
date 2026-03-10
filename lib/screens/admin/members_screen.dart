@@ -13,11 +13,25 @@ import 'edit_member_sheet.dart';
 // ═════════════════════════════════════════════
 // Members List
 // ═════════════════════════════════════════════
-class MembersScreen extends ConsumerWidget {
+class MembersScreen extends ConsumerStatefulWidget {
   const MembersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MembersScreen> createState() => _MembersScreenState();
+}
+
+class _MembersScreenState extends ConsumerState<MembersScreen> {
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final membersAsync = ref.watch(membersProvider);
 
     return Scaffold(
@@ -35,93 +49,189 @@ class MembersScreen extends ConsumerWidget {
       ),
       body: membersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
-        error: (e, _) => ErrorRetry(message: e.toString(), onRetry: () => ref.invalidate(membersProvider)),
-        data: (members) => members.isEmpty
-            ? const EmptyState(icon: Icons.people_outline_rounded, title: 'No members yet')
-            : ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                itemCount: members.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, i) => _MemberCard(
-                  member: members[i],
-                  onEdited: () => ref.invalidate(membersProvider),
+        error: (e, _) => ErrorRetry(
+          message: e.toString(),
+          onRetry: () => ref.invalidate(membersProvider),
+        ),
+        data: (members) {
+          final filtered = _query.isEmpty
+              ? members
+              : members.where((m) =>
+                  m.fullName.toLowerCase().contains(_query) ||
+                  m.phone.contains(_query)).toList();
+
+          return Column(
+            children: [
+              // ── Search bar ──────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: (v) => setState(() => _query = v.toLowerCase().trim()),
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or phone...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _query.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _query = '');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppTheme.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: AppTheme.divider),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: AppTheme.divider),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                    ),
+                  ),
                 ),
               ),
+
+              // ── Count ───────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                child: Row(children: [
+                  Text(
+                    '${filtered.length} member${filtered.length == 1 ? '' : 's'}',
+                    style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
+                  ),
+                ]),
+              ),
+
+              // ── List ────────────────────────────────────
+              Expanded(
+                child: filtered.isEmpty
+                    ? const Center(
+                        child: Text('No members found',
+                            style: TextStyle(color: AppTheme.textGrey)))
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(0, 4, 0, 100),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1, indent: 56),
+                        itemBuilder: (_, i) => _MemberTile(
+                          member: filtered[i],
+                          onEdited: () => ref.invalidate(membersProvider),
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _MemberCard extends StatelessWidget {
+class _MemberTile extends StatelessWidget {
   final UserSummary member;
   final VoidCallback onEdited;
-  const _MemberCard({required this.member, required this.onEdited});
+  const _MemberTile({required this.member, required this.onEdited});
 
   @override
   Widget build(BuildContext context) {
     final hasPending = member.pendingAmount > 0;
-    return GestureDetector(
+
+    return InkWell(
       onTap: () async {
-        final edited = await Navigator.push<bool>(context,
-            MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member)));
+        final edited = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member)),
+        );
         if (edited == true) onEdited();
       },
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-        decoration: BoxDecoration(
-          color: AppTheme.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.divider),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(children: [
+          // Avatar
           CircleAvatar(
+            radius: 18,
             backgroundColor: AppTheme.primaryLight,
-            child: Text(member.fullName[0].toUpperCase(),
-                style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700)),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Flexible(
-                  child: Text(member.fullName,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: AppTheme.textDark)),
-                ),
-                if (member.role == 'Admin') ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: AppTheme.primaryLight, borderRadius: BorderRadius.circular(4)),
-                    child: const Text('Admin', style: TextStyle(fontSize: 10, color: AppTheme.primary, fontWeight: FontWeight.w600)),
-                  ),
-                ],
-              ]),
-              Text(member.phone, style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
-              if (member.referredByName != null)
-                Text('Ref: ${member.referredByName}',
-                    style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
-            ]),
-          ),
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Text('₹${member.totalInvested.toStringAsFixed(0)}',
-                style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.primary)),
-            Text('${member.totalContributions} months',
-                style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
-            if (hasPending)
-              Text('₹${member.pendingAmount.toStringAsFixed(0)} due',
-                  style: const TextStyle(color: AppTheme.error, fontSize: 11, fontWeight: FontWeight.w500)),
-          ]),
-          const SizedBox(width: 4),
-          // Edit icon
-          IconButton(
-            icon: const Icon(Icons.edit_outlined, size: 18, color: AppTheme.textGrey),
-            onPressed: () => showModalBottomSheet(
-              context: context,
-              isScrollControlled: true,
-              backgroundColor: Colors.transparent,
-              builder: (_) => EditMemberSheet(member: member, onSaved: onEdited),
+            child: Text(
+              member.fullName[0].toUpperCase(),
+              style: const TextStyle(
+                color: AppTheme.primary,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
             ),
           ),
+          const SizedBox(width: 12),
+
+          // Name + Phone
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: [
+                  Flexible(
+                    child: Text(
+                      member.fullName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: AppTheme.textDark,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (member.role == 'Admin') ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryLight,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text('Admin',
+                          style: TextStyle(
+                              fontSize: 9,
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ]),
+                Text(
+                  member.phone,
+                  style: const TextStyle(color: AppTheme.textGrey, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+
+          // Pending or clear
+          if (hasPending)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.error.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '₹${member.pendingAmount.toStringAsFixed(0)} due',
+                style: const TextStyle(
+                  color: AppTheme.error,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF2ECC71)),
+
+          const SizedBox(width: 6),
+          const Icon(Icons.chevron_right, size: 16, color: AppTheme.textGrey),
         ]),
       ),
     );
@@ -167,7 +277,8 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   @override
   void dispose() {
     _nameCtrl.dispose(); _phoneCtrl.dispose();
-    _emailCtrl.dispose(); _passCtrl.dispose(); _preInvestCtrl.dispose(); _pendingCtrl.dispose();
+    _emailCtrl.dispose(); _passCtrl.dispose();
+    _preInvestCtrl.dispose(); _pendingCtrl.dispose();
     super.dispose();
   }
 
@@ -203,7 +314,8 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
       }
     } catch (e) {
       if (mounted)
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiError(e))));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(apiError(e))));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -239,14 +351,15 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
                     labelText: 'Password',
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                      icon: Icon(_obscure
+                          ? Icons.visibility_outlined
+                          : Icons.visibility_off_outlined),
                       onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
                   validator: (v) => v!.length < 6 ? 'Min 6 characters' : null,
                 ),
               ]),
-              const SizedBox(height: 14),
               const SizedBox(height: 14),
               _card('Joining Date & Pending', [
                 GestureDetector(
@@ -258,13 +371,18 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(children: [
-                      const Icon(Icons.calendar_today_outlined, color: AppTheme.textGrey, size: 20),
+                      const Icon(Icons.calendar_today_outlined,
+                          color: AppTheme.textGrey, size: 20),
                       const SizedBox(width: 12),
                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('Joining Date *', style: TextStyle(fontSize: 12, color: AppTheme.textGrey)),
+                        const Text('Joining Date *',
+                            style: TextStyle(fontSize: 12, color: AppTheme.textGrey)),
                         Text(
                           '${_joinedDate.day}/${_joinedDate.month}/${_joinedDate.year}',
-                          style: const TextStyle(fontSize: 15, color: AppTheme.textDark, fontWeight: FontWeight.w500),
+                          style: const TextStyle(
+                              fontSize: 15,
+                              color: AppTheme.textDark,
+                              fontWeight: FontWeight.w500),
                         ),
                       ]),
                       const Spacer(),
@@ -297,14 +415,21 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
               _card('Referral (Optional)', [
                 DropdownButtonFormField<UserDropdownItem>(
                   value: _selectedReferral,
-                  hint: const Text('Select who referred this member'),
+                  isExpanded: true,
+                  hint: const Text('Select who referred this member',
+                      overflow: TextOverflow.ellipsis),
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.person_add_outlined),
                   ),
-                  items: _referralOptions.map((u) => DropdownMenuItem(
-                    value: u,
-                    child: Text('${u.fullName} (${u.phone})'),
-                  )).toList(),
+                  items: _referralOptions
+                      .map((u) => DropdownMenuItem(
+                            value: u,
+                            child: Text(
+                              '${u.fullName} (${u.phone})',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ))
+                      .toList(),
                   onChanged: (v) => setState(() => _selectedReferral = v),
                 ),
               ]),
@@ -321,22 +446,30 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   }
 
   Widget _card(String title, List<Widget> children) => Container(
-    margin: const EdgeInsets.only(bottom: 0),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: AppTheme.white,
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppTheme.divider),
-    ),
-    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(title, style: const TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textGrey, fontSize: 12)),
-      const SizedBox(height: 14),
-      ...children,
-    ]),
-  );
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.divider),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textGrey,
+                  fontSize: 12)),
+          const SizedBox(height: 14),
+          ...children,
+        ]),
+      );
 
-  Widget _field(TextEditingController ctrl, String label, IconData icon,
-      {TextInputType? keyboardType, String? Function(String?)? validator}) =>
+  Widget _field(
+    TextEditingController ctrl,
+    String label,
+    IconData icon, {
+    TextInputType? keyboardType,
+    String? Function(String?)? validator,
+  }) =>
       TextFormField(
         controller: ctrl,
         keyboardType: keyboardType,

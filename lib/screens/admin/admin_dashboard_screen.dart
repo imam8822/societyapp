@@ -13,8 +13,7 @@ class AdminDashboardScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final dashAsync = ref.watch(adminDashboardProvider);
-    final fmt = NumberFormat.currency(
-        locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Scaffold(
       backgroundColor: AppTheme.bgGrey,
@@ -46,9 +45,9 @@ class AdminDashboardScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // ── Pool Balance ──────────────────────
+
+              // ── Pool Card ─────────────────────────
               Container(
-                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [AppTheme.primary, Color(0xFF2ECC71)],
@@ -57,32 +56,56 @@ class AdminDashboardScreen extends ConsumerWidget {
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      const SizedBox(width: 8),
-                      _pill('${dash.currentMonthPaidCount}/${dash.activeMembers} paid this month'),
-                    ]),
-                    const SizedBox(height: 16),
-                    // 2 financial values — Disbursed removed (shown in Overview)
-                    Row(children: [
-                      Expanded(child: _FinanceCard(
-                        label: 'Total Collected',
-                        value: fmt.format(dash.totalCollected),
-                        icon: Icons.currency_rupee_rounded, // ← rupee icon
-                      )),
-                      const SizedBox(width: 10),
-                      Expanded(child: _FinanceCard(
-                        label: 'Balance',
-                        value: fmt.format(dash.balance),
-                        icon: Icons.account_balance_wallet_rounded,
-                        valueColor: Colors.greenAccent.shade200,
-                      )),
-                    ]),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Month payment status
+                      Row(children: [
+                        const Icon(Icons.people_outline_rounded,
+                            color: Colors.white70, size: 15),
+                        const SizedBox(width: 6),
+                        Text(
+                          '${dash.currentMonthPaidCount} of ${dash.activeMembers} paid this month',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 13),
+                        ),
+                      ]),
+
+                      const SizedBox(height: 20),
+                      const Divider(color: Colors.white24, height: 1),
+                      const SizedBox(height: 20),
+
+                      // Two financial stats side by side
+                      Row(children: [
+                        Expanded(
+                          child: _FinanceStat(
+                            label: 'Total Collected',
+                            value: fmt.format(dash.totalCollected),
+                            icon: Icons.arrow_downward_rounded,
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: 40,
+                          color: Colors.white24,
+                        ),
+                        Expanded(
+                          child: _FinanceStat(
+                            label: 'Balance',
+                            value: fmt.format(dash.balance),
+                            icon: Icons.account_balance_wallet_outlined,
+                            valueColor: Colors.greenAccent.shade200,
+                            alignRight: true,
+                          ),
+                        ),
+                      ]),
+                    ],
+                  ),
                 ),
               ),
+
               const SizedBox(height: 16),
 
               // ── Alert badges ──────────────────────
@@ -94,24 +117,21 @@ class AdminDashboardScreen extends ConsumerWidget {
                 if (dash.pendingLoanApplications > 0)
                   _AlertBanner(
                     icon: Icons.pending_actions_rounded,
-                    label:
-                        '${dash.pendingLoanApplications} loan application(s) awaiting review',
+                    label: '${dash.pendingLoanApplications} loan application(s) awaiting review',
                     color: AppTheme.warning,
                     onTap: () => context.push('/admin/loans'),
                   ),
                 if (dash.loansAwaitingDisbursement > 0)
                   _AlertBanner(
                     icon: Icons.payment_rounded,
-                    label:
-                        '${dash.loansAwaitingDisbursement} approved loan(s) to disburse',
+                    label: '${dash.loansAwaitingDisbursement} approved loan(s) to disburse',
                     color: const Color(0xFF2563EB),
                     onTap: () => context.push('/admin/loans'),
                   ),
                 if (dash.pendingScreenshotReviews > 0)
                   _AlertBanner(
                     icon: Icons.image_search_rounded,
-                    label:
-                        '${dash.pendingScreenshotReviews} screenshot(s) need manual verification',
+                    label: '${dash.pendingScreenshotReviews} screenshot(s) need manual verification',
                     color: AppTheme.primary,
                     onTap: () => context.push('/admin/screenshots'),
                   ),
@@ -141,11 +161,10 @@ class AdminDashboardScreen extends ConsumerWidget {
                     icon: Icons.account_balance_rounded,
                     iconColor: const Color(0xFF2563EB),
                   ),
-                  // Total Disbursed removed — already visible in green section
                   StatCard(
                     label: 'Total Disbursed',
                     value: fmt.format(dash.totalDisbursed),
-                    icon: Icons.currency_rupee_rounded, // ← rupee icon
+                    icon: Icons.currency_rupee_rounded,
                     iconColor: AppTheme.warning,
                   ),
                   StatCard(
@@ -189,46 +208,91 @@ class AdminDashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _pill(String text) => Container(
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white24,
-          borderRadius: BorderRadius.circular(20),
+// ── Finance stat inside gradient card ────────────────────────
+class _FinanceStat extends StatelessWidget {
+  final String label, value;
+  final IconData icon;
+  final Color? valueColor;
+  final bool alignRight;
+
+  const _FinanceStat({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.valueColor,
+    this.alignRight = false,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: EdgeInsets.only(
+          left: alignRight ? 20 : 0,
+          right: alignRight ? 0 : 20,
         ),
-        child: Text(text,
-            style:
-                const TextStyle(color: Colors.white, fontSize: 12)),
+        child: Column(
+          crossAxisAlignment:
+              alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: alignRight
+                  ? MainAxisAlignment.end
+                  : MainAxisAlignment.start,
+              children: [
+                if (!alignRight) ...[
+                  Icon(icon, color: Colors.white54, size: 13),
+                  const SizedBox(width: 4),
+                ],
+                Text(label,
+                    style: const TextStyle(
+                        color: Colors.white60, fontSize: 12)),
+                if (alignRight) ...[
+                  const SizedBox(width: 4),
+                  Icon(icon, color: Colors.white54, size: 13),
+                ],
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                color: valueColor ?? Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ],
+        ),
       );
 }
 
+// ── Alert banner ──────────────────────────────────────────────
 class _AlertBanner extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
 
-  const _AlertBanner(
-      {required this.icon,
-      required this.label,
-      required this.color,
-      required this.onTap});
+  const _AlertBanner({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.25)),
-        ),
-        child: Row(
-          children: [
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.08),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: color.withOpacity(0.25)),
+          ),
+          child: Row(children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 10),
             Expanded(
@@ -238,13 +302,12 @@ class _AlertBanner extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         fontSize: 13))),
             Icon(Icons.chevron_right_rounded, color: color, size: 18),
-          ],
+          ]),
         ),
-      ),
-    );
-  }
+      );
 }
 
+// ── Nav tile ──────────────────────────────────────────────────
 class _NavTile extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -261,19 +324,17 @@ class _NavTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: AppTheme.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.divider),
-        ),
-        child: Row(
-          children: [
+  Widget build(BuildContext context) => GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppTheme.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.divider),
+          ),
+          child: Row(children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -300,8 +361,7 @@ class _NavTile extends StatelessWidget {
             ),
             if (badge > 0)
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: AppTheme.error,
                   borderRadius: BorderRadius.circular(12),
@@ -313,33 +373,8 @@ class _NavTile extends StatelessWidget {
                         fontWeight: FontWeight.w700)),
               )
             else
-              const Icon(Icons.chevron_right_rounded,
-                  color: AppTheme.textGrey),
-          ],
+              const Icon(Icons.chevron_right_rounded, color: AppTheme.textGrey),
+          ]),
         ),
-      ),
-    );
-  }
-}
-
-class _FinanceCard extends StatelessWidget {
-  final String label, value;
-  final IconData icon;
-  final Color? valueColor;
-  const _FinanceCard({required this.label, required this.value, required this.icon, this.valueColor});
-
-  @override
-  Widget build(BuildContext context) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Icon(icon, color: Colors.white60, size: 16),
-      const SizedBox(height: 4),
-      Text(value,
-          style: TextStyle(
-              color: valueColor ?? Colors.white,
-              fontSize: 15,
-              fontWeight: FontWeight.w700)),
-      Text(label, style: const TextStyle(color: Colors.white60, fontSize: 11)),
-    ],
-  );
+      );
 }

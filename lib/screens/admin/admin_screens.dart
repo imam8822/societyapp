@@ -185,7 +185,6 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
           const Divider(height: 20),
           InfoRow(
               label: 'Amount', value: fmt.format(l.requestedAmount)),
-          InfoRow(label: 'Purpose', value: l.purpose),
           InfoRow(
               label: 'Saved',
               value: fmt.format(l.applicantTotalSaved)),
@@ -196,11 +195,11 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
           InfoRow(
               label: 'Applied',
               value: DateFormat('d MMM yyyy').format(l.appliedDate),
-              last: l.repaymentDueDate == null),
-          if (l.repaymentDueDate != null)
+              last: l.finalRepaymentDueDate == null),
+          if (l.finalRepaymentDueDate != null)
             InfoRow(
               label: 'Due Date',
-              value: DateFormat('d MMM yyyy').format(l.repaymentDueDate!),
+              value: DateFormat('d MMM yyyy').format(l.finalRepaymentDueDate!),
               last: true,
             ),
 

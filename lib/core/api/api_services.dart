@@ -110,6 +110,11 @@ class ContributionApi {
 // Loans
 // ─────────────────────────────────────────────
 class LoanApi {
+  static Future<LoanFormData> getFormData() async {
+    final res = await ApiClient.instance.get('/loans/form-data');
+    return LoanFormData.fromJson(res.data);
+  }
+
   static Future<List<LoanApplication>> getMyLoans() async {
     final res = await ApiClient.instance.get('/loans/my');
     return (res.data as List).map((e) => LoanApplication.fromJson(e)).toList();
