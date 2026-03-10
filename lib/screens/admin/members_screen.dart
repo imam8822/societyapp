@@ -7,15 +7,31 @@ import '../../core/constants.dart';
 import '../../models/user_models.dart';
 import '../../providers/data_providers.dart';
 import '../../widgets/shared_widgets.dart';
+import 'member_detail_screen.dart';
+import 'edit_member_sheet.dart';
 
 // ═════════════════════════════════════════════
 // Members List
 // ═════════════════════════════════════════════
-class MembersScreen extends ConsumerWidget {
+class MembersScreen extends ConsumerStatefulWidget {
   const MembersScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MembersScreen> createState() => _MembersScreenState();
+}
+
+class _MembersScreenState extends ConsumerState<MembersScreen> {
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final membersAsync = ref.watch(membersProvider);
 
     return Scaffold(
@@ -32,86 +48,191 @@ class MembersScreen extends ConsumerWidget {
         label: const Text('Add Member'),
       ),
       body: membersAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary)),
+        loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
         error: (e, _) => ErrorRetry(
-            message: e.toString(),
-            onRetry: () => ref.invalidate(membersProvider)),
-        data: (members) => members.isEmpty
-            ? const EmptyState(
-                icon: Icons.people_outline_rounded,
-                title: 'No members yet',
-                subtitle: 'Add your first society member')
-            : ListView.separated(
-                padding:
-                    const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                itemCount: members.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (_, i) => _MemberCard(member: members[i]),
+          message: e.toString(),
+          onRetry: () => ref.invalidate(membersProvider),
+        ),
+        data: (members) {
+          final filtered = _query.isEmpty
+              ? members
+              : members.where((m) =>
+                  m.fullName.toLowerCase().contains(_query) ||
+                  m.phone.contains(_query)).toList();
+
+          return Column(
+            children: [
+              // ── Search bar ──────────────────────────────
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: (v) => setState(() => _query = v.toLowerCase().trim()),
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or phone...',
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: _query.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _query = '');
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppTheme.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: AppTheme.divider),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide(color: AppTheme.divider),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                    ),
+                  ),
+                ),
               ),
+
+              // ── Count ───────────────────────────────────
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                child: Row(children: [
+                  Text(
+                    '${filtered.length} member${filtered.length == 1 ? '' : 's'}',
+                    style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
+                  ),
+                ]),
+              ),
+
+              // ── List ────────────────────────────────────
+              Expanded(
+                child: filtered.isEmpty
+                    ? const Center(
+                        child: Text('No members found',
+                            style: TextStyle(color: AppTheme.textGrey)))
+                    : ListView.separated(
+                        padding: const EdgeInsets.fromLTRB(0, 4, 0, 100),
+                        itemCount: filtered.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1, indent: 56),
+                        itemBuilder: (_, i) => _MemberTile(
+                          member: filtered[i],
+                          onEdited: () => ref.invalidate(membersProvider),
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 }
 
-class _MemberCard extends StatelessWidget {
+class _MemberTile extends StatelessWidget {
   final UserSummary member;
-  const _MemberCard({required this.member});
+  final VoidCallback onEdited;
+  const _MemberTile({required this.member, required this.onEdited});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: Row(
-        children: [
+    final hasPending = member.pendingAmount > 0;
+
+    return InkWell(
+      onTap: () async {
+        final edited = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(builder: (_) => MemberDetailScreen(member: member)),
+        );
+        if (edited == true) onEdited();
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(children: [
+          // Avatar
           CircleAvatar(
+            radius: 18,
             backgroundColor: AppTheme.primaryLight,
             child: Text(
               member.fullName[0].toUpperCase(),
               style: const TextStyle(
-                  color: AppTheme.primary, fontWeight: FontWeight.w700),
+                color: AppTheme.primary,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 12),
+
+          // Name + Phone
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(member.fullName,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                        color: AppTheme.textDark)),
-                Text(member.phone,
-                    style: const TextStyle(
-                        color: AppTheme.textGrey, fontSize: 13)),
-                if (member.referredBy != null)
-                  Text('Ref: ${member.referredBy}',
+                Row(children: [
+                  Flexible(
+                    child: Text(
+                      member.fullName,
                       style: const TextStyle(
-                          color: AppTheme.textGrey, fontSize: 12)),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        color: AppTheme.textDark,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (member.role == 'Admin') ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                      decoration: BoxDecoration(
+                        color: AppTheme.primaryLight,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: const Text('Admin',
+                          style: TextStyle(
+                              fontSize: 9,
+                              color: AppTheme.primary,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                  ],
+                ]),
+                Text(
+                  member.phone,
+                  style: const TextStyle(color: AppTheme.textGrey, fontSize: 12),
+                ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text('₹${member.totalSaved.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.primary)),
-              Text('${member.totalContributions} months',
-                  style: const TextStyle(
-                      color: AppTheme.textGrey, fontSize: 12)),
-              if (!member.isActive)
-                const StatusBadge(status: 'Rejected'),
-            ],
-          ),
-        ],
+
+          // Pending or clear
+          if (hasPending)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppTheme.error.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                '₹${member.pendingAmount.toStringAsFixed(0)} due',
+                style: const TextStyle(
+                  color: AppTheme.error,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
+          else
+            const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF2ECC71)),
+
+          const SizedBox(width: 6),
+          const Icon(Icons.chevron_right, size: 16, color: AppTheme.textGrey),
+        ]),
       ),
     );
   }
@@ -120,35 +241,56 @@ class _MemberCard extends StatelessWidget {
 // ═════════════════════════════════════════════
 // Add Member Screen
 // ═════════════════════════════════════════════
-class AddMemberScreen extends ConsumerStatefulWidget {
+class AddMemberScreen extends StatefulWidget {
   const AddMemberScreen({super.key});
-
   @override
-  ConsumerState<AddMemberScreen> createState() => _AddMemberScreenState();
+  State<AddMemberScreen> createState() => _AddMemberScreenState();
 }
 
-class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
+class _AddMemberScreenState extends State<AddMemberScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
-  final _refCtrl = TextEditingController();
-  final _amountCtrl = TextEditingController(text: '500');
-  final _penaltyCtrl = TextEditingController(text: '50');
+  final _preInvestCtrl = TextEditingController(text: '0');
+  final _pendingCtrl = TextEditingController(text: '0');
+  DateTime _joinedDate = DateTime.now();
   bool _loading = false;
   bool _obscure = true;
+  UserDropdownItem? _selectedReferral;
+  List<UserDropdownItem> _referralOptions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReferrals();
+  }
+
+  Future<void> _loadReferrals() async {
+    try {
+      final list = await UserApi.getAllForReferral();
+      setState(() => _referralOptions = list);
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
-    _nameCtrl.dispose();
-    _phoneCtrl.dispose();
-    _emailCtrl.dispose();
-    _passCtrl.dispose();
-    _refCtrl.dispose();
-    _amountCtrl.dispose();
-    _penaltyCtrl.dispose();
+    _nameCtrl.dispose(); _phoneCtrl.dispose();
+    _emailCtrl.dispose(); _passCtrl.dispose();
+    _preInvestCtrl.dispose(); _pendingCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _joinedDate,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+      helpText: 'Select Joining Date',
+    );
+    if (picked != null) setState(() => _joinedDate = picked);
   }
 
   Future<void> _submit() async {
@@ -158,11 +300,12 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
       await UserApi.createUser(CreateUserRequest(
         fullName: _nameCtrl.text.trim(),
         phone: _phoneCtrl.text.trim(),
-        email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
-        referredBy: _refCtrl.text.trim().isEmpty ? null : _refCtrl.text.trim(),
-        monthlyContributionAmount: double.tryParse(_amountCtrl.text) ?? 500,
-        penaltyPerMissedMonth: double.tryParse(_penaltyCtrl.text) ?? 50,
+        preExistingInvestment: double.tryParse(_preInvestCtrl.text) ?? 0,
+        joinedDate: _joinedDate,
+        email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
+        pendingAmount: double.tryParse(_pendingCtrl.text) ?? 0,
+        referredById: _selectedReferral?.id,
       ));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -170,10 +313,11 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
         context.pop();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(apiError(e))));
+      if (mounted)
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(apiError(e))));
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -188,33 +332,17 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
           padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
-            child: Column(
-              children: [
-                _field(
-                  ctrl: _nameCtrl,
-                  label: 'Full Name',
-                  icon: Icons.person_outlined,
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Required' : null,
-                ),
+            child: Column(children: [
+              _card('Basic Info', [
+                _field(_nameCtrl, 'Full Name', Icons.person_outlined,
+                    validator: (v) => v!.isEmpty ? 'Required' : null),
                 const SizedBox(height: 14),
-                _field(
-                  ctrl: _phoneCtrl,
-                  label: 'Mobile Number',
-                  icon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone,
-                  validator: (v) =>
-                      v == null || v.length < 10 ? 'Enter valid mobile' : null,
-                ),
+                _field(_phoneCtrl, 'Mobile Number', Icons.phone_outlined,
+                    keyboardType: TextInputType.phone,
+                    validator: (v) => v!.length < 10 ? 'Enter valid mobile' : null),
                 const SizedBox(height: 14),
-                _field(
-                  ctrl: _emailCtrl,
-                  label: 'Email',
-                  icon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (v) =>
-                      v == null || !v.contains('@') ? 'Enter valid email' : null,
-                ),
+                _field(_emailCtrl, 'Email (optional)', Icons.email_outlined,
+                    keyboardType: TextInputType.emailAddress),
                 const SizedBox(height: 14),
                 TextFormField(
                   controller: _passCtrl,
@@ -229,71 +357,123 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
                       onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
-                  validator: (v) =>
-                      v == null || v.length < 6
-                          ? 'Min 6 characters'
-                          : null,
+                  validator: (v) => v!.length < 6 ? 'Min 6 characters' : null,
+                ),
+              ]),
+              const SizedBox(height: 14),
+              _card('Joining Date & Pending', [
+                GestureDetector(
+                  onTap: _pickDate,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade400),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(children: [
+                      const Icon(Icons.calendar_today_outlined,
+                          color: AppTheme.textGrey, size: 20),
+                      const SizedBox(width: 12),
+                      Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        const Text('Joining Date *',
+                            style: TextStyle(fontSize: 12, color: AppTheme.textGrey)),
+                        Text(
+                          '${_joinedDate.day}/${_joinedDate.month}/${_joinedDate.year}',
+                          style: const TextStyle(
+                              fontSize: 15,
+                              color: AppTheme.textDark,
+                              fontWeight: FontWeight.w500),
+                        ),
+                      ]),
+                      const Spacer(),
+                      const Icon(Icons.arrow_drop_down, color: AppTheme.textGrey),
+                    ]),
+                  ),
                 ),
                 const SizedBox(height: 14),
-                _field(
-                  ctrl: _refCtrl,
-                  label: 'Referred By (optional)',
-                  icon: Icons.person_add_outlined,
+                _field(_pendingCtrl, 'Pending Amount (₹)', Icons.warning_amber_outlined,
+                    keyboardType: TextInputType.number),
+              ]),
+              const SizedBox(height: 14),
+              _card('Pre-existing Investment', [
+                const Text(
+                  'If this member was paying contributions before joining the app, enter the total amount already invested.',
+                  style: TextStyle(color: AppTheme.textGrey, fontSize: 13),
                 ),
                 const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _amountCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Monthly Amount (₹)',
-                          prefixIcon: Icon(Icons.currency_rupee_rounded),
-                        ),
-                        validator: (v) => (double.tryParse(v ?? '') ?? 0) <= 0
-                            ? 'Enter valid amount'
-                            : null,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _penaltyCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(
-                          labelText: 'Penalty/Month (₹)',
-                          prefixIcon: Icon(Icons.warning_amber_rounded),
-                        ),
-                      ),
-                    ),
-                  ],
+                TextFormField(
+                  controller: _preInvestCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount Already Invested (₹)',
+                    hintText: 'e.g. 10500',
+                    prefixIcon: Icon(Icons.savings_outlined),
+                  ),
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _loading ? null : _submit,
-                  child: const Text('Add Member'),
+              ]),
+              const SizedBox(height: 14),
+              _card('Referral (Optional)', [
+                DropdownButtonFormField<UserDropdownItem>(
+                  value: _selectedReferral,
+                  isExpanded: true,
+                  hint: const Text('Select who referred this member',
+                      overflow: TextOverflow.ellipsis),
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.person_add_outlined),
+                  ),
+                  items: _referralOptions
+                      .map((u) => DropdownMenuItem(
+                            value: u,
+                            child: Text(
+                              '${u.fullName} (${u.phone})',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ))
+                      .toList(),
+                  onChanged: (v) => setState(() => _selectedReferral = v),
                 ),
-              ],
-            ),
+              ]),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _loading ? null : _submit,
+                child: const Text('Add Member'),
+              ),
+            ]),
           ),
         ),
       ),
     );
   }
 
-  Widget _field({
-    required TextEditingController ctrl,
-    required String label,
-    required IconData icon,
+  Widget _card(String title, List<Widget> children) => Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppTheme.divider),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(title,
+              style: const TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.textGrey,
+                  fontSize: 12)),
+          const SizedBox(height: 14),
+          ...children,
+        ]),
+      );
+
+  Widget _field(
+    TextEditingController ctrl,
+    String label,
+    IconData icon, {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) =>
       TextFormField(
         controller: ctrl,
         keyboardType: keyboardType,
-        decoration: InputDecoration(
-            labelText: label, prefixIcon: Icon(icon)),
+        decoration: InputDecoration(labelText: label, prefixIcon: Icon(icon)),
         validator: validator,
       );
 }

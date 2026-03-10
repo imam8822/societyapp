@@ -4,8 +4,11 @@ import 'contribution_models.dart';
 class UserDashboard {
   final int userId;
   final String fullName;
+  final double monthlyContributionAmount;
   final int totalContributions;
   final double totalInvested;
+  final double pendingAmount;
+  final int unpaidMonthsCount;
   final bool currentMonthPaid;
   final bool isEligibleForLoan;
   final bool guarantorRequired;
@@ -15,8 +18,11 @@ class UserDashboard {
   UserDashboard({
     required this.userId,
     required this.fullName,
+    required this.monthlyContributionAmount,
     required this.totalContributions,
     required this.totalInvested,
+    required this.pendingAmount,
+    required this.unpaidMonthsCount,
     required this.currentMonthPaid,
     required this.isEligibleForLoan,
     required this.guarantorRequired,
@@ -25,30 +31,32 @@ class UserDashboard {
   });
 
   factory UserDashboard.fromJson(Map<String, dynamic> j) => UserDashboard(
-        userId: j['userId'],
-        fullName: j['fullName'],
-        totalContributions: j['totalContributions'],
-        totalInvested: (j['totalInvested'] as num).toDouble(),
-        currentMonthPaid: j['currentMonthPaid'],
-        isEligibleForLoan: j['isEligibleForLoan'],
-        guarantorRequired: j['guarantorRequired'],
+        userId: j['userId'] ?? 0,
+        fullName: j['fullName'] ?? '',
+        monthlyContributionAmount: (j['monthlyContributionAmount'] as num?)?.toDouble() ?? 500,
+        totalContributions: j['totalContributions'] ?? 0,
+        totalInvested: (j['totalInvested'] as num?)?.toDouble() ?? 0,
+        pendingAmount: (j['pendingAmount'] as num?)?.toDouble() ?? 0,
+        unpaidMonthsCount: j['unpaidMonthsCount'] ?? 0,
+        currentMonthPaid: j['currentMonthPaid'] ?? false,
+        isEligibleForLoan: j['isEligibleForLoan'] ?? false,
+        guarantorRequired: j['guarantorRequired'] ?? true,
         activeLoan: j['activeLoan'] != null
-            ? LoanApplication.fromJson(j['activeLoan'])
-            : null,
-        recentContributions: (j['recentContributions'] as List)
-            .map((e) => Contribution.fromJson(e))
-            .toList(),
+            ? LoanApplication.fromJson(j['activeLoan']) : null,
+        recentContributions: (j['recentContributions'] as List? ?? [])
+            .map((e) => Contribution.fromJson(e)).toList(),
       );
 }
 
 class AdminDashboard {
   final int totalMembers;
   final int activeMembers;
-  final double totalPoolAmount;
+  final double totalCollected;    // renamed from totalPoolAmount
+  final double totalDisbursed;
+  final double balance;           // new
   final int pendingLoanApplications;
   final int loansAwaitingDisbursement;
   final int activeLoans;
-  final double totalDisbursed;
   final double totalRepaid;
   final double outstandingAmount;
   final int currentMonthPaidCount;
@@ -60,11 +68,12 @@ class AdminDashboard {
   AdminDashboard({
     required this.totalMembers,
     required this.activeMembers,
-    required this.totalPoolAmount,
+    required this.totalCollected,
+    required this.totalDisbursed,
+    required this.balance,
     required this.pendingLoanApplications,
     required this.loansAwaitingDisbursement,
     required this.activeLoans,
-    required this.totalDisbursed,
     required this.totalRepaid,
     required this.outstandingAmount,
     required this.currentMonthPaidCount,
@@ -75,23 +84,22 @@ class AdminDashboard {
   });
 
   factory AdminDashboard.fromJson(Map<String, dynamic> j) => AdminDashboard(
-        totalMembers: j['totalMembers'],
-        activeMembers: j['activeMembers'],
-        totalPoolAmount: (j['totalPoolAmount'] as num).toDouble(),
-        pendingLoanApplications: j['pendingLoanApplications'],
-        loansAwaitingDisbursement: j['loansAwaitingDisbursement'],
-        activeLoans: j['activeLoans'],
-        totalDisbursed: (j['totalDisbursed'] as num).toDouble(),
-        totalRepaid: (j['totalRepaid'] as num).toDouble(),
-        outstandingAmount: (j['outstandingAmount'] as num).toDouble(),
-        currentMonthPaidCount: j['currentMonthPaidCount'],
-        currentMonthUnpaidCount: j['currentMonthUnpaidCount'],
-        pendingScreenshotReviews: j['pendingScreenshotReviews'],
-        pendingLoans: (j['pendingLoans'] as List)
-            .map((e) => LoanApplication.fromJson(e))
-            .toList(),
-        loansToDisburse: (j['loansToDisburse'] as List)
-            .map((e) => LoanApplication.fromJson(e))
-            .toList(),
+        totalMembers: j['totalMembers'] ?? 0,
+        activeMembers: j['activeMembers'] ?? 0,
+        totalCollected: (j['totalCollected'] as num?)?.toDouble() ?? 0,
+        totalDisbursed: (j['totalDisbursed'] as num?)?.toDouble() ?? 0,
+        balance: (j['balance'] as num?)?.toDouble() ?? 0,
+        pendingLoanApplications: j['pendingLoanApplications'] ?? 0,
+        loansAwaitingDisbursement: j['loansAwaitingDisbursement'] ?? 0,
+        activeLoans: j['activeLoans'] ?? 0,
+        totalRepaid: (j['totalRepaid'] as num?)?.toDouble() ?? 0,
+        outstandingAmount: (j['outstandingAmount'] as num?)?.toDouble() ?? 0,
+        currentMonthPaidCount: j['currentMonthPaidCount'] ?? 0,
+        currentMonthUnpaidCount: j['currentMonthUnpaidCount'] ?? 0,
+        pendingScreenshotReviews: j['pendingScreenshotReviews'] ?? 0,
+        pendingLoans: (j['pendingLoans'] as List? ?? [])
+            .map((e) => LoanApplication.fromJson(e)).toList(),
+        loansToDisburse: (j['loansToDisburse'] as List? ?? [])
+            .map((e) => LoanApplication.fromJson(e)).toList(),
       );
 }
