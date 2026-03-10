@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 class AppConstants {
-  // ── Change this to your actual server IP/domain ──
+  // ── Server URL ──────────────────────────────────────────────────────
+  // For physical device: use your machine's local IP (run `ipconfig` on Windows)
+  // For Android emulator: use 10.0.2.2 (maps to host localhost)
+  // For production: use your domain e.g. https://api.yoursociety.com/api
   static const String baseUrl = 'http://societyapp1.runasp.net/api';
-  // static const String baseUrl = 'https://localhost:51019/api';
   static const String tokenKey = 'auth_token';
   static const String roleKey = 'auth_role';
   static const String userIdKey = 'auth_user_id';
@@ -41,7 +43,7 @@ class AppTheme {
             fontWeight: FontWeight.w600,
           ),
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: white,
           elevation: 0,
           shape: RoundedRectangleBorder(
