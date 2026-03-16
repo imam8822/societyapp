@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 
 class AppConstants {
-  // ── Server URL ──────────────────────────────────────────────────────
-  // For physical device: use your machine's local IP (run `ipconfig` on Windows)
-  // For Android emulator: use 10.0.2.2 (maps to host localhost)
-  // For production: use your domain e.g. https://api.yoursociety.com/api
   static const String baseUrl = 'http://societyapp1.runasp.net/api';
   static const String tokenKey = 'auth_token';
   static const String roleKey = 'auth_role';
@@ -13,7 +9,7 @@ class AppConstants {
 }
 
 class AppTheme {
-  static const Color primary = Color(0xFF1E6B4A);      // deep green
+  static const Color primary = Color(0xFF1E6B4A);
   static const Color primaryLight = Color(0xFFE8F5EE);
   static const Color accent = Color(0xFF2ECC71);
   static const Color error = Color(0xFFE74C3C);
@@ -78,8 +74,8 @@ class AppTheme {
             backgroundColor: primary,
             foregroundColor: white,
             minimumSize: const Size(double.infinity, 50),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
             elevation: 0,
             textStyle: const TextStyle(
               fontSize: 16,
