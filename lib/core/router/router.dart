@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:society_app/providers/auth_provider.dart';
@@ -9,53 +10,74 @@ import 'package:society_app/screens/user/pay_screen.dart';
 import 'package:society_app/screens/user/user_dashboard_screen.dart';
 import 'package:society_app/screens/user/user_screens.dart';
 
-
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authProvider);
+  final notifier = _AuthRouterNotifier(ref);
 
   return GoRouter(
     initialLocation: '/login',
+    refreshListenable: notifier,
     redirect: (context, state) {
-      final loggedIn = auth.isLoggedIn;
+      final loggedIn = notifier.isLoggedIn;
+      final role = notifier.role;
       final onLogin = state.matchedLocation == '/login';
 
       if (!loggedIn && !onLogin) return '/login';
       if (loggedIn && onLogin) {
-        return auth.role == 'Admin' ? '/admin' : '/home';
+        return role == 'Admin' ? '/admin' : '/home';
       }
       return null;
     },
     routes: [
-      // ── Auth ──────────────────────────────
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
-
-      // ── User ──────────────────────────────
       GoRoute(path: '/home', builder: (_, __) => const UserDashboardScreen()),
       GoRoute(path: '/pay', builder: (_, __) => const PayScreen()),
       GoRoute(
           path: '/contributions',
           builder: (_, __) => const ContributionHistoryScreen()),
-      GoRoute(path: '/loan/apply', builder: (_, __) => const LoanApplyScreen()),
+      GoRoute(
+          path: '/loan/apply', builder: (_, __) => const LoanApplyScreen()),
       GoRoute(
           path: '/loan/status', builder: (_, __) => const LoanStatusScreen()),
-
-      // ── Admin ─────────────────────────────
       GoRoute(path: '/admin', builder: (_, __) => const AdminDashboardScreen()),
-      GoRoute(path: '/admin/members', builder: (_, __) => const MembersScreen()),
+      GoRoute(
+          path: '/admin/members', builder: (_, __) => const MembersScreen()),
       GoRoute(
           path: '/admin/members/add',
           builder: (_, __) => const AddMemberScreen()),
       GoRoute(
-          path: '/admin/loans',
-          builder: (_, __) => const LoanReviewScreen()),
+          path: '/admin/loans', builder: (_, __) => const LoanReviewScreen()),
       GoRoute(
           path: '/admin/screenshots',
           builder: (_, __) => const ScreenshotReviewScreen()),
       GoRoute(
           path: '/admin/reports', builder: (_, __) => const ReportsScreen()),
       GoRoute(
-          path: '/admin/settings',
-          builder: (_, __) => const SettingsScreen()),
+          path: '/admin/settings', builder: (_, __) => const SettingsScreen()),
     ],
   );
 });
+
+class _AuthRouterNotifier extends ChangeNotifier {
+  _AuthRouterNotifier(Ref ref) {
+    // Seed initial values
+    final auth = ref.read(authProvider);
+    _isLoggedIn = auth.isLoggedIn;
+    _role = auth.role;
+
+    // Only notify router when isLoggedIn actually changes
+    // Ignores isLoading/error changes — prevents form reset
+    ref.listen<AuthState>(authProvider, (prev, next) {
+      if (prev?.isLoggedIn != next.isLoggedIn) {
+        _isLoggedIn = next.isLoggedIn;
+        _role = next.role;
+        notifyListeners();
+      }
+    });
+  }
+
+  bool _isLoggedIn = false;
+  String? _role;
+
+  bool get isLoggedIn => _isLoggedIn;
+  String? get role => _role;
+}
