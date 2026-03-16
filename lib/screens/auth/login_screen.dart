@@ -49,16 +49,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         final role = ref.read(authProvider).role;
         context.go(role == 'Admin' ? '/admin' : '/home');
       } else {
+        // Read the actual error from provider
         final providerError = ref.read(authProvider).error;
         setState(() {
-          _error = providerError ?? 'Invalid credentials. Please try again.';
+          _error = providerError ?? 'Login failed. Please try again.';
           _loading = false;
         });
       }
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = 'Error: ${e.toString()}';
         _loading = false;
       });
     }
@@ -144,6 +145,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                     const SizedBox(height: 12),
 
+                    // Server URL shown for debugging
+                    Text(
+                      'Server: ${AppConstants.baseUrl}',
+                      style: const TextStyle(
+                          fontSize: 10, color: AppTheme.textGrey),
+                    ),
+
+                    const SizedBox(height: 8),
+
                     // Error
                     if (_error != null)
                       Container(
@@ -152,16 +162,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           color: const Color(0xFFFEF2F2),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: Row(children: [
-                          const Icon(Icons.error_outline,
-                              color: AppTheme.error, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(_error!,
-                                style: const TextStyle(
-                                    color: AppTheme.error, fontSize: 13)),
-                          ),
-                        ]),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.error_outline,
+                                color: AppTheme.error, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(_error!,
+                                  style: const TextStyle(
+                                      color: AppTheme.error, fontSize: 13)),
+                            ),
+                          ],
+                        ),
                       ),
 
                     const SizedBox(height: 24),
