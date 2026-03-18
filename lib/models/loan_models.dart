@@ -1,36 +1,3 @@
-class LoanInstallment {
-  final int id;
-  final int installmentNumber;
-  final double amount;
-  final DateTime dueDate;
-  final bool isPaid;
-  final DateTime? paidDate;
-  final String? remarks;
-  final bool isOverdue;
-
-  LoanInstallment({
-    required this.id,
-    required this.installmentNumber,
-    required this.amount,
-    required this.dueDate,
-    required this.isPaid,
-    this.paidDate,
-    this.remarks,
-    required this.isOverdue,
-  });
-
-  factory LoanInstallment.fromJson(Map<String, dynamic> j) => LoanInstallment(
-        id: j['id'],
-        installmentNumber: j['installmentNumber'],
-        amount: (j['amount'] as num?)?.toDouble() ?? 0,
-        dueDate: DateTime.parse(j['dueDate']),
-        isPaid: j['isPaid'],
-        paidDate: j['paidDate'] != null ? DateTime.parse(j['paidDate']) : null,
-        remarks: j['remarks'],
-        isOverdue: j['isOverdue'] ?? false,
-      );
-}
-
 class LoanApplication {
   final int id;
   final int applicantId;
@@ -53,7 +20,6 @@ class LoanApplication {
   final double totalRepaid;
   final double outstandingAmount;
   final double applicantTotalSaved;
-  final List<LoanInstallment> installments;
 
   LoanApplication({
     required this.id,
@@ -77,7 +43,6 @@ class LoanApplication {
     required this.totalRepaid,
     required this.outstandingAmount,
     required this.applicantTotalSaved,
-    required this.installments,
   });
 
   factory LoanApplication.fromJson(Map<String, dynamic> j) => LoanApplication(
@@ -92,19 +57,25 @@ class LoanApplication {
         amount: (j['amount'] as num?)?.toDouble() ?? 0,
         status: j['status'],
         appliedDate: DateTime.parse(j['appliedDate']),
-        reviewedAt: j['reviewedAt'] != null ? DateTime.parse(j['reviewedAt']) : null,
+        reviewedAt: j['reviewedAt'] != null
+            ? DateTime.parse(j['reviewedAt'])
+            : null,
         reviewedByAdmin: j['reviewedByAdmin'],
         rejectionReason: j['rejectionReason'],
         tenureMonths: j['tenureMonths'],
-        disbursedDate: j['disbursedDate'] != null ? DateTime.parse(j['disbursedDate']) : null,
-        repaymentDueDate: j['repaymentDueDate'] != null ? DateTime.parse(j['repaymentDueDate']) : null,
-        finalRepaymentDate: j['finalRepaymentDate'] != null ? DateTime.parse(j['finalRepaymentDate']) : null,
+        disbursedDate: j['disbursedDate'] != null
+            ? DateTime.parse(j['disbursedDate'])
+            : null,
+        repaymentDueDate: j['repaymentDueDate'] != null
+            ? DateTime.parse(j['repaymentDueDate'])
+            : null,
+        finalRepaymentDate: j['finalRepaymentDate'] != null
+            ? DateTime.parse(j['finalRepaymentDate'])
+            : null,
         totalRepaid: (j['totalRepaid'] as num?)?.toDouble() ?? 0,
         outstandingAmount: (j['outstandingAmount'] as num?)?.toDouble() ?? 0,
-        applicantTotalSaved: (j['applicantTotalSaved'] as num?)?.toDouble() ?? 0,
-        installments: (j['installments'] as List? ?? [])
-            .map((e) => LoanInstallment.fromJson(e))
-            .toList(),
+        applicantTotalSaved:
+            (j['applicantTotalSaved'] as num?)?.toDouble() ?? 0,
       );
 
   bool get isPending => status == 'Pending';
@@ -113,30 +84,21 @@ class LoanApplication {
   bool get isDisbursed => status == 'Disbursed';
   bool get isRepaid => status == 'Repaid';
   bool get isActive => isPending || isApproved || isDisbursed;
-
-  LoanInstallment? get nextInstallment => installments
-      .where((i) => !i.isPaid)
-      .toList()
-      .isEmpty ? null : (installments.where((i) => !i.isPaid).toList()
-        ..sort((a, b) => a.dueDate.compareTo(b.dueDate)))
-      .first;
 }
 
 class ApplyLoanRequest {
   final int? guarantorId;
-  final double requestedAmount;
-  final int tenureMonths;
+  final double amount;
+  // tenureMonths not needed — fixed per loan option on backend
 
   ApplyLoanRequest({
     this.guarantorId,
-    required this.requestedAmount,
-    required this.tenureMonths,
+    required this.amount,
   });
 
   Map<String, dynamic> toJson() => {
         if (guarantorId != null) 'guarantorId': guarantorId,
-        'requestedAmount': requestedAmount,
-        'tenureMonths': tenureMonths,
+        'requestedAmount': amount, // backend field name
       };
 }
 
@@ -144,33 +106,51 @@ class LoanOption {
   final int id;
   final String label;
   final double amount;
-  final int minTenureRequired;    // months contributed needed to be eligible
-  final int maxRepaymentTenure;   // max months allowed to repay
-  final double repaymentAmount;   // fixed monthly installment amount
-  final bool isEligible;          // whether current user meets minTenureRequired
+  final int minTenureRequired;   // months user must have contributed to be eligible
+  final int maxRepaymentTenure;  // deadline — repay on or before 15th of this month from disbursal
+  final double repaymentAmount;  // fixed TOTAL single repayment amount (not monthly)
+  final bool isEligible;         // user has >= minTenureRequired months paid
+  final bool guarantorRequired;  // loan amount > user's total invested
 
-  LoanOption({required this.id, required this.label, required this.amount,
-      required this.minTenureRequired, required this.maxRepaymentTenure,
-      required this.repaymentAmount, required this.isEligible});
+  LoanOption({
+    required this.id,
+    required this.label,
+    required this.amount,
+    required this.minTenureRequired,
+    required this.maxRepaymentTenure,
+    required this.repaymentAmount,
+    required this.isEligible,
+    required this.guarantorRequired,
+  });
 
   factory LoanOption.fromJson(Map<String, dynamic> j) => LoanOption(
-    id: j['id'],
-    label: j['label'] ?? '',
-    amount: (j['amount'] as num?)?.toDouble() ?? 0,
-    minTenureRequired: j['minTenureRequired'] ?? 6,
-    maxRepaymentTenure: j['maxRepaymentTenure'] ?? 12,
-    repaymentAmount: (j['repaymentAmount'] as num?)?.toDouble() ?? 0,
-    isEligible: j['isEligible'] ?? false,
-  );
+        id: j['id'],
+        label: j['label'] ?? '',
+        amount: (j['amount'] as num?)?.toDouble() ?? 0,
+        minTenureRequired: j['minTenureRequired'] ?? 6,
+        maxRepaymentTenure: j['maxRepaymentTenure'] ?? 12,
+        repaymentAmount: (j['repaymentAmount'] as num?)?.toDouble() ?? 0,
+        isEligible: j['isEligible'] ?? false,
+        guarantorRequired: j['guarantorRequired'] ?? false,
+      );
 }
 
 class GuarantorOption {
   final int id;
-  final String fullName, phone;
-  GuarantorOption({required this.id, required this.fullName, required this.phone});
+  final String fullName;
+  final String phone;
+
+  GuarantorOption({
+    required this.id,
+    required this.fullName,
+    required this.phone,
+  });
+
   factory GuarantorOption.fromJson(Map<String, dynamic> j) => GuarantorOption(
-    id: j['id'], fullName: j['fullName'], phone: j['phone'],
-  );
+        id: j['id'],
+        fullName: j['fullName'],
+        phone: j['phone'],
+      );
 }
 
 class LoanFormData {
@@ -179,15 +159,22 @@ class LoanFormData {
   final double userTotalInvested;
   final int userPaidMonths;
 
-  LoanFormData({required this.loanOptions, required this.availableGuarantors,
-      required this.userTotalInvested, required this.userPaidMonths});
+  LoanFormData({
+    required this.loanOptions,
+    required this.availableGuarantors,
+    required this.userTotalInvested,
+    required this.userPaidMonths,
+  });
 
   factory LoanFormData.fromJson(Map<String, dynamic> j) => LoanFormData(
-    loanOptions: (j['loanOptions'] as List? ?? [])
-        .map((e) => LoanOption.fromJson(e)).toList(),
-    availableGuarantors: (j['availableGuarantors'] as List? ?? [])
-        .map((e) => GuarantorOption.fromJson(e)).toList(),
-    userTotalInvested: (j['userTotalInvested'] as num?)?.toDouble() ?? 0,
-    userPaidMonths: j['userPaidMonths'] ?? 0,
-  );
+        loanOptions: (j['loanOptions'] as List? ?? [])
+            .map((e) => LoanOption.fromJson(e))
+            .toList(),
+        availableGuarantors: (j['availableGuarantors'] as List? ?? [])
+            .map((e) => GuarantorOption.fromJson(e))
+            .toList(),
+        userTotalInvested:
+            (j['userTotalInvested'] as num?)?.toDouble() ?? 0,
+        userPaidMonths: j['userPaidMonths'] ?? 0,
+      );
 }

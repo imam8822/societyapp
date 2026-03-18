@@ -147,11 +147,9 @@ class LoanApi {
     return LoanApplication.fromJson(res.data);
   }
 
-  static Future<LoanApplication> disburseLoan(
-      int id, DateTime repaymentDueDate) async {
-    final res = await ApiClient.instance.patch('/loans/$id/disburse', data: {
-      'repaymentDueDate': repaymentDueDate.toIso8601String(),
-    });
+  static Future<LoanApplication> disburseLoan(int id) async {
+    // Due date auto-calculated on backend: 15th of month that is TenureMonths from today
+    final res = await ApiClient.instance.patch('/loans/$id/disburse', data: {});
     return LoanApplication.fromJson(res.data);
   }
 

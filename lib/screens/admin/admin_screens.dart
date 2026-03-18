@@ -122,18 +122,52 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
   }
 
   Future<void> _disburse() async {
-    final dueDate = await showDatePicker(
+    // Confirm before disbursing
+    final confirm = await showDialog<bool>(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 30)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      helpText: 'Select Repayment Start Date',
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(children: [
+          Icon(Icons.payments_rounded, color: Color(0xFF7C3AED)),
+          SizedBox(width: 10),
+          Text('Confirm Disbursement',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Disburse ₹${NumberFormat('#,##,###').format(widget.loan.amount)} to ${widget.loan.applicantName}?',
+                style: const TextStyle(fontSize: 13)),
+            const SizedBox(height: 8),
+            Text(
+              'Repayment due date will be automatically set to the 15th of the month that is ${widget.loan.tenureMonths} months from today.',
+              style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: AppTheme.textGrey)),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.payments_rounded, size: 16),
+            label: const Text('Disburse'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF7C3AED),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+          ),
+        ],
+      ),
     );
-    if (dueDate == null) return;
+    if (confirm != true) return;
 
     setState(() => _loading = true);
     try {
-      await LoanApi.disburseLoan(widget.loan.id, dueDate);
+      await LoanApi.disburseLoan(widget.loan.id);
       widget.onAction();
     } catch (e) {
       if (mounted) {
@@ -329,7 +363,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
           if (l.repaymentDueDate != null)
             InfoRow(
               label: 'Due Date',
-              value: DateFormat('d MMM yyyy').format(l.repaymentDueDate!),
+              value: 'On or before ${DateFormat('d MMM yyyy').format(l.repaymentDueDate!)}',
               last: true,
             ),
 

@@ -133,7 +133,6 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
   bool _submitting = false;
 
   LoanOption? _selectedOption;
-  int? _selectedTenure;
   GuarantorOption? _selectedGuarantor;
 
   @override
@@ -158,10 +157,9 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
     }
   }
 
+  // Use guarantorRequired flag from backend — already calculated per user
   bool get _needsGuarantor =>
-      _selectedOption != null &&
-      _formData != null &&
-      _selectedOption!.amount > _formData!.userTotalInvested;
+      _selectedOption != null && _selectedOption!.guarantorRequired;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -173,10 +171,6 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       _snack('You are not eligible for this loan option');
       return;
     }
-    if (_selectedTenure == null) {
-      _snack('Please select repayment tenure');
-      return;
-    }
     if (_needsGuarantor && _selectedGuarantor == null) {
       _snack('Please select a guarantor');
       return;
@@ -185,8 +179,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
     setState(() => _submitting = true);
     try {
       await LoanApi.applyLoan(ApplyLoanRequest(
-        requestedAmount: _selectedOption!.amount,
-        tenureMonths: _selectedTenure!,
+        amount: _selectedOption!.amount,
         guarantorId: _needsGuarantor ? _selectedGuarantor?.id : null,
       ));
       if (mounted) {
@@ -202,6 +195,33 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
 
   void _snack(String msg) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+
+  /// Repayment due = on or before 15th of the month that is [tenureMonths] from today
+  /// e.g. Applied March 18 + 4 months → due on or before July 15
+  String _repaymentDate(int tenureMonths) {
+    final now = DateTime.now();
+    final dueMonth = DateTime(now.year, now.month + tenureMonths, 15);
+    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return 'On or before 15 ${months[dueMonth.month]} ${dueMonth.year}';
+  }
+
+  Widget _summaryRow(IconData icon, String label, String value,
+      {bool highlight = false}) =>
+      Row(children: [
+        Icon(icon,
+            size: 14,
+            color: highlight ? AppTheme.primary : AppTheme.textGrey),
+        const SizedBox(width: 6),
+        Text('$label: ',
+            style: const TextStyle(
+                fontSize: 12, color: AppTheme.textGrey)),
+        Text(value,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: highlight ? FontWeight.w700 : FontWeight.w500,
+                color: highlight ? AppTheme.primary : AppTheme.textDark)),
+      ]);
 
   @override
   Widget build(BuildContext context) {
@@ -250,7 +270,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                 child: Text(
                   _needsGuarantor
                       ? 'Loan amount exceeds your invested amount (${_fmt.format(data.userTotalInvested)}). A guarantor is required.'
-                      : 'No guarantor needed — loan amount is within your invested amount (${_fmt.format(data.userTotalInvested)}).',
+                      : 'Your investment of ${_fmt.format(data.userTotalInvested)} covers this loan — no guarantor needed.',
                   style: TextStyle(
                     fontSize: 12,
                     color: _needsGuarantor ? AppTheme.warning : const Color(0xFF2ECC71),
@@ -268,7 +288,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
               isExpanded: true,
               hint: const Text('Select amount'),
               decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.monetization_on_outlined)),
+                  prefixIcon: Icon(Icons.currency_rupee_rounded)),
               items: data.loanOptions.map((o) => DropdownMenuItem(
                 value: o,
                 child: Text(
@@ -278,105 +298,84 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
               )).toList(),
               onChanged: (v) => setState(() {
                 _selectedOption = v;
-                _selectedTenure = null;
                 _selectedGuarantor = null;
               }),
             ),
 
-            // Instant eligibility feedback
+            // Eligibility feedback + repayment summary
             if (_selectedOption != null) ...[
               const SizedBox(height: 10),
-              _selectedOption!.isEligible
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF2ECC71)),
-                      ),
-                      child: Row(children: [
-                        const Icon(Icons.check_circle_outline,
-                            color: Color(0xFF2ECC71), size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'You\'re eligible!  Fixed EMI: ${_fmt.format(_selectedOption!.repaymentAmount)}/month  ·  Max ${_selectedOption!.maxRepaymentTenure} months',
-                            style: const TextStyle(
-                                color: Color(0xFF2ECC71),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                      ]),
-                    )
-                  : Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppTheme.error),
-                      ),
-                      child: Row(children: [
-                        const Icon(Icons.lock_outline, color: AppTheme.error, size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'You need ${_selectedOption!.minTenureRequired} months paid to apply for ${_selectedOption!.label}. '
-                            'You currently have ${data.userPaidMonths} months.',
-                            style: const TextStyle(color: AppTheme.error, fontSize: 12),
-                          ),
-                        ),
-                      ]),
-                    ),
-            ],
-          ]),
-          const SizedBox(height: 14),
-
-          // ── Tenure (only if eligible) ────────────────
-          if (_selectedOption != null && _selectedOption!.isEligible)
-            _Section(title: 'Repayment Tenure', children: [
-              DropdownButtonFormField<int>(
-                value: _selectedTenure,
-                isExpanded: true,
-                hint: const Text('Select tenure'),
-                decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.calendar_month_outlined)),
-                items: List.generate(
-                  _selectedOption!.maxRepaymentTenure,
-                  (i) => DropdownMenuItem(
-                      value: i + 1, child: Text('${i + 1} months')),
-                ),
-                onChanged: (v) => setState(() => _selectedTenure = v),
-                validator: (v) => v == null ? 'Select tenure' : null,
-              ),
-              // Fixed repayment summary
-              if (_selectedTenure != null) ...[
-                const SizedBox(height: 12),
+              if (_selectedOption!.isEligible) ...[
+                // Repayment details card
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
                     color: AppTheme.primaryLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        const Icon(Icons.check_circle_outline,
+                            color: AppTheme.primary, size: 16),
+                        const SizedBox(width: 6),
+                        const Text('You are eligible!',
+                            style: TextStyle(
+                                color: AppTheme.primary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13)),
+                      ]),
+                      const SizedBox(height: 10),
+                      // Tenure row
+                      _summaryRow(
+                        Icons.calendar_month_outlined,
+                        'Repayment Tenure',
+                        '${_selectedOption!.maxRepaymentTenure} months',
+                      ),
+                      const SizedBox(height: 6),
+                      // Total repayment row
+                      _summaryRow(
+                        Icons.receipt_long_outlined,
+                        'Single Repayment',
+                        _fmt.format(_selectedOption!.repaymentAmount),
+                        highlight: true,
+                      ),
+                      const SizedBox(height: 6),
+                      // Repayment due date row
+                      _summaryRow(
+                        Icons.event_rounded,
+                        'Due Date',
+                        _repaymentDate(_selectedOption!.maxRepaymentTenure),
+                        highlight: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ] else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.error),
                   ),
                   child: Row(children: [
-                    const Icon(Icons.receipt_long_outlined,
-                        color: AppTheme.primary, size: 18),
+                    const Icon(Icons.lock_outline, color: AppTheme.error, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${_fmt.format(_selectedOption!.repaymentAmount)}/month  ×  $_selectedTenure months  =  ${_fmt.format(_selectedOption!.repaymentAmount * _selectedTenure!)} total',
-                        style: const TextStyle(
-                            color: AppTheme.primary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600),
+                        'You need ${_selectedOption!.minTenureRequired} months paid for ${_selectedOption!.label}. '
+                        'You have ${data.userPaidMonths} months.',
+                        style: const TextStyle(color: AppTheme.error, fontSize: 12),
                       ),
                     ),
                   ]),
                 ),
-              ],
-            ]),
-          if (_selectedOption != null && _selectedOption!.isEligible)
-            const SizedBox(height: 14),
+            ],
+          ]),
+          const SizedBox(height: 14),
 
           // ── Guarantor (only if needed) ───────────────
           if (_needsGuarantor)
@@ -532,10 +531,6 @@ class _LoanDetailCard extends StatelessWidget {
           InfoRow(
               label: 'Applied',
               value: DateFormat('d MMM yyyy').format(loan.appliedDate)),
-          if (loan.amount != null)
-            InfoRow(
-                label: 'Approved',
-                value: '₹${loan.amount!.toStringAsFixed(0)}'),
           if (loan.tenureMonths != null)
             InfoRow(label: 'Tenure', value: '${loan.tenureMonths} months'),
           if (loan.disbursedDate != null)
@@ -544,15 +539,12 @@ class _LoanDetailCard extends StatelessWidget {
                 value: DateFormat('d MMM yyyy').format(loan.disbursedDate!)),
           if (loan.repaymentDueDate != null)
             InfoRow(
-                label: 'Repayment Start',
-                value: DateFormat('d MMM yyyy').format(loan.repaymentDueDate!)),
-          if (loan.finalRepaymentDate != null)
+                label: 'Due Date',
+                value: 'On or before ${DateFormat('d MMM yyyy').format(loan.repaymentDueDate!)}'),
+          if (loan.totalRepaid > 0)
             InfoRow(
-                label: 'Final Due',
-                value: DateFormat('d MMM yyyy').format(loan.finalRepaymentDate!)),
-          InfoRow(
-              label: 'Repaid',
-              value: '₹${loan.totalRepaid.toStringAsFixed(0)}'),
+                label: 'Repaid',
+                value: '₹${loan.totalRepaid.toStringAsFixed(0)}'),
           if (loan.outstandingAmount > 0)
             InfoRow(
                 label: 'Outstanding',
