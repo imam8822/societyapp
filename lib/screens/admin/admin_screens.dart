@@ -184,10 +184,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
           ),
           const Divider(height: 20),
           InfoRow(
-              label: 'Amount', value: fmt.format(l.requestedAmount)),
-          InfoRow(
-              label: 'Saved',
-              value: fmt.format(l.applicantTotalSaved)),
+              label: 'Amount', value: fmt.format(l.amount)),
           if (l.guarantorName != null)
             InfoRow(
                 label: 'Guarantor',
@@ -195,11 +192,11 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
           InfoRow(
               label: 'Applied',
               value: DateFormat('d MMM yyyy').format(l.appliedDate),
-              last: l.finalRepaymentDueDate == null),
-          if (l.finalRepaymentDueDate != null)
+              last: l.repaymentDueDate == null),
+          if (l.finalRepaymentDate != null)
             InfoRow(
               label: 'Due Date',
-              value: DateFormat('d MMM yyyy').format(l.finalRepaymentDueDate!),
+              value: DateFormat('d MMM yyyy').format(l.finalRepaymentDate!),
               last: true,
             ),
 

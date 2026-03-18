@@ -40,21 +40,18 @@ class LoanApplication {
   final String? guarantorName;
   final String? guarantorPhone;
   final bool guarantorRequired;
-  final double requestedAmount;
-  final double? approvedAmount;
+  final double amount;
   final String status;
   final DateTime appliedDate;
   final DateTime? reviewedAt;
   final String? reviewedByAdmin;
   final String? rejectionReason;
   final int? tenureMonths;
-  final double? monthlyInstallmentAmount;
   final DateTime? disbursedDate;
-  final DateTime? repaymentStartDate;
-  final DateTime? finalRepaymentDueDate;
+  final DateTime? repaymentDueDate;
+  final DateTime? finalRepaymentDate;
   final double totalRepaid;
   final double outstandingAmount;
-  final DateTime? fullyRepaidDate;
   final double applicantTotalSaved;
   final List<LoanInstallment> installments;
 
@@ -67,21 +64,18 @@ class LoanApplication {
     this.guarantorName,
     this.guarantorPhone,
     required this.guarantorRequired,
-    required this.requestedAmount,
-    this.approvedAmount,
+    required this.amount,
     required this.status,
     required this.appliedDate,
     this.reviewedAt,
     this.reviewedByAdmin,
     this.rejectionReason,
     this.tenureMonths,
-    this.monthlyInstallmentAmount,
     this.disbursedDate,
-    this.repaymentStartDate,
-    this.finalRepaymentDueDate,
+    this.repaymentDueDate,
+    this.finalRepaymentDate,
     required this.totalRepaid,
     required this.outstandingAmount,
-    this.fullyRepaidDate,
     required this.applicantTotalSaved,
     required this.installments,
   });
@@ -95,21 +89,18 @@ class LoanApplication {
         guarantorName: j['guarantorName'],
         guarantorPhone: j['guarantorPhone'],
         guarantorRequired: j['guarantorRequired'] ?? true,
-        requestedAmount: (j['requestedAmount'] as num?)?.toDouble() ?? 0,
-        approvedAmount: (j['approvedAmount'] as num?)?.toDouble(),
+        amount: (j['amount'] as num?)?.toDouble() ?? 0,
         status: j['status'],
         appliedDate: DateTime.parse(j['appliedDate']),
         reviewedAt: j['reviewedAt'] != null ? DateTime.parse(j['reviewedAt']) : null,
         reviewedByAdmin: j['reviewedByAdmin'],
         rejectionReason: j['rejectionReason'],
         tenureMonths: j['tenureMonths'],
-        monthlyInstallmentAmount: (j['monthlyInstallmentAmount'] as num?)?.toDouble(),
         disbursedDate: j['disbursedDate'] != null ? DateTime.parse(j['disbursedDate']) : null,
-        repaymentStartDate: j['repaymentStartDate'] != null ? DateTime.parse(j['repaymentStartDate']) : null,
-        finalRepaymentDueDate: j['finalRepaymentDueDate'] != null ? DateTime.parse(j['finalRepaymentDueDate']) : null,
+        repaymentDueDate: j['repaymentDueDate'] != null ? DateTime.parse(j['repaymentDueDate']) : null,
+        finalRepaymentDate: j['finalRepaymentDate'] != null ? DateTime.parse(j['finalRepaymentDate']) : null,
         totalRepaid: (j['totalRepaid'] as num?)?.toDouble() ?? 0,
         outstandingAmount: (j['outstandingAmount'] as num?)?.toDouble() ?? 0,
-        fullyRepaidDate: j['fullyRepaidDate'] != null ? DateTime.parse(j['fullyRepaidDate']) : null,
         applicantTotalSaved: (j['applicantTotalSaved'] as num?)?.toDouble() ?? 0,
         installments: (j['installments'] as List? ?? [])
             .map((e) => LoanInstallment.fromJson(e))
