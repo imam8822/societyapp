@@ -1,6 +1,3 @@
-// ─────────────────────────────────────────────
-// Payment Models
-// ─────────────────────────────────────────────
 class PaymentToken {
   final int id;
   final String token;
@@ -9,11 +6,8 @@ class PaymentToken {
   final double amount;
   final double penaltyAmount;
   final double totalAmount;
-  final String? coveredMonths;
   final DateTime expiresAt;
   final bool isUsed;
-  final String ocrStatus;
-  final String? screenshotUrl;
   final String upiDeepLink;
 
   PaymentToken({
@@ -24,11 +18,8 @@ class PaymentToken {
     required this.amount,
     required this.penaltyAmount,
     required this.totalAmount,
-    this.coveredMonths,
     required this.expiresAt,
     required this.isUsed,
-    required this.ocrStatus,
-    this.screenshotUrl,
     required this.upiDeepLink,
   });
 
@@ -39,81 +30,106 @@ class PaymentToken {
         year: j['year'],
         amount: (j['amount'] as num?)?.toDouble() ?? 0,
         penaltyAmount: (j['penaltyAmount'] as num?)?.toDouble() ?? 0,
-        totalAmount: (j['totalAmount'] as num?)?.toDouble() ?? (j['amount'] as num?)?.toDouble() ?? 0,
-        coveredMonths: j['coveredMonths'],
+        totalAmount: (j['totalAmount'] as num?)?.toDouble() ?? 0,
         expiresAt: DateTime.parse(j['expiresAt']),
-        isUsed: j['isUsed'],
-        ocrStatus: j['ocrStatus'],
-        screenshotUrl: j['screenshotUrl'],
-        upiDeepLink: j['upiDeepLink'],
+        isUsed: j['isUsed'] ?? false,
+        upiDeepLink: j['upiDeepLink'] ?? '',
       );
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
+
+  Duration get timeRemaining => expiresAt.difference(DateTime.now());
+  String get expiresInText {
+    final h = timeRemaining.inHours;
+    final m = timeRemaining.inMinutes % 60;
+    if (h > 0) return '${h}h ${m}m';
+    return '${m}m';
+  }
 }
 
 class ScreenshotResult {
   final int tokenId;
+  final int contributionId;
   final String ocrStatus;
   final bool autoVerified;
   final String message;
+  final String? aiSummary;
 
   ScreenshotResult({
     required this.tokenId,
+    required this.contributionId,
     required this.ocrStatus,
     required this.autoVerified,
     required this.message,
+    this.aiSummary,
   });
 
   factory ScreenshotResult.fromJson(Map<String, dynamic> j) => ScreenshotResult(
-        tokenId: j['tokenId'],
-        ocrStatus: j['ocrStatus'],
-        autoVerified: j['autoVerified'],
-        message: j['message'],
+        tokenId: j['tokenId'] ?? 0,
+        contributionId: j['contributionId'] ?? 0,
+        ocrStatus: j['ocrStatus'] ?? '',
+        autoVerified: j['autoVerified'] ?? false,
+        message: j['message'] ?? '',
+        aiSummary: j['aiSummary'],
       );
 }
 
 class PendingScreenshot {
-  final int tokenId;
+  final int contributionId;
   final int userId;
   final String userName;
   final String userPhone;
-  final String token;
+  final String? token;
   final int month;
   final int year;
   final double amount;
+  final double penaltyAmount;
+  final double totalAmount;
   final String? screenshotUrl;
   final String ocrStatus;
   final String? ocrExtractedText;
+  final String aiVerificationStatus;
+  final String? aiSummary;
+  final double? aiExtractedAmount;
   final DateTime? screenshotUploadedAt;
 
   PendingScreenshot({
-    required this.tokenId,
+    required this.contributionId,
     required this.userId,
     required this.userName,
     required this.userPhone,
-    required this.token,
+    this.token,
     required this.month,
     required this.year,
     required this.amount,
+    required this.penaltyAmount,
+    required this.totalAmount,
     this.screenshotUrl,
     required this.ocrStatus,
     this.ocrExtractedText,
+    required this.aiVerificationStatus,
+    this.aiSummary,
+    this.aiExtractedAmount,
     this.screenshotUploadedAt,
   });
 
-  factory PendingScreenshot.fromJson(Map<String, dynamic> j) =>
-      PendingScreenshot(
-        tokenId: j['tokenId'],
+  factory PendingScreenshot.fromJson(Map<String, dynamic> j) => PendingScreenshot(
+        contributionId: j['contributionId'],
         userId: j['userId'],
-        userName: j['userName'],
-        userPhone: j['userPhone'],
+        userName: j['userName'] ?? '',
+        userPhone: j['userPhone'] ?? '',
         token: j['token'],
         month: j['month'],
         year: j['year'],
         amount: (j['amount'] as num?)?.toDouble() ?? 0,
+        penaltyAmount: (j['penaltyAmount'] as num?)?.toDouble() ?? 0,
+        totalAmount: (j['totalAmount'] as num?)?.toDouble() ?? 0,
         screenshotUrl: j['screenshotUrl'],
-        ocrStatus: j['ocrStatus'],
+        ocrStatus: j['ocrStatus'] ?? '',
         ocrExtractedText: j['ocrExtractedText'],
+        aiVerificationStatus: j['aiVerificationStatus'] ?? '',
+        aiSummary: j['aiSummary'],
+        aiExtractedAmount: (j['aiExtractedAmount'] as num?)?.toDouble(),
         screenshotUploadedAt: j['screenshotUploadedAt'] != null
             ? DateTime.parse(j['screenshotUploadedAt'])
             : null,
@@ -161,7 +177,9 @@ class SocietySettings {
         penaltyPerMissedMonth:
             (j['penaltyPerMissedMonth'] as num?)?.toDouble() ?? 50,
         logoBase64: j['logoBase64'],
-        updatedAt: j['updatedAt'] != null ? DateTime.parse(j['updatedAt']) : null,
+        updatedAt: j['updatedAt'] != null
+            ? DateTime.parse(j['updatedAt'])
+            : null,
         updatedByName: j['updatedByName'],
       );
 }

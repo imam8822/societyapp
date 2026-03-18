@@ -31,8 +31,8 @@ class UserDashboardScreen extends ConsumerWidget {
         ],
       ),
       body: dashAsync.when(
-        loading: () =>
-            const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+        loading: () => const Center(
+            child: CircularProgressIndicator(color: AppTheme.primary)),
         error: (e, _) => ErrorRetry(
             message: e.toString(),
             onRetry: () => ref.invalidate(userDashboardProvider)),
@@ -42,7 +42,7 @@ class UserDashboardScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              // ── Greeting ──────────────────────
+              // ── Greeting ──────────────────────────
               Text('Hello, ${dash.fullName.split(' ').first} 👋',
                   style: const TextStyle(
                       fontSize: 22,
@@ -54,7 +54,7 @@ class UserDashboardScreen extends ConsumerWidget {
                       fontSize: 14, color: AppTheme.textGrey)),
               const SizedBox(height: 20),
 
-              // ── Total Invested card ──────────────
+              // ── Total Invested card ────────────────
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -92,13 +92,45 @@ class UserDashboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 16),
 
-              // ── Pay This Month ──────────────────
+              // ── Pay This Month banner ──────────────
               if (!dash.currentMonthPaid)
-                _PayNowBanner(month: now.month, year: now.year),
+                _PayNowBanner(
+                  pendingAmount: dash.pendingAmount,
+                  monthlyRate: dash.monthlyContributionAmount,
+                ),
 
-              const SizedBox(height: 16),
+              if (!dash.currentMonthPaid) const SizedBox(height: 16),
 
-              // ── Active Loan ─────────────────────
+              // ── Pending amount warning ─────────────
+              if (dash.pendingAmount > 0 && dash.unpaidMonthsCount > 1) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFCA5A5)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          color: AppTheme.error, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          '${dash.unpaidMonthsCount} months pending — ${fmt.format(dash.pendingAmount)} due',
+                          style: const TextStyle(
+                              color: AppTheme.error,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 13),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // ── Active Loan ────────────────────────
               if (dash.activeLoan != null) ...[
                 const SectionHeader(title: 'Active Loan'),
                 const SizedBox(height: 10),
@@ -106,7 +138,7 @@ class UserDashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 16),
               ],
 
-              // ── Quick Actions ───────────────────
+              // ── Quick Actions ──────────────────────
               const SectionHeader(title: 'Quick Actions'),
               const SizedBox(height: 10),
               Row(
@@ -135,7 +167,7 @@ class UserDashboardScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 24),
 
-              // ── Recent Contributions ────────────
+              // ── Recent Contributions ───────────────
               SectionHeader(
                 title: 'Recent Contributions',
                 actionLabel: 'View All',
@@ -147,7 +179,8 @@ class UserDashboardScreen extends ConsumerWidget {
                     icon: Icons.receipt_long_outlined,
                     title: 'No contributions yet')
               else
-                ...dash.recentContributions.map((c) => _ContributionTile(c: c)),
+                ...dash.recentContributions
+                    .map((c) => _ContributionTile(c: c)),
             ],
           ),
         ),
@@ -167,12 +200,18 @@ class UserDashboardScreen extends ConsumerWidget {
 }
 
 class _PayNowBanner extends StatelessWidget {
-  final int month;
-  final int year;
-  const _PayNowBanner({required this.month, required this.year});
+  final double pendingAmount;
+  final double monthlyRate;
+  const _PayNowBanner(
+      {required this.pendingAmount, required this.monthlyRate});
 
   @override
   Widget build(BuildContext context) {
+    final fmt = NumberFormat.currency(
+        locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    // Show pending amount if more than one month due, else show monthly rate
+    final displayAmount = pendingAmount > 0 ? pendingAmount : monthlyRate;
+
     return GestureDetector(
       onTap: () => context.push('/pay'),
       child: Container(
@@ -194,19 +233,19 @@ class _PayNowBanner extends StatelessWidget {
                   color: Color(0xFFF97316), size: 22),
             ),
             const SizedBox(width: 14),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Monthly contribution pending',
+                  const Text('Monthly contribution pending',
                       style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: AppTheme.textDark,
                           fontSize: 14)),
-                  SizedBox(height: 2),
-                  Text('Tap to pay ₹500 via UPI',
-                      style:
-                          TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                  const SizedBox(height: 2),
+                  Text('Tap to pay ${fmt.format(displayAmount)} via UPI',
+                      style: const TextStyle(
+                          color: AppTheme.textGrey, fontSize: 13)),
                 ],
               ),
             ),
@@ -220,7 +259,7 @@ class _PayNowBanner extends StatelessWidget {
 }
 
 class _LoanCard extends StatelessWidget {
-  final loan;
+  final dynamic loan;
   const _LoanCard({required this.loan});
 
   @override
@@ -242,24 +281,26 @@ class _LoanCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(fmt.format(loan.requestedAmount),
+                  Text(fmt.format(loan.amount),
                       style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                           color: AppTheme.textDark)),
                   const SizedBox(height: 4),
-                  Text(loan.purpose,
+                  // Status subtitle instead of removed purpose field
+                  Text('Loan ${loan.status}',
                       style: const TextStyle(
                           color: AppTheme.textGrey, fontSize: 13)),
                   if (loan.repaymentDueDate != null) ...[
                     const SizedBox(height: 4),
                     Text(
-                        'Due: ${DateFormat('d MMM yyyy').format(loan.repaymentDueDate!)}',
-                        style: const TextStyle(
-                            color: AppTheme.warning,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500)),
-                  ]
+                      'Due: ${DateFormat('d MMM yyyy').format(loan.repaymentDueDate!)}',
+                      style: const TextStyle(
+                          color: AppTheme.warning,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -307,7 +348,7 @@ class _ActionTile extends StatelessWidget {
 }
 
 class _ContributionTile extends StatelessWidget {
-  final c;
+  final dynamic c;
   const _ContributionTile({required this.c});
 
   @override
@@ -364,7 +405,8 @@ class _ContributionTile extends StatelessWidget {
                   style: const TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textDark)),
-              StatusBadge(status: c.isVerified ? 'Verified' : 'Pending'),
+              StatusBadge(
+                  status: c.isVerified ? 'Verified' : 'Pending'),
             ],
           ),
         ],

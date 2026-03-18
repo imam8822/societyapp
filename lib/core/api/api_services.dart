@@ -169,26 +169,16 @@ class LoanApi {
 // Payment / UPI
 // ─────────────────────────────────────────────
 class PaymentApi {
-  static Future<PaymentToken> generateToken(int month, int year) async {
-    final res = await ApiClient.instance
-        .post('/payment/token/generate', data: {'month': month, 'year': year});
+  /// Get existing valid token or create a new one — no params needed.
+  static Future<PaymentToken> getOrCreateToken() async {
+    final res = await ApiClient.instance.get('/payment/token');
     return PaymentToken.fromJson(res.data);
   }
 
-  static Future<PaymentToken?> getActiveToken(int month, int year) async {
-    try {
-      final res = await ApiClient.instance.get('/payment/token/active',
-          queryParameters: {'month': month, 'year': year});
-      return PaymentToken.fromJson(res.data);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  static Future<ScreenshotResult> uploadScreenshot(
-      int tokenId, String base64Image) async {
+  /// Upload screenshot — backend finds active token automatically.
+  static Future<ScreenshotResult> uploadScreenshot(String base64Image) async {
     final res = await ApiClient.instance.post(
-        '/payment/token/$tokenId/upload-screenshot',
+        '/payment/upload-screenshot',
         data: {'screenshotBase64': base64Image});
     return ScreenshotResult.fromJson(res.data);
   }
@@ -200,10 +190,11 @@ class PaymentApi {
         .toList();
   }
 
+  /// Admin: approve or reject a contribution by contributionId (not tokenId).
   static Future<void> adminVerify(
-      int tokenId, bool approve, String? remarks) async {
+      int contributionId, bool approve, String? remarks) async {
     await ApiClient.instance
-        .patch('/payment/token/$tokenId/admin-verify', data: {
+        .patch('/payment/contributions/$contributionId/verify', data: {
       'approve': approve,
       if (remarks != null) 'remarks': remarks,
     });
