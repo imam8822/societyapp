@@ -82,7 +82,6 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
         widget.loan.id,
         true,
         remarks.isEmpty ? null : remarks,
-        null,
       );
       widget.onAction();
     } catch (e) {
@@ -109,7 +108,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
 
     setState(() => _loading = true);
     try {
-      await LoanApi.reviewLoan(widget.loan.id, false, reason, null);
+      await LoanApi.reviewLoan(widget.loan.id, false, reason);
       widget.onAction();
     } catch (e) {
       if (mounted) {

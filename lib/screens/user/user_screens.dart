@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:society_app/core/api/api_client.dart';
 import 'package:society_app/core/api/api_services.dart';
@@ -179,7 +180,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
     setState(() => _submitting = true);
     try {
       await LoanApi.applyLoan(ApplyLoanRequest(
-        amount: _selectedOption!.amount,
+        loanOptionId: _selectedOption!.id,
         guarantorId: _needsGuarantor ? _selectedGuarantor?.id : null,
       ));
       if (mounted) {

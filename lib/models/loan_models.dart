@@ -87,18 +87,17 @@ class LoanApplication {
 }
 
 class ApplyLoanRequest {
+  final int loanOptionId;
   final int? guarantorId;
-  final double amount;
-  // tenureMonths not needed — fixed per loan option on backend
 
   ApplyLoanRequest({
+    required this.loanOptionId,
     this.guarantorId,
-    required this.amount,
   });
 
   Map<String, dynamic> toJson() => {
+        'loanOptionId': loanOptionId,
         if (guarantorId != null) 'guarantorId': guarantorId,
-        'requestedAmount': amount, // backend field name
       };
 }
 

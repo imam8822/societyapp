@@ -137,12 +137,10 @@ class LoanApi {
   }
 
   static Future<LoanApplication> reviewLoan(
-      int id, bool approve, String? rejectionReason, DateTime? repaymentDueDate) async {
+      int id, bool approve, String? remarks) async {
     final res = await ApiClient.instance.patch('/loans/$id/review', data: {
-      'approve': approve,
-      if (rejectionReason != null) 'rejectionReason': rejectionReason,
-      if (repaymentDueDate != null)
-        'repaymentDueDate': repaymentDueDate.toIso8601String(),
+      'approved': approve,
+      if (remarks != null) 'remarks': remarks,
     });
     return LoanApplication.fromJson(res.data);
   }
