@@ -519,7 +519,7 @@ class _LoanDetailCard extends StatelessWidget {
           Row(children: [
             Expanded(
               child: Text(
-                '₹${loan.requestedAmount.toStringAsFixed(0)}',
+                '₹${loan.amount.toStringAsFixed(0)}',
                 style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -532,28 +532,24 @@ class _LoanDetailCard extends StatelessWidget {
           InfoRow(
               label: 'Applied',
               value: DateFormat('d MMM yyyy').format(loan.appliedDate)),
-          if (loan.approvedAmount != null)
+          if (loan.amount != null)
             InfoRow(
                 label: 'Approved',
-                value: '₹${loan.approvedAmount!.toStringAsFixed(0)}'),
-          if (loan.monthlyInstallmentAmount != null)
-            InfoRow(
-                label: 'Monthly EMI',
-                value: '₹${loan.monthlyInstallmentAmount!.toStringAsFixed(0)}'),
+                value: '₹${loan.amount!.toStringAsFixed(0)}'),
           if (loan.tenureMonths != null)
             InfoRow(label: 'Tenure', value: '${loan.tenureMonths} months'),
           if (loan.disbursedDate != null)
             InfoRow(
                 label: 'Disbursed',
                 value: DateFormat('d MMM yyyy').format(loan.disbursedDate!)),
-          if (loan.repaymentStartDate != null)
+          if (loan.repaymentDueDate != null)
             InfoRow(
                 label: 'Repayment Start',
-                value: DateFormat('d MMM yyyy').format(loan.repaymentStartDate!)),
-          if (loan.finalRepaymentDueDate != null)
+                value: DateFormat('d MMM yyyy').format(loan.repaymentDueDate!)),
+          if (loan.finalRepaymentDate != null)
             InfoRow(
                 label: 'Final Due',
-                value: DateFormat('d MMM yyyy').format(loan.finalRepaymentDueDate!)),
+                value: DateFormat('d MMM yyyy').format(loan.finalRepaymentDate!)),
           InfoRow(
               label: 'Repaid',
               value: '₹${loan.totalRepaid.toStringAsFixed(0)}'),
