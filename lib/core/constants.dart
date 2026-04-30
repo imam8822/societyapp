@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 
 class AppConstants {
-  static const String baseUrl = 'http://societyapp1.runasp.net/api';
+  static const String baseUrl = 'http://societyappapi-abfrh7bqeeb0cyeb.canadacentral-01.azurewebsites.net/api';
+  //static const String baseUrl = 'http://societyapp1.runasp.net/api';
   static const String tokenKey = 'auth_token';
   static const String roleKey = 'auth_role';
   static const String userIdKey = 'auth_user_id';
