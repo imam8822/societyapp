@@ -14,11 +14,18 @@ import '../../widgets/shared_widgets.dart';
 // ═════════════════════════════════════════════
 // Loan Review
 // ═════════════════════════════════════════════
-class LoanReviewScreen extends ConsumerWidget {
+class LoanReviewScreen extends ConsumerStatefulWidget {
   const LoanReviewScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoanReviewScreen> createState() => _LoanReviewScreenState();
+}
+
+class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
+  String _searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
     final loansAsync = ref.watch(allLoansProvider);
 
     return Scaffold(
@@ -30,23 +37,61 @@ class LoanReviewScreen extends ConsumerWidget {
         error: (e, _) => ErrorRetry(
             message: e.toString(),
             onRetry: () => ref.invalidate(allLoansProvider)),
-        data: (loans) => loans.isEmpty
-            ? const EmptyState(
-                icon: Icons.account_balance_outlined,
-                title: 'No loan applications')
-            : RefreshIndicator(
-                color: AppTheme.primary,
-                onRefresh: () async => ref.invalidate(allLoansProvider),
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: loans.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) => _LoanReviewCard(
-                    loan: loans[i],
-                    onAction: () => ref.invalidate(allLoansProvider),
+        data: (loans) {
+          final filtered = loans.where((l) => 
+            l.applicantName.toLowerCase().contains(_searchQuery.toLowerCase()) || 
+            l.applicantPhone.contains(_searchQuery)
+          ).toList();
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: TextField(
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or phone...',
+                    prefixIcon: const Icon(Icons.search, color: AppTheme.textGrey),
+                    filled: true,
+                    fillColor: AppTheme.white,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.divider),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.divider),
+                    ),
                   ),
                 ),
               ),
+              Expanded(
+                child: loans.isEmpty
+                  ? const EmptyState(
+                      icon: Icons.account_balance_outlined,
+                      title: 'No loan applications')
+                  : filtered.isEmpty
+                    ? const EmptyState(
+                        icon: Icons.search_off,
+                        title: 'No matching applications')
+                    : RefreshIndicator(
+                        color: AppTheme.primary,
+                        onRefresh: () async => ref.invalidate(allLoansProvider),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (_, i) => _LoanReviewCard(
+                            loan: filtered[i],
+                            onAction: () => ref.invalidate(allLoansProvider),
+                          ),
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -122,51 +167,107 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
 
   Future<void> _disburse() async {
     // Confirm before disbursing
-    final confirm = await showDialog<bool>(
+    final mode = await showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(children: [
-          Icon(Icons.payments_rounded, color: Color(0xFF7C3AED)),
-          SizedBox(width: 10),
-          Text('Confirm Disbursement',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-        ]),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Disburse ₹${NumberFormat('#,##,###').format(widget.loan.amount)} to ${widget.loan.applicantName}?',
-                style: const TextStyle(fontSize: 13)),
-            const SizedBox(height: 8),
-            Text(
-              'Repayment due date will be automatically set to the 15th of the month that is ${widget.loan.tenureMonths} months from today.',
-              style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
-            ),
-          ],
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: AppTheme.white,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C3AED).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.payments_rounded, color: Color(0xFF7C3AED)),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Text('Disburse Loan',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textDark)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text('Disburse ₹${NumberFormat('#,##,###').format(widget.loan.amount)} to ${widget.loan.applicantName}?',
+                  style: const TextStyle(fontSize: 15, color: AppTheme.textDark)),
+              const SizedBox(height: 24),
+              const Text('Select Disbursement Mode:',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textGrey)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context, 'Cash'),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFF16A34A).withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF16A34A).withOpacity(0.05),
+                        ),
+                        child: const Column(
+                          children: [
+                            Icon(Icons.money, color: Color(0xFF16A34A), size: 32),
+                            SizedBox(height: 8),
+                            Text('Cash', style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context, 'Online'),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFF7C3AED).withOpacity(0.3)),
+                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF7C3AED).withOpacity(0.05),
+                        ),
+                        child: const Column(
+                          children: [
+                            Icon(Icons.account_balance, color: Color(0xFF7C3AED), size: 32),
+                            SizedBox(height: 8),
+                            Text('Online', style: TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textGrey,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: AppTheme.textGrey)),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(context, true),
-            icon: const Icon(Icons.payments_rounded, size: 16),
-            label: const Text('Disburse'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF7C3AED),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-        ],
       ),
     );
-    if (confirm != true) return;
+    if (mode == null) return;
 
     setState(() => _loading = true);
     try {
-      await LoanApi.disburseLoan(widget.loan.id);
+      await LoanApi.disburseLoan(widget.loan.id, mode);
       widget.onAction();
     } catch (e) {
       if (mounted) {
@@ -363,6 +464,12 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
             InfoRow(
               label: 'Due Date',
               value: 'On or before ${DateFormat('d MMM yyyy').format(l.repaymentDueDate!)}',
+              last: l.disbursementMode == null,
+            ),
+          if (l.disbursementMode != null)
+            InfoRow(
+              label: 'Mode',
+              value: 'Disbursed via ${l.disbursementMode}',
               last: true,
             ),
 
@@ -452,260 +559,6 @@ class _DialogRow extends StatelessWidget {
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: AppTheme.textDark)),
-        ],
-      ),
-    );
-  }
-}
-
-// ═════════════════════════════════════════════
-// Screenshot Review
-// ═════════════════════════════════════════════
-class ScreenshotReviewScreen extends ConsumerWidget {
-  const ScreenshotReviewScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final screenshotsAsync = ref.watch(pendingScreenshotsProvider);
-
-    return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
-      appBar: AppBar(title: const Text('Screenshot Reviews')),
-      body: screenshotsAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary)),
-        error: (e, _) => ErrorRetry(
-            message: e.toString(),
-            onRetry: () => ref.invalidate(pendingScreenshotsProvider)),
-        data: (items) => items.isEmpty
-            ? const EmptyState(
-                icon: Icons.check_circle_outline_rounded,
-                title: 'All clear!',
-                subtitle: 'No screenshots pending review')
-            : RefreshIndicator(
-                color: AppTheme.primary,
-                onRefresh: () async =>
-                    ref.invalidate(pendingScreenshotsProvider),
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) => _ScreenshotCard(
-                    item: items[i],
-                    onAction: () => ref.invalidate(pendingScreenshotsProvider),
-                  ),
-                ),
-              ),
-      ),
-    );
-  }
-}
-
-class _ScreenshotCard extends StatefulWidget {
-  final PendingScreenshot item;
-  final VoidCallback onAction;
-  const _ScreenshotCard({required this.item, required this.onAction});
-
-  @override
-  State<_ScreenshotCard> createState() => _ScreenshotCardState();
-}
-
-class _ScreenshotCardState extends State<_ScreenshotCard> {
-  bool _loading = false;
-
-  Future<void> _verify(bool approve) async {
-    setState(() => _loading = true);
-    try {
-      await PaymentApi.adminVerify(
-          widget.item.contributionId,
-          approve,
-          approve ? 'Verified by admin' : null);
-      widget.onAction();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  void _viewScreenshot() {
-    if (widget.item.screenshotUrl == null) return;
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppBar(
-              title: Text(
-                  '${widget.item.userName} - ${widget.item.monthName}'),
-              automaticallyImplyLeading: false,
-              actions: [
-                IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context))
-              ],
-            ),
-            Image.memory(
-              Uri.parse(widget.item.screenshotUrl!).data!.contentAsBytes(),
-              fit: BoxFit.contain,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final s = widget.item;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: AppTheme.primaryLight,
-                child: Text(s.userName[0],
-                    style: const TextStyle(
-                        color: AppTheme.primary,
-                        fontWeight: FontWeight.w700)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.userName,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: AppTheme.textDark)),
-                    Text('${s.userPhone} • ${s.monthName}',
-                        style: const TextStyle(
-                            color: AppTheme.textGrey, fontSize: 12)),
-                  ],
-                ),
-              ),
-              Text('₹${s.amount.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark)),
-            ],
-          ),
-
-          if (s.aiSummary != null || s.token != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.bgGrey,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (s.token != null) ...[
-                    const Text('Token expected:',
-                        style: TextStyle(
-                            fontSize: 11, color: AppTheme.textGrey)),
-                    Text(s.token!,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            color: AppTheme.primary,
-                            fontSize: 13,
-                            letterSpacing: 1)),
-                    const SizedBox(height: 6),
-                  ],
-                  if (s.aiSummary != null)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Icon(Icons.auto_awesome,
-                            size: 12, color: AppTheme.textGrey),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(s.aiSummary!,
-                              style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppTheme.textGrey)),
-                        ),
-                      ],
-                    ),
-                  if (s.aiExtractedAmount != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'AI extracted: ₹${s.aiExtractedAmount!.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                          fontSize: 11, color: AppTheme.textGrey),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: _viewScreenshot,
-            icon: const Icon(Icons.image_outlined, size: 16),
-            label: const Text('View Screenshot'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 40),
-              foregroundColor: AppTheme.primary,
-              side: const BorderSide(color: AppTheme.primary),
-            ),
-          ),
-
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.only(top: 12),
-              child: Center(
-                  child: CircularProgressIndicator(color: AppTheme.primary)),
-            )
-          else ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _verify(false),
-                    icon: const Icon(Icons.cancel_rounded, size: 16),
-                    label: const Text('Reject'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.error,
-                      side: const BorderSide(color: AppTheme.error),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => _verify(true),
-                    icon: const Icon(Icons.check_circle_rounded, size: 16),
-                    label: const Text('Approve'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF16A34A),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
         ],
       ),
     );
@@ -1023,6 +876,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   SocietySettings? _settings;
   String? _logoBase64;
   bool _logoChanged = false;
+  bool _enableAi = true;
 
   @override
   void initState() {
@@ -1058,6 +912,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       final s = await SettingsApi.getSettings();
       _settings = s;
       _logoBase64 = s.logoBase64;
+      _enableAi = s.enableAiVerification;
       _nameCtrl.text = s.societyName;
       _upiCtrl.text = s.upiId;
       _upiNameCtrl.text = s.upiDisplayName;
@@ -1078,6 +933,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         'societyName': _nameCtrl.text.trim(),
         'upiId': _upiCtrl.text.trim(),
         'upiDisplayName': _upiNameCtrl.text.trim(),
+        'enableAiVerification': _enableAi,
         if (_logoChanged) 'logoBase64': _logoBase64,
       };
       await SettingsApi.updateSettings(payload);
@@ -1270,6 +1126,36 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             labelText: 'Society Name',
                             prefixIcon: Icon(Icons.home_work_outlined),
                           ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Automation
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.divider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('AUTOMATION',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textGrey,
+                                fontSize: 12,
+                                letterSpacing: 0.5)),
+                        const SizedBox(height: 14),
+                        SwitchListTile(
+                          title: const Text('AI Auto-Verify', style: TextStyle(fontSize: 14)),
+                          subtitle: const Text('Automatically verify screenshots using Gemini AI', style: TextStyle(fontSize: 12, color: AppTheme.textGrey)),
+                          value: _enableAi,
+                          activeColor: AppTheme.primary,
+                          contentPadding: EdgeInsets.zero,
+                          onChanged: (val) => setState(() => _enableAi = val),
                         ),
                       ],
                     ),

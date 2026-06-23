@@ -36,7 +36,14 @@ class _PayScreenState extends ConsumerState<PayScreen> {
     setState(() { _loading = true; _error = null; });
     try {
       final token = await PaymentApi.getOrCreateToken();
-      setState(() => _token = token);
+      if (token.isPendingReview) {
+        setState(() {
+          _resultMessage = token.pendingMessage ?? "⌛ Screenshot sent to admin for manual review.";
+          _autoVerified = false;
+        });
+      } else {
+        setState(() => _token = token);
+      }
     } catch (e) {
       setState(() => _error = apiError(e));
     } finally {
@@ -96,7 +103,7 @@ class _PayScreenState extends ConsumerState<PayScreen> {
                     padding: const EdgeInsets.all(16),
                     children: [
                       if (_resultMessage != null)
-                        _ResultBanner(
+                        ResultBanner(
                           message: _resultMessage!,
                           success: _autoVerified == true,
                           aiSummary: _aiSummary,
@@ -397,77 +404,4 @@ class _StepCard extends StatelessWidget {
     );
   }
 }
-
-// ── Result Banner ─────────────────────────────────────────────
-class _ResultBanner extends StatelessWidget {
-  final String message;
-  final bool success;
-  final String? aiSummary;
-  const _ResultBanner(
-      {required this.message,
-      required this.success,
-      this.aiSummary});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: success
-            ? const Color(0xFFDCFCE7)
-            : const Color(0xFFFEF9C3),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: success
-              ? const Color(0xFF86EFAC)
-              : const Color(0xFFFDE68A),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                success
-                    ? Icons.check_circle_rounded
-                    : Icons.hourglass_top_rounded,
-                color: success
-                    ? const Color(0xFF16A34A)
-                    : const Color(0xFFCA8A04),
-                size: 32,
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(message,
-                    style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        color: success
-                            ? const Color(0xFF15803D)
-                            : const Color(0xFF92400E))),
-              ),
-            ],
-          ),
-          // Show AI summary if available
-          if (aiSummary != null && aiSummary!.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.auto_awesome,
-                    size: 13, color: AppTheme.textGrey),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(aiSummary!,
-                      style: const TextStyle(
-                          fontSize: 12, color: AppTheme.textGrey)),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
+

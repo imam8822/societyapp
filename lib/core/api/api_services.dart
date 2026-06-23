@@ -79,7 +79,7 @@ class ContributionApi {
   static Future<Contribution> addContribution(
       AddContributionRequest req) async {
     final res =
-        await ApiClient.instance.post('/contributions', data: req.toJson());
+        await ApiClient.instance.post('/contributions/cash', data: req.toJson());
     return Contribution.fromJson(res.data);
   }
 
@@ -145,9 +145,9 @@ class LoanApi {
     return LoanApplication.fromJson(res.data);
   }
 
-  static Future<LoanApplication> disburseLoan(int id) async {
+  static Future<LoanApplication> disburseLoan(int id, String mode) async {
     // Due date auto-calculated on backend: 15th of month that is TenureMonths from today
-    final res = await ApiClient.instance.patch('/loans/$id/disburse', data: {});
+    final res = await ApiClient.instance.patch('/loans/$id/disburse?mode=$mode', data: {});
     return LoanApplication.fromJson(res.data);
   }
 
@@ -191,6 +191,39 @@ class PaymentApi {
       int contributionId, bool approve, String? remarks) async {
     await ApiClient.instance
         .patch('/payment/contributions/$contributionId/verify', data: {
+      'approve': approve,
+      if (remarks != null) 'remarks': remarks,
+    });
+  }
+
+  // ── Loan Repayment ──────────────────────────────────
+
+  /// Get or create a payment token for loan repayment.
+  static Future<PaymentToken> getOrCreateLoanToken(int loanId) async {
+    final res = await ApiClient.instance.get('/payment/loan-token/$loanId');
+    return PaymentToken.fromJson(res.data);
+  }
+
+  /// Upload screenshot for loan repayment verification.
+  static Future<ScreenshotResult> uploadLoanScreenshot(
+      int loanId, String base64Image) async {
+    final res = await ApiClient.instance.post(
+        '/payment/loan-screenshot/$loanId',
+        data: {'screenshotBase64': base64Image});
+    return ScreenshotResult.fromJson(res.data);
+  }
+
+  static Future<List<PendingLoanRepayment>> getPendingLoanRepayments() async {
+    final res = await ApiClient.instance.get('/payment/pending-loan-repayments');
+    return (res.data as List)
+        .map((e) => PendingLoanRepayment.fromJson(e))
+        .toList();
+  }
+
+  static Future<void> adminVerifyLoanRepayment(
+      int loanRepaymentId, bool approve, String? remarks) async {
+    await ApiClient.instance
+        .patch('/payment/loan-repayments/$loanRepaymentId/verify', data: {
       'approve': approve,
       if (remarks != null) 'remarks': remarks,
     });

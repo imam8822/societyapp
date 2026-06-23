@@ -15,11 +15,13 @@ class LoanApplication {
   final String? rejectionReason;
   final int? tenureMonths;
   final DateTime? disbursedDate;
+  final String? disbursementMode;
   final DateTime? repaymentDueDate;
   final DateTime? finalRepaymentDate;
   final double totalRepaid;
   final double outstandingAmount;
   final double applicantTotalSaved;
+  final bool hasPendingRepayment;
 
   LoanApplication({
     required this.id,
@@ -38,24 +40,26 @@ class LoanApplication {
     this.rejectionReason,
     this.tenureMonths,
     this.disbursedDate,
+    this.disbursementMode,
     this.repaymentDueDate,
     this.finalRepaymentDate,
     required this.totalRepaid,
     required this.outstandingAmount,
     required this.applicantTotalSaved,
+    required this.hasPendingRepayment,
   });
 
   factory LoanApplication.fromJson(Map<String, dynamic> j) => LoanApplication(
         id: j['id'],
         applicantId: j['applicantId'],
-        applicantName: j['applicantName'],
-        applicantPhone: j['applicantPhone'],
+        applicantName: j['applicantName'] ?? '',
+        applicantPhone: j['applicantPhone'] ?? '',
         guarantorId: j['guarantorId'],
         guarantorName: j['guarantorName'],
         guarantorPhone: j['guarantorPhone'],
-        guarantorRequired: j['guarantorRequired'] ?? true,
-        amount: (j['amount'] as num?)?.toDouble() ?? 0,
-        status: j['status'],
+        guarantorRequired: j['guarantorRequired'] ?? false,
+        amount: (j['amount'] as num).toDouble(),
+        status: j['status'] ?? 'Pending',
         appliedDate: DateTime.parse(j['appliedDate']),
         reviewedAt: j['reviewedAt'] != null
             ? DateTime.parse(j['reviewedAt'])
@@ -66,6 +70,7 @@ class LoanApplication {
         disbursedDate: j['disbursedDate'] != null
             ? DateTime.parse(j['disbursedDate'])
             : null,
+        disbursementMode: j['disbursementMode'],
         repaymentDueDate: j['repaymentDueDate'] != null
             ? DateTime.parse(j['repaymentDueDate'])
             : null,
@@ -76,6 +81,7 @@ class LoanApplication {
         outstandingAmount: (j['outstandingAmount'] as num?)?.toDouble() ?? 0,
         applicantTotalSaved:
             (j['applicantTotalSaved'] as num?)?.toDouble() ?? 0,
+        hasPendingRepayment: j['hasPendingRepayment'] ?? false,
       );
 
   bool get isPending => status == 'Pending';

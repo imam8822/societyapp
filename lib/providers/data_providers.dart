@@ -55,6 +55,11 @@ final pendingScreenshotsProvider =
   return PaymentApi.getPendingReviews();
 });
 
+final pendingLoanRepaymentsProvider =
+    FutureProvider.autoDispose<List<PendingLoanRepayment>>((ref) {
+  return PaymentApi.getPendingLoanRepayments();
+});
+
 // ─────────────────────────────────────────────
 // Settings
 // ─────────────────────────────────────────────

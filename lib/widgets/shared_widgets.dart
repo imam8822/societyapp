@@ -289,3 +289,167 @@ class ErrorRetry extends StatelessWidget {
     );
   }
 }
+
+// ─────────────────────────────────────────────
+// Result Banner — Animated banner for success/pending messages
+// ─────────────────────────────────────────────
+class ResultBanner extends StatefulWidget {
+  final String message;
+  final bool success;
+  final String? aiSummary;
+
+  const ResultBanner({
+    super.key,
+    required this.message,
+    required this.success,
+    this.aiSummary,
+  });
+
+  @override
+  State<ResultBanner> createState() => _ResultBannerState();
+}
+
+class _ResultBannerState extends State<ResultBanner>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _scaleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // If not success, we assume it's "pending review" based on the message.
+    final bool isPending =
+        !widget.success && widget.message.toLowerCase().contains('review');
+    final bool isSuccess = widget.success;
+
+    final Color gradientStart = isSuccess
+        ? const Color(0xFF10B981) // Emerald Green
+        : isPending
+            ? const Color(0xFF6366F1) // Indigo for pending
+            : const Color(0xFFF59E0B); // Amber
+
+    final Color gradientEnd = isSuccess
+        ? const Color(0xFF059669)
+        : isPending
+            ? const Color(0xFF4338CA)
+            : const Color(0xFFD97706);
+
+    final IconData iconData = isSuccess
+        ? Icons.check_circle_outline_rounded
+        : isPending
+            ? Icons.hourglass_empty_rounded
+            : Icons.info_outline_rounded;
+
+    return FadeTransition(
+      opacity: _fadeAnimation,
+      child: ScaleTransition(
+        scale: _scaleAnimation,
+        child: Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [gradientStart, gradientEnd],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: gradientStart.withOpacity(0.4),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(iconData, color: Colors.white, size: 36),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text(
+                      widget.message
+                          .replaceAll('⏳ ', '')
+                          .replaceAll('✅ ', ''), // clean up emojis
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (widget.aiSummary != null &&
+                  widget.aiSummary!.isNotEmpty) ...[
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.auto_awesome_rounded,
+                          size: 16, color: Colors.white70),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          widget.aiSummary!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ]
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

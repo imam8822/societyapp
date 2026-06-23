@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../constants.dart';
 import '../storage/storage_service.dart';
 
@@ -24,10 +25,14 @@ class ApiClient {
         final token = await StorageService.getToken();
         if (token != null) {
           options.headers['Authorization'] = 'Bearer $token';
+          debugPrint('[ApiClient] Token attached to ${options.method} ${options.path}');
+        } else {
+          debugPrint('[ApiClient] ⚠️ NO TOKEN for ${options.method} ${options.path}');
         }
         return handler.next(options);
       },
       onError: (error, handler) {
+        debugPrint('[ApiClient] ❌ ${error.response?.statusCode} on ${error.requestOptions.path}');
         return handler.next(error);
       },
     ));

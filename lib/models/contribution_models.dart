@@ -63,30 +63,33 @@ class AddContributionRequest {
   final int userId;
   final int month;
   final int year;
-  final int mode; // 0=Online, 1=Cash
-  final String? screenshotUrl;
+  final double? amountOverride;
+  final double penaltyAmount;
   final String? transactionReference;
   final String? remarks;
+  final DateTime? paidDate;
 
   AddContributionRequest({
     required this.userId,
     required this.month,
     required this.year,
-    required this.mode,
-    this.screenshotUrl,
+    this.amountOverride,
+    this.penaltyAmount = 0,
     this.transactionReference,
     this.remarks,
+    this.paidDate,
   });
 
   Map<String, dynamic> toJson() => {
         'userId': userId,
         'month': month,
         'year': year,
-        'mode': mode,
-        if (screenshotUrl != null) 'screenshotUrl': screenshotUrl,
+        if (amountOverride != null) 'amountOverride': amountOverride,
+        'penaltyAmount': penaltyAmount,
         if (transactionReference != null)
           'transactionReference': transactionReference,
         if (remarks != null) 'remarks': remarks,
+        if (paidDate != null) 'paidDate': paidDate!.toIso8601String(),
       };
 }
 

@@ -5,8 +5,10 @@ import 'package:society_app/providers/auth_provider.dart';
 import 'package:society_app/screens/admin/admin_dashboard_screen.dart';
 import 'package:society_app/screens/admin/admin_screens.dart';
 import 'package:society_app/screens/admin/members_screen.dart';
+import 'package:society_app/screens/admin/screenshot_review_screen.dart';
 import 'package:society_app/screens/auth/login_screen.dart';
 import 'package:society_app/screens/user/pay_screen.dart';
+import 'package:society_app/screens/user/loan_repay_screen.dart';
 import 'package:society_app/screens/user/user_dashboard_screen.dart';
 import 'package:society_app/screens/user/user_screens.dart';
 
@@ -38,6 +40,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/loan/apply', builder: (_, __) => const LoanApplyScreen()),
       GoRoute(
           path: '/loan/status', builder: (_, __) => const LoanStatusScreen()),
+      GoRoute(
+          path: '/loan/repay/:id',
+          builder: (_, state) => LoanRepayScreen(
+              loanId: int.parse(state.pathParameters['id']!))),
       GoRoute(path: '/admin', builder: (_, __) => const AdminDashboardScreen()),
       GoRoute(
           path: '/admin/members', builder: (_, __) => const MembersScreen()),

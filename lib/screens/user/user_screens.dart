@@ -537,7 +537,7 @@ class _LoanDetailCard extends StatelessWidget {
           if (loan.disbursedDate != null)
             InfoRow(
                 label: 'Disbursed',
-                value: DateFormat('d MMM yyyy').format(loan.disbursedDate!)),
+                value: '${DateFormat('d MMM yyyy').format(loan.disbursedDate!)}${loan.disbursementMode != null ? ' via ${loan.disbursementMode}' : ''}'),
           if (loan.repaymentDueDate != null)
             InfoRow(
                 label: 'Due Date',
@@ -557,6 +557,31 @@ class _LoanDetailCard extends StatelessWidget {
                 label: 'Reason',
                 value: loan.rejectionReason!,
                 last: true),
+
+          // Repay Button
+          if (loan.isDisbursed) ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: loan.hasPendingRepayment
+                    ? null
+                    : () => context.push('/loan/repay/${loan.id}'),
+                icon: Icon(loan.hasPendingRepayment
+                    ? Icons.hourglass_empty_rounded
+                    : Icons.payment_rounded),
+                label: Text(loan.hasPendingRepayment
+                    ? 'Repayment Pending Review'
+                    : 'Repay Loan'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  disabledBackgroundColor: AppTheme.divider,
+                  disabledForegroundColor: AppTheme.textGrey,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
