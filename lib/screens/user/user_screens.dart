@@ -13,9 +13,6 @@ import 'package:society_app/widgets/shared_widgets.dart';
 // ═════════════════════════════════════════════
 // Contribution History
 // ═════════════════════════════════════════════
-final myContributionsProvider = FutureProvider.autoDispose<List<Contribution>>((ref) async {
-  return await ContributionApi.getMyContributions();
-});
 
 class ContributionHistoryScreen extends ConsumerWidget {
   const ContributionHistoryScreen({super.key});
@@ -153,8 +150,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       setState(() { _formData = data; _loadingForm = false; });
     } catch (e) {
       setState(() => _loadingForm = false);
-      if (mounted) ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(apiError(e))));
+      if (mounted) AppToast.showError(context, apiError(e));
     }
   }
 
@@ -194,8 +190,13 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
     }
   }
 
-  void _snack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _snack(String msg) {
+    if (msg.contains('submitted') || msg.contains('success')) {
+      AppToast.showSuccess(context, msg);
+    } else {
+      AppToast.showError(context, msg);
+    }
+  }
 
   /// Repayment due = on or before 15th of the month that is [tenureMonths] from today
   /// e.g. Applied March 18 + 4 months → due on or before July 15

@@ -86,8 +86,13 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
     }
   }
 
-  void _showSnack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _showSnack(String msg) {
+    if (msg.contains('success') || msg.contains('verified') || msg.contains('uploaded') || msg.contains('repaid')) {
+      AppToast.showSuccess(context, msg);
+    } else {
+      AppToast.showError(context, msg);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

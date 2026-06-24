@@ -4,6 +4,7 @@ import '../../models/user_models.dart';
 import '../../models/contribution_models.dart';
 import '../../models/loan_models.dart';
 import '../../models/payment_models.dart';
+import '../../models/app_notification.dart';
 
 
 // ─────────────────────────────────────────────
@@ -243,5 +244,23 @@ class SettingsApi {
       Map<String, dynamic> data) async {
     final res = await ApiClient.instance.put('/settings', data: data);
     return SocietySettings.fromJson(res.data);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────
+class NotificationApi {
+  static Future<List<AppNotification>> getMyNotifications() async {
+    final res = await ApiClient.instance.get('/Notifications');
+    return (res.data as List).map((e) => AppNotification.fromJson(e)).toList();
+  }
+
+  static Future<void> markAsRead(int id) async {
+    await ApiClient.instance.put('/Notifications/$id/read');
+  }
+
+  static Future<void> saveFcmToken(String token) async {
+    await ApiClient.instance.post('/Notifications/fcm-token', data: {'token': token});
   }
 }

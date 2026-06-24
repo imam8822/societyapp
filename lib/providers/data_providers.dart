@@ -4,6 +4,8 @@ import 'package:society_app/models/dashboard_models.dart';
 import 'package:society_app/models/loan_models.dart';
 import 'package:society_app/models/payment_models.dart';
 import 'package:society_app/models/user_models.dart';
+import 'package:society_app/models/app_notification.dart';
+import 'package:society_app/models/contribution_models.dart';
 
 
 // ─────────────────────────────────────────────
@@ -74,4 +76,25 @@ final settingsProvider =
 final eligibleGuarantorsProvider =
     FutureProvider.autoDispose<List<UserSummary>>((ref) {
   return UserApi.getEligibleGuarantors();
+});
+
+// ─────────────────────────────────────────────
+// My Profile
+// ─────────────────────────────────────────────
+final myProfileProvider = FutureProvider.autoDispose<UserSummary>((ref) {
+  return UserApi.getMyProfile();
+});
+
+// ─────────────────────────────────────────────
+// My Contributions History
+// ─────────────────────────────────────────────
+final myContributionsProvider = FutureProvider.autoDispose<List<Contribution>>((ref) {
+  return ContributionApi.getMyContributions();
+});
+
+// ─────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────
+final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>((ref) {
+  return NotificationApi.getMyNotifications();
 });

@@ -13,6 +13,7 @@ class UserDashboard {
   final bool isEligibleForLoan;
   final bool hasRepaidLoanThisMonth;
   final bool guarantorRequired;
+  final String societyName;
   final LoanApplication? activeLoan;
   final List<Contribution> recentContributions;
 
@@ -28,6 +29,7 @@ class UserDashboard {
     required this.isEligibleForLoan,
     required this.hasRepaidLoanThisMonth,
     required this.guarantorRequired,
+    required this.societyName,
     this.activeLoan,
     required this.recentContributions,
   });
@@ -44,6 +46,7 @@ class UserDashboard {
         isEligibleForLoan: j['isEligibleForLoan'] ?? false,
         hasRepaidLoanThisMonth: j['hasRepaidLoanThisMonth'] ?? false,
         guarantorRequired: j['guarantorRequired'] ?? true,
+        societyName: j['societyName'] ?? 'My Society',
         activeLoan: j['activeLoan'] != null
             ? LoanApplication.fromJson(j['activeLoan']) : null,
         recentContributions: (j['recentContributions'] as List? ?? [])

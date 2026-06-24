@@ -11,6 +11,7 @@ import 'package:society_app/screens/user/pay_screen.dart';
 import 'package:society_app/screens/user/loan_repay_screen.dart';
 import 'package:society_app/screens/user/user_dashboard_screen.dart';
 import 'package:society_app/screens/user/user_screens.dart';
+import 'package:society_app/screens/notifications_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _AuthRouterNotifier(ref);
@@ -59,6 +60,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/admin/reports', builder: (_, __) => const ReportsScreen()),
       GoRoute(
           path: '/admin/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(
+          path: '/notifications', builder: (_, __) => const NotificationsScreen()),
     ],
   );
 });

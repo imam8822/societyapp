@@ -453,3 +453,87 @@ class _ResultBannerState extends State<ResultBanner>
     );
   }
 }
+
+class AppToast {
+  static void showSuccess(BuildContext context, String message) {
+    _show(context, message, isSuccess: true);
+  }
+
+  static void showError(BuildContext context, String message) {
+    _show(context, message, isError: true);
+  }
+
+  static void showInfo(BuildContext context, String message) {
+    _show(context, message);
+  }
+
+  static void _show(
+    BuildContext context,
+    String message, {
+    bool isError = false,
+    bool isSuccess = false,
+  }) {
+    final snackBar = SnackBar(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      duration: const Duration(seconds: 3),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      content: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isError
+                ? [const Color(0xFFEF4444), const Color(0xFFDC2626)]
+                : isSuccess
+                    ? [const Color(0xFF10B981), const Color(0xFF059669)]
+                    : [const Color(0xFF1F2937), const Color(0xFF111827)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: (isError
+                      ? const Color(0xFFEF4444)
+                      : isSuccess
+                          ? const Color(0xFF10B981)
+                          : const Color(0xFF1F2937))
+                  .withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isError
+                  ? Icons.error_outline_rounded
+                  : isSuccess
+                      ? Icons.check_circle_outline_rounded
+                      : Icons.info_outline_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(snackBar);
+  }
+}

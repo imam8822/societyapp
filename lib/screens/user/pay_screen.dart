@@ -85,8 +85,13 @@ class _PayScreenState extends ConsumerState<PayScreen> {
     }
   }
 
-  void _showSnack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _showSnack(String msg) {
+    if (msg.contains('success') || msg.contains('verified') || msg.contains('uploaded')) {
+      AppToast.showSuccess(context, msg);
+    } else {
+      AppToast.showError(context, msg);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
