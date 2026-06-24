@@ -101,7 +101,16 @@ class _PayScreenState extends ConsumerState<PayScreen> {
       body: LoadingOverlay(
         isLoading: _loading,
         child: _loading && _token == null
-            ? const SizedBox()
+            ? ListView(
+                padding: const EdgeInsets.all(16),
+                children: const [
+                  ShimmerBox(height: 120, width: double.infinity, borderRadius: 12),
+                  SizedBox(height: 16),
+                  ShimmerBox(height: 180, width: double.infinity, borderRadius: 12),
+                  SizedBox(height: 16),
+                  ShimmerBox(height: 100, width: double.infinity, borderRadius: 12),
+                ],
+              )
             : _error != null && _token == null
                 ? ErrorRetry(message: _error!, onRetry: _loadToken)
                 : _resultMessage != null
@@ -279,13 +288,13 @@ class _AmountBreakdownCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: hasPenalty
-            ? const Color(0xFFFFF7ED)
+            ? AppTheme.warning.withValues(alpha: 0.1)
             : AppTheme.primaryLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: hasPenalty
-              ? const Color(0xFFFED7AA)
-              : AppTheme.primary.withOpacity(0.3),
+              ? AppTheme.warning.withValues(alpha: 0.3)
+              : AppTheme.primary.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -298,7 +307,7 @@ class _AmountBreakdownCard extends StatelessWidget {
                     ? Icons.warning_amber_rounded
                     : Icons.check_circle_outline_rounded,
                 color: hasPenalty
-                    ? const Color(0xFFF97316)
+                    ? AppTheme.warning
                     : AppTheme.primary,
                 size: 18,
               ),
@@ -310,7 +319,7 @@ class _AmountBreakdownCard extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: hasPenalty
-                      ? const Color(0xFF9A3412)
+                      ? AppTheme.warning
                       : AppTheme.primary,
                   fontSize: 14,
                 ),
@@ -353,7 +362,7 @@ class _AmountBreakdownCard extends StatelessWidget {
                   fontWeight:
                       bold ? FontWeight.w700 : FontWeight.w500,
                   color: highlight
-                      ? const Color(0xFFF97316)
+                      ? AppTheme.warning
                       : bold
                           ? AppTheme.textDark
                           : AppTheme.textGrey,

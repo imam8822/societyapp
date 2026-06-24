@@ -5,6 +5,7 @@ import '../../models/contribution_models.dart';
 import '../../models/loan_models.dart';
 import '../../models/payment_models.dart';
 import '../../models/app_notification.dart';
+import '../../models/transaction_models.dart';
 
 
 // ─────────────────────────────────────────────
@@ -264,3 +265,35 @@ class NotificationApi {
     await ApiClient.instance.post('/Notifications/fcm-token', data: {'token': token});
   }
 }
+
+// ─────────────────────────────────────────────
+// Transactions (Ledger & Stats)
+// ─────────────────────────────────────────────
+class TransactionApi {
+  static Future<List<TransactionDto>> getTransactions({int limit = 100}) async {
+    final res = await ApiClient.instance.get('/transaction', queryParameters: {'limit': limit});
+    return (res.data as List).map((e) => TransactionDto.fromJson(e)).toList();
+  }
+
+  static Future<TransactionStatsDto> getStats() async {
+    final res = await ApiClient.instance.get('/transaction/stats');
+    return TransactionStatsDto.fromJson(res.data);
+  }
+
+  static Future<void> exportStatement({
+    DateTime? startDate,
+    DateTime? endDate,
+    required String format,
+    required String savePath,
+  }) async {
+    final Map<String, dynamic> params = {'format': format};
+    if (startDate != null) params['startDate'] = startDate.toIso8601String();
+    if (endDate != null) params['endDate'] = endDate.toIso8601String();
+
+    await ApiClient.instance.download(
+      '/transaction/export',
+      savePath,
+      queryParameters: params,
+    );
+  }
+}

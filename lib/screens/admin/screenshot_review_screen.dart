@@ -494,80 +494,61 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(approve ? 'Approve Payment?' : 'Reject Payment?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Member: ${item.userName}'),
-            Text('Month: ${item.monthName}'),
-            Text('Amount: ${fmt.format(item.totalAmount)}'),
-            if (!approve) ...[
-              const SizedBox(height: 12),
-              const Text(
-                'The member will need to re-upload their payment screenshot.',
-                style: TextStyle(color: AppTheme.textGrey, fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: remarkCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Rejection Remark (Optional)',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  isDense: true,
-                ),
-                maxLines: 2,
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 44,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+      barrierDismissible: false,
+      builder: (ctx) {
+        bool isProcessing = false;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(approve ? 'Approve Payment?' : 'Reject Payment?'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Member: ${item.userName}'),
+                  Text('Month: ${item.monthName}'),
+                  Text('Amount: ${fmt.format(item.totalAmount)}'),
+                  if (!approve) ...[
+                    const SizedBox(height: 12),
+                    const Text(
+                      'The member will need to re-upload their payment screenshot.',
+                      style: TextStyle(color: AppTheme.textGrey, fontSize: 13),
                     ),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 44,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: approve ? AppTheme.primary : AppTheme.error,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    
-                    // Show a loading snackbar
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Processing...'),
-                        duration: Duration(seconds: 1),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: remarkCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Rejection Remark (Optional)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        isDense: true,
                       ),
-                    );
-
+                      maxLines: 2,
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isProcessing ? null : () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: approve ? AppTheme.primary : AppTheme.error,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    minimumSize: const Size(100, 44),
+                  ),
+                  onPressed: isProcessing ? null : () async {
+                    setState(() => isProcessing = true);
                     try {
-                      // Call the API
                       final remark = remarkCtrl.text.trim().isEmpty ? null : remarkCtrl.text.trim();
                       await PaymentApi.adminVerify(item.contributionId, approve, remark);
                       
-                      // Refresh the list
                       ref.invalidate(pendingScreenshotsProvider);
+                      if (ctx.mounted) Navigator.pop(ctx);
                       
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -588,16 +569,22 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                           ),
                         );
                       }
+                    } finally {
+                      if (ctx.mounted) setState(() => isProcessing = false);
                     }
                   },
-                  child: Text(approve ? 'Approve' : 'Reject'),
+                  child: isProcessing
+                      ? const SizedBox(
+                          height: 20, width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(approve ? 'Approve' : 'Reject'),
                 ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            );
+          }
+        );
+      },
     );
   }
 }
@@ -875,75 +862,60 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(approve ? 'Approve Repayment?' : 'Reject Repayment?'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Member: ${item.userName}'),
-            Text('Amount: ${fmt.format(item.amount)}'),
-            if (!approve) ...[
-              const SizedBox(height: 12),
-              const Text(
-                'The member will need to re-upload their payment screenshot.',
-                style: TextStyle(color: AppTheme.textGrey, fontSize: 13),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: remarkCtrl,
-                decoration: InputDecoration(
-                  labelText: 'Rejection Remark (Optional)',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  isDense: true,
-                ),
-                maxLines: 2,
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 44,
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
+      barrierDismissible: false,
+      builder: (ctx) {
+        bool isProcessing = false;
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(approve ? 'Approve Repayment?' : 'Reject Repayment?'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Member: ${item.userName}'),
+                  Text('Amount: ${fmt.format(item.amount)}'),
+                  if (!approve) ...[
+                    const SizedBox(height: 12),
+                    const Text(
+                      'The member will need to re-upload their payment screenshot.',
+                      style: TextStyle(color: AppTheme.textGrey, fontSize: 13),
                     ),
-                    child: const Text('Cancel'),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: SizedBox(
-                  height: 44,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: approve ? AppTheme.primary : AppTheme.error,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8)),
-                    ),
-                  onPressed: () async {
-                    Navigator.pop(ctx);
-                    
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Processing...'),
-                        duration: Duration(seconds: 1),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: remarkCtrl,
+                      decoration: InputDecoration(
+                        labelText: 'Rejection Remark (Optional)',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        isDense: true,
                       ),
-                    );
-
+                      maxLines: 2,
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isProcessing ? null : () => Navigator.pop(ctx),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: approve ? AppTheme.primary : AppTheme.error,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    minimumSize: const Size(100, 44),
+                  ),
+                  onPressed: isProcessing ? null : () async {
+                    setState(() => isProcessing = true);
                     try {
                       final remark = remarkCtrl.text.trim().isEmpty ? null : remarkCtrl.text.trim();
                       await PaymentApi.adminVerifyLoanRepayment(item.loanRepaymentId, approve, remark);
+                      
                       ref.invalidate(pendingLoanRepaymentsProvider);
+                      if (ctx.mounted) Navigator.pop(ctx);
                       
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -964,16 +936,22 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                           ),
                         );
                       }
+                    } finally {
+                      if (ctx.mounted) setState(() => isProcessing = false);
                     }
                   },
-                  child: Text(approve ? 'Approve' : 'Reject'),
+                  child: isProcessing
+                      ? const SizedBox(
+                          height: 20, width: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : Text(approve ? 'Approve' : 'Reject'),
                 ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            );
+          }
+        );
+      },
     );
   }
 }

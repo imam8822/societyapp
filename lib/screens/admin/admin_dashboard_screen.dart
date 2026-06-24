@@ -8,6 +8,7 @@ import '../../providers/data_providers.dart';
 import '../../widgets/shared_widgets.dart';
 import 'admin_screens.dart';
 import 'screenshot_review_screen.dart';
+import 'statistics_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -34,7 +35,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               return const ScreenshotReviewScreen();
             case 3:
             default:
-              return const ReportsScreen();
+              return const StatisticsScreen();
           }
         },
       ),
@@ -78,7 +79,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             NavigationDestination(
               icon: Icon(Icons.bar_chart_outlined),
               selectedIcon: Icon(Icons.bar_chart),
-              label: 'Reports',
+              label: 'Stats & Ledger',
             ),
           ],
         ),
@@ -137,7 +138,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             onPressed: () => context.push('/admin/settings'),
           ),
           IconButton(
-            icon: const Icon(Icons.logout_rounded),
+            icon: const Icon(Icons.power_settings_new_rounded),
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
               if (context.mounted) context.go('/login');

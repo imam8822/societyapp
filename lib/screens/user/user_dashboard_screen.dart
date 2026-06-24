@@ -102,7 +102,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.logout_rounded, color: Colors.white),
+            icon: const Icon(Icons.power_settings_new_rounded, color: Colors.white),
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
               if (context.mounted) context.go('/login');
@@ -370,7 +370,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'Pay contribution in 1 click',
+                              'Monthly contribution pending',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -379,7 +379,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              'Instantly clear your ₹${dash.monthlyContributionAmount.toStringAsFixed(0)} pending dues',
+                              'Tap to pay ₹${dash.pendingAmount.toStringAsFixed(0)} via UPI',
                               style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 12,
@@ -396,14 +396,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
               const SizedBox(height: 20),
             ],
 
-            // ── Pay Now banner ────────────────────
-            if (!dash.currentMonthPaid) ...[
-              _PayNowBanner(
-                pendingAmount: dash.pendingAmount,
-                monthlyRate: dash.monthlyContributionAmount,
-              ),
-              const SizedBox(height: 16),
-            ],
+
 
             // ── Active Loan ───────────────────────
             if (dash.activeLoan != null) ...[
