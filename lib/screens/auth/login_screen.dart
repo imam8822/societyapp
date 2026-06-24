@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/shared_widgets.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -11,19 +12,71 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with TickerProviderStateMixin {
   final _phoneCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _obscure = true;
   bool _loading = false;
   String? _error;
-  // NO _formKey — manual validation so we control everything
+
+  // Entry animation controller
+  late AnimationController _entryCtrl;
+  late List<Animation<double>> _fadeAnims;
+  late List<Animation<Offset>> _slideAnims;
+
+  static const _itemCount = 5; // logo, title, subtitle, fields, button
+  static const _stagger = 80; // ms between each item
+
+  @override
+  void initState() {
+    super.initState();
+    _entryCtrl = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 400 + (_itemCount - 1) * _stagger),
+    );
+
+    _fadeAnims = List.generate(_itemCount, (i) {
+      final start = (i * _stagger) / _entryCtrl.duration!.inMilliseconds;
+      final end = (start + 0.55).clamp(0.0, 1.0);
+      return Tween<double>(begin: 0, end: 1).animate(
+        CurvedAnimation(
+          parent: _entryCtrl,
+          curve: Interval(start, end, curve: Curves.easeOut),
+        ),
+      );
+    });
+
+    _slideAnims = List.generate(_itemCount, (i) {
+      final start = (i * _stagger) / _entryCtrl.duration!.inMilliseconds;
+      final end = (start + 0.55).clamp(0.0, 1.0);
+      return Tween<Offset>(
+        begin: const Offset(0, 0.15),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: _entryCtrl,
+          curve: Interval(start, end, curve: Curves.easeOutCubic),
+        ),
+      );
+    });
+
+    _entryCtrl.forward();
+  }
 
   @override
   void dispose() {
     _phoneCtrl.dispose();
     _passCtrl.dispose();
+    _entryCtrl.dispose();
     super.dispose();
+  }
+
+  Widget _animated(int index, Widget child) {
+    return FadeTransition(
+      opacity: _fadeAnims[index],
+      child: SlideTransition(position: _slideAnims[index], child: child),
+    );
   }
 
   String? _validatePhone(String v) {
@@ -37,9 +90,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _login() async {
-    // Manual validation — never resets fields
     final phoneError = _validatePhone(_phoneCtrl.text);
-    final passError  = _validatePass(_passCtrl.text);
+    final passError = _validatePass(_passCtrl.text);
 
     if (phoneError != null || passError != null) {
       setState(() => _error = phoneError ?? passError);
@@ -48,7 +100,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     FocusScope.of(context).unfocus();
 
-    // Show spinner — but do NOT disable fields so they keep their values
     setState(() {
       _loading = true;
       _error = null;
@@ -63,22 +114,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       if (success) {
         final role = ref.read(authProvider).role;
-        // Keep spinner on — widget will be replaced by navigation
         context.go(role == 'Admin' ? '/admin' : '/home');
         return;
       }
 
-      // Login failed — show error, keep fields as-is
       final providerError = ref.read(authProvider).error;
       setState(() {
-        _error   = providerError ?? 'Invalid mobile or password.';
+        _error = providerError ?? 'Invalid mobile or password.';
         _loading = false;
       });
-
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error   = e.toString();
+        _error = e.toString();
         _loading = false;
       });
     }
@@ -87,7 +135,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.white,
+      backgroundColor: AppTheme.bgGrey,
       body: Stack(
         children: [
           SafeArea(
@@ -98,118 +146,212 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 children: [
                   const SizedBox(height: 60),
 
-                  // Logo
-                  Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: AppTheme.primary,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.currency_rupee,
-                        color: Colors.white, size: 30),
-                  ),
-                  const SizedBox(height: 28),
-                  const Text('Welcome back',
-                      style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.textDark)),
-                  const SizedBox(height: 6),
-                  const Text('Sign in to your society account',
-                      style: TextStyle(
-                          fontSize: 15, color: AppTheme.textGrey)),
-                  const SizedBox(height: 40),
-
-                  // Phone — always enabled, never cleared
-                  TextField(
-                    controller: _phoneCtrl,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Mobile Number',
-                      prefixIcon: Icon(Icons.phone_outlined),
-                    ),
-                    onSubmitted: (_) => _login(),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Password — always enabled, never cleared
-                  TextField(
-                    controller: _passCtrl,
-                    obscureText: _obscure,
-                    decoration: InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: const Icon(Icons.lock_outlined),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscure
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined),
-                        onPressed: () => setState(() => _obscure = !_obscure),
-                      ),
-                    ),
-                    onSubmitted: (_) => _login(),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Debug: show server URL
-                  Text(
-                    'Server: ${AppConstants.baseUrl}',
-                    style: const TextStyle(
-                        fontSize: 10, color: AppTheme.textGrey),
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Error banner — shows full message
-                  if (_error != null)
+                  // ── Logo
+                  _animated(
+                    0,
                     Container(
-                      padding: const EdgeInsets.all(12),
+                      width: 60,
+                      height: 60,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.error_outline,
-                              color: AppTheme.error, size: 18),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _error!,
-                              style: const TextStyle(
-                                  color: AppTheme.error, fontSize: 13),
-                            ),
+                        gradient: const LinearGradient(
+                          colors: [AppTheme.primary, Color(0xFF5B21B6)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primary.withValues(alpha: 0.4),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                       ),
+                      child: const Icon(Icons.currency_rupee,
+                          color: Colors.white, size: 30),
                     ),
+                  ),
+                  const SizedBox(height: 28),
+
+                  // ── Title
+                  _animated(
+                    1,
+                    const Text(
+                      'Welcome back',
+                      style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w800,
+                          color: AppTheme.textDark,
+                          letterSpacing: -0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+
+                  // ── Subtitle
+                  _animated(
+                    2,
+                    const Text(
+                      'Sign in to your society account',
+                      style:
+                          TextStyle(fontSize: 15, color: AppTheme.textGrey),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // ── Fields
+                  _animated(
+                    3,
+                    Column(
+                      children: [
+                        TextField(
+                          controller: _phoneCtrl,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Mobile Number',
+                            prefixIcon: Icon(Icons.phone_outlined),
+                          ),
+                          onSubmitted: (_) => _login(),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: _passCtrl,
+                          obscureText: _obscure,
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            prefixIcon: const Icon(Icons.lock_outlined),
+                            suffixIcon: IconButton(
+                              icon: Icon(_obscure
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined),
+                              onPressed: () =>
+                                  setState(() => _obscure = !_obscure),
+                            ),
+                          ),
+                          onSubmitted: (_) => _login(),
+                        ),
+                        const SizedBox(height: 10),
+                        // Debug server URL
+                        Text(
+                          'Server: ${AppConstants.baseUrl}',
+                          style: const TextStyle(
+                              fontSize: 10, color: AppTheme.textGrey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // ── Error Banner (animated appearance)
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, -0.2),
+                          end: Offset.zero,
+                        ).animate(anim),
+                        child: child,
+                      ),
+                    ),
+                    child: _error != null
+                        ? Container(
+                            key: const ValueKey('error'),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: AppTheme.error.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                  color:
+                                      AppTheme.error.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.error_outline,
+                                    color: AppTheme.error, size: 18),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    _error!,
+                                    style: const TextStyle(
+                                        color: AppTheme.error, fontSize: 13),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : const SizedBox.shrink(key: ValueKey('no-error')),
+                  ),
 
                   const SizedBox(height: 24),
 
-                  // Button — shows spinner inside, never disables fields
-                  ElevatedButton(
-                    onPressed: _loading ? null : _login,
-                    child: _loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2),
-                          )
-                        : const Text('Sign In'),
+                  // ── Sign In Button (animated press)
+                  _animated(
+                    4,
+                    AnimatedPressable(
+                      onTap: _loading ? null : _login,
+                      scale: 0.97,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: _loading
+                                ? null
+                                : const LinearGradient(
+                                    colors: [
+                                      AppTheme.primary,
+                                      Color(0xFF5B21B6)
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                            color: _loading ? AppTheme.white : null,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow: _loading
+                                ? []
+                                : [
+                                    BoxShadow(
+                                      color: AppTheme.primary
+                                          .withValues(alpha: 0.35),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                          ),
+                          child: Center(
+                            child: _loading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                        color: AppTheme.primary,
+                                        strokeWidth: 2),
+                                  )
+                                : const Text(
+                                    'Sign In',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
 
-          // Full-screen overlay while navigating to dashboard
+          // Full-screen overlay while navigating — themed AppLoader
           if (_loading)
-            Container(
-              color: Colors.white.withOpacity(0.75),
-              child: const Center(
-                child: CircularProgressIndicator(color: AppTheme.primary),
-              ),
+            Positioned.fill(
+              child: AppLoader(message: 'Signing you in…'),
             ),
         ],
       ),

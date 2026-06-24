@@ -313,21 +313,21 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
               child: Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF0F9FF),
+                  color: Colors.blue.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFBAE6FD)),
+                  border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.smart_toy_outlined,
-                        size: 15, color: Color(0xFF0284C7)),
+                        size: 15, color: Color(0xFF38BDF8)),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         item.aiSummary!,
                         style: const TextStyle(
-                            fontSize: 12, color: Color(0xFF0369A1)),
+                            fontSize: 12, color: Color(0xFF38BDF8)),
                       ),
                     ),
                   ],

@@ -13,47 +13,54 @@ class AppConstants {
 }
 
 class AppTheme {
-  // ── Modern Fintech Palette ──
-  static const Color primary = Color(0xFF064E3B); // Midnight Teal
-  static const Color primaryLight = Color(0xFFD1FAE5); // Emerald 100
+  // ── Modern Dark Fintech Palette ──
+  static const Color primary = Color(0xFF7C3AED); // Vibrant Violet / Purple
+  static const Color primaryLight = Color(0xFF261D45); // Dark Violet subtle container
   static const Color accent = Color(0xFF10B981); // Vibrant Emerald
   static const Color error = Color(0xFFEF4444); // Red 500
   static const Color warning = Color(0xFFF59E0B); // Amber 500
   
-  static const Color textDark = Color(0xFF0F172A); // Slate 900
-  static const Color textGrey = Color(0xFF64748B); // Slate 500
-  static const Color bgGrey = Color(0xFFF8FAFC); // Slate Pearl (Calm off-white)
-  static const Color white = Color(0xFFFFFFFF);
-  static const Color divider = Color(0xFFE2E8F0); // Slate 200
-  static const Color cardShadow = Color(0xFF0F172A);
+  static const Color textDark = Color(0xFFFFFFFF); // White text
+  static const Color textGrey = Color(0xFF9094B6); // Slate/indigo grey
+  static const Color bgGrey = Color(0xFF0C0E1A); // Scaffold Background (Deep Navy)
+  static const Color white = Color(0xFF181B2F); // Container/Card Background (Dark Slate)
+  static const Color divider = Color(0xFF282C4A); // Card Border / Divider color
+  static const Color cardShadow = Color(0xFF000000);
 
   static ThemeData get theme => ThemeData(
         useMaterial3: true,
-        textTheme: GoogleFonts.outfitTextTheme(),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: primary,
-          brightness: Brightness.light,
+        brightness: Brightness.dark,
+        textTheme: GoogleFonts.outfitTextTheme().apply(
+          bodyColor: Colors.white,
+          displayColor: Colors.white,
+        ),
+        colorScheme: const ColorScheme.dark(
+          primary: primary,
+          onPrimary: Colors.white,
+          surface: white,
+          background: bgGrey,
+          error: error,
         ),
         scaffoldBackgroundColor: bgGrey,
-        appBarTheme: AppBarTheme(
-          backgroundColor: white,
-          foregroundColor: textDark,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: bgGrey,
+          foregroundColor: Colors.white,
           elevation: 0,
           centerTitle: false,
-          titleTextStyle: GoogleFonts.outfit(
-            color: textDark,
+          titleTextStyle: TextStyle(
+            color: Colors.white,
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
         ),
         cardTheme: CardThemeData(
           color: white,
-          elevation: 8,
-          shadowColor: cardShadow.withOpacity(0.06),
+          elevation: 4,
+          shadowColor: cardShadow.withValues(alpha: 0.4),
           margin: EdgeInsets.zero,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
-            side: BorderSide.none, // Remove harsh borders for floating look
+            side: const BorderSide(color: divider),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
@@ -81,12 +88,12 @@ class AppTheme {
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: primary,
-            foregroundColor: white,
+            foregroundColor: Colors.white,
             minimumSize: const Size(double.infinity, 50),
             shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12)),
             elevation: 2,
-            shadowColor: primary.withOpacity(0.4),
+            shadowColor: primary.withValues(alpha: 0.4),
             textStyle: GoogleFonts.outfit(
               fontSize: 16,
               fontWeight: FontWeight.w600,

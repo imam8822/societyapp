@@ -1,5 +1,244 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../core/constants.dart';
+
+// ─────────────────────────────────────────────
+// AnimatedPressable — scale-down on press
+// ─────────────────────────────────────────────
+class AnimatedPressable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final double scale;
+  final Duration duration;
+  final bool haptic;
+
+  const AnimatedPressable({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.scale = 0.96,
+    this.duration = const Duration(milliseconds: 120),
+    this.haptic = true,
+  });
+
+  @override
+  State<AnimatedPressable> createState() => _AnimatedPressableState();
+}
+
+class _AnimatedPressableState extends State<AnimatedPressable> {
+  bool _pressed = false;
+
+  void _onTapDown(TapDownDetails _) {
+    setState(() => _pressed = true);
+    if (widget.haptic) HapticFeedback.lightImpact();
+  }
+
+  void _onTapUp(TapUpDetails _) {
+    setState(() => _pressed = false);
+    widget.onTap?.call();
+  }
+
+  void _onTapCancel() => setState(() => _pressed = false);
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      child: AnimatedScale(
+        scale: _pressed ? widget.scale : 1.0,
+        duration: widget.duration,
+        curve: Curves.easeOut,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// FadeSlideIn — fade + slide-up entry animation
+// ─────────────────────────────────────────────
+class FadeSlideIn extends StatefulWidget {
+  final Widget child;
+  final Duration delay;
+  final Duration duration;
+  final double offsetY;
+
+  const FadeSlideIn({
+    super.key,
+    required this.child,
+    this.delay = Duration.zero,
+    this.duration = const Duration(milliseconds: 450),
+    this.offsetY = 24.0,
+  });
+
+  @override
+  State<FadeSlideIn> createState() => _FadeSlideInState();
+}
+
+class _FadeSlideInState extends State<FadeSlideIn>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _fade;
+  late Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(vsync: this, duration: widget.duration);
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slide = Tween<Offset>(
+      begin: Offset(0, widget.offsetY / 100),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+
+    if (widget.delay == Duration.zero) {
+      _ctrl.forward();
+    } else {
+      Future.delayed(widget.delay, () {
+        if (mounted) _ctrl.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(position: _slide, child: widget.child),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// ShimmerBox — single shimmering placeholder
+// ─────────────────────────────────────────────
+class ShimmerBox extends StatefulWidget {
+  final double width;
+  final double height;
+  final double borderRadius;
+
+  const ShimmerBox({
+    super.key,
+    this.width = double.infinity,
+    this.height = 16,
+    this.borderRadius = 8,
+  });
+
+  @override
+  State<ShimmerBox> createState() => _ShimmerBoxState();
+}
+
+class _ShimmerBoxState extends State<ShimmerBox>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    )..repeat();
+    _anim = Tween<double>(begin: -2, end: 2).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (_, __) {
+        return Container(
+          width: widget.width,
+          height: widget.height,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(widget.borderRadius),
+            gradient: LinearGradient(
+              begin: Alignment(_anim.value - 1, 0),
+              end: Alignment(_anim.value + 1, 0),
+              colors: const [
+                AppTheme.white,
+                AppTheme.divider,
+                AppTheme.white,
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// ShimmerListLoader — shimmer skeleton card list
+// ─────────────────────────────────────────────
+class ShimmerListLoader extends StatelessWidget {
+  final int count;
+  final double cardHeight;
+
+  const ShimmerListLoader({super.key, this.count = 5, this.cardHeight = 80});
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: List.generate(count, (i) {
+            return Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 0 : 10),
+              child: Container(
+                height: cardHeight,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.divider),
+                ),
+                child: Row(
+                  children: [
+                    const ShimmerBox(width: 36, height: 36, borderRadius: 10),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          ShimmerBox(height: 13, width: MediaQuery.of(context).size.width * 0.45),
+                          const SizedBox(height: 8),
+                          ShimmerBox(height: 10, width: MediaQuery.of(context).size.width * 0.28),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const ShimmerBox(width: 60, height: 13),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+}
 
 // ─────────────────────────────────────────────
 // Stat Card — used in dashboards
@@ -24,41 +263,53 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return AnimatedPressable(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
           color: bgColor ?? AppTheme.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppTheme.divider),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: (iconColor ?? AppTheme.primary).withOpacity(0.1),
+                color: (iconColor ?? AppTheme.primary).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon,
                   color: iconColor ?? AppTheme.primary, size: 20),
             ),
-            const SizedBox(height: 12),
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(value,
-                  style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(value,
+                        style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textDark)),
+                  ),
+                  const SizedBox(height: 2),
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(label,
+                        style: const TextStyle(
+                            fontSize: 12, color: AppTheme.textGrey, fontWeight: FontWeight.w500)),
+                  ),
+                ],
+              ),
             ),
-            const SizedBox(height: 2),
-            Text(label,
-                style: const TextStyle(
-                    fontSize: 13, color: AppTheme.textGrey)),
           ],
         ),
       ),
@@ -192,9 +443,14 @@ class EmptyState extends StatelessWidget {
 class LoadingOverlay extends StatelessWidget {
   final bool isLoading;
   final Widget child;
+  final String? message;
 
-  const LoadingOverlay(
-      {super.key, required this.isLoading, required this.child});
+  const LoadingOverlay({
+    super.key,
+    required this.isLoading,
+    required this.child,
+    this.message,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -202,13 +458,137 @@ class LoadingOverlay extends StatelessWidget {
       children: [
         child,
         if (isLoading)
-          Container(
-            color: Colors.black26,
-            child: const Center(
-              child: CircularProgressIndicator(color: AppTheme.primary),
+          Positioned.fill(
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                child: Container(
+                  color: AppTheme.bgGrey.withValues(alpha: 0.65),
+                  child: AppLoader(message: message),
+                ),
+              ),
             ),
           ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// App Loader — Modern & smooth progress indicator
+// ─────────────────────────────────────────────
+class AppLoader extends StatefulWidget {
+  final String? message;
+  const AppLoader({super.key, this.message});
+
+  @override
+  State<AppLoader> createState() => _AppLoaderState();
+}
+
+class _AppLoaderState extends State<AppLoader>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _pulseAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 1),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        decoration: BoxDecoration(
+          color: AppTheme.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppTheme.divider),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primary.withValues(alpha: 0.15),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                // Glowing background circle
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primary.withValues(alpha: 0.2),
+                        blurRadius: 15,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                ),
+                // Circular Progress
+                const SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3.5,
+                    color: AppTheme.primary,
+                    backgroundColor: AppTheme.primaryLight,
+                    strokeCap: StrokeCap.round,
+                  ),
+                ),
+                // Glowing inner dot or icon
+                AnimatedBuilder(
+                  animation: _pulseAnimation,
+                  builder: (context, child) {
+                    return Opacity(
+                      opacity: _pulseAnimation.value,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.accent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            const SizedBox(height: 18),
+            Text(
+              widget.message ?? 'Loading...',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textDark,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -345,17 +725,11 @@ class _ResultBannerState extends State<ResultBanner>
         !widget.success && widget.message.toLowerCase().contains('review');
     final bool isSuccess = widget.success;
 
-    final Color gradientStart = isSuccess
-        ? const Color(0xFF10B981) // Emerald Green
+    final Color statusColor = isSuccess
+        ? AppTheme.accent // Emerald Green
         : isPending
-            ? const Color(0xFF6366F1) // Indigo for pending
-            : const Color(0xFFF59E0B); // Amber
-
-    final Color gradientEnd = isSuccess
-        ? const Color(0xFF059669)
-        : isPending
-            ? const Color(0xFF4338CA)
-            : const Color(0xFFD97706);
+            ? AppTheme.primary // Vibrant Violet
+            : AppTheme.warning; // Amber
 
     final IconData iconData = isSuccess
         ? Icons.check_circle_outline_rounded
@@ -372,32 +746,30 @@ class _ResultBannerState extends State<ResultBanner>
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [gradientStart, gradientEnd],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            color: AppTheme.white,
             borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 1.5),
             boxShadow: [
               BoxShadow(
-                color: gradientStart.withOpacity(0.4),
-                blurRadius: 16,
+                color: statusColor.withValues(alpha: 0.08),
+                blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
             ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: statusColor.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(iconData, color: Colors.white, size: 36),
+                    child: Icon(iconData, color: statusColor, size: 36),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -406,9 +778,9 @@ class _ResultBannerState extends State<ResultBanner>
                           .replaceAll('⏳ ', '')
                           .replaceAll('✅ ', ''), // clean up emojis
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppTheme.textDark,
                         fontSize: 16,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         letterSpacing: 0.3,
                         height: 1.4,
                       ),
@@ -422,21 +794,21 @@ class _ResultBannerState extends State<ResultBanner>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.15),
+                    color: AppTheme.bgGrey,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    border: Border.all(color: AppTheme.divider),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Icon(Icons.auto_awesome_rounded,
-                          size: 16, color: Colors.white70),
+                          size: 16, color: AppTheme.textGrey),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           widget.aiSummary!,
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: AppTheme.textGrey,
                             fontSize: 13,
                             height: 1.5,
                           ),

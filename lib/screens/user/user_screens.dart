@@ -256,15 +256,17 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: _needsGuarantor ? const Color(0xFFFFF8E1) : const Color(0xFFE8F5E9),
+              color: _needsGuarantor 
+                  ? const Color(0xFF261D15) 
+                  : const Color(0xFF10B981).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _needsGuarantor ? AppTheme.warning : const Color(0xFF2ECC71)),
+                color: _needsGuarantor ? AppTheme.warning : const Color(0xFF10B981)),
             ),
             child: Row(children: [
               Icon(
                 _needsGuarantor ? Icons.info_outline_rounded : Icons.check_circle_outline_rounded,
-                color: _needsGuarantor ? AppTheme.warning : const Color(0xFF2ECC71),
+                color: _needsGuarantor ? AppTheme.warning : const Color(0xFF10B981),
                 size: 20,
               ),
               const SizedBox(width: 10),
@@ -275,7 +277,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                       : 'Your investment of ${_fmt.format(data.userTotalInvested)} covers this loan — no guarantor needed.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: _needsGuarantor ? AppTheme.warning : const Color(0xFF2ECC71),
+                    color: _needsGuarantor ? AppTheme.warning : const Color(0xFF10B981),
                   ),
                 ),
               ),
@@ -359,7 +361,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFEF2F2),
+                    color: AppTheme.error.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: AppTheme.error),
                   ),
@@ -386,7 +388,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                   ? Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2),
+                        color: AppTheme.error.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Row(children: [

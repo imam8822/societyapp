@@ -108,16 +108,24 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
             ? const SizedBox()
             : _error != null && _token == null
                 ? ErrorRetry(message: _error!, onRetry: _loadToken)
-                : ListView(
-                    padding: const EdgeInsets.all(16),
-                    children: [
-                      if (_resultMessage != null)
-                        ResultBanner(
-                          message: _resultMessage!,
-                          success: _autoVerified == true,
-                          aiSummary: _aiSummary,
-                        )
-                      else if (_token != null) ...[
+                : _resultMessage != null
+                    ? Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(24),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 480),
+                            child: ResultBanner(
+                              message: _resultMessage!,
+                              success: _autoVerified == true,
+                              aiSummary: _aiSummary,
+                            ),
+                          ),
+                        ),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          if (_token != null) ...[
                         // ── Amount Card ─────────────────────────
                         _LoanRepaymentAmountCard(token: _token!),
                         const SizedBox(height: 12),

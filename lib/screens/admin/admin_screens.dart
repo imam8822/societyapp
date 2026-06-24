@@ -23,6 +23,7 @@ class LoanReviewScreen extends ConsumerStatefulWidget {
 
 class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
   String _searchQuery = '';
+  double? _amountFilter; // null means 'All'
 
   @override
   Widget build(BuildContext context) {
@@ -38,15 +39,31 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
             message: e.toString(),
             onRetry: () => ref.invalidate(allLoansProvider)),
         data: (loans) {
-          final filtered = loans.where((l) => 
-            l.applicantName.toLowerCase().contains(_searchQuery.toLowerCase()) || 
-            l.applicantPhone.contains(_searchQuery)
-          ).toList();
+          final uniqueAmounts = loans.map((l) => l.amount).toSet().toList()..sort();
+          final fmtFilter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+
+          // Auto-reset filter if selected amount is no longer in the loans list
+          if (_amountFilter != null && !uniqueAmounts.contains(_amountFilter)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _amountFilter = null;
+                });
+              }
+            });
+          }
+
+          final filtered = loans.where((l) {
+            final matchesSearch = l.applicantName.toLowerCase().contains(_searchQuery.toLowerCase()) || 
+                                  l.applicantPhone.contains(_searchQuery);
+            final matchesAmount = _amountFilter == null || l.amount == _amountFilter;
+            return matchesSearch && matchesAmount;
+          }).toList();
 
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
                 child: TextField(
                   onChanged: (val) => setState(() => _searchQuery = val),
                   decoration: InputDecoration(
@@ -63,6 +80,74 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                       borderRadius: BorderRadius.circular(12),
                       borderSide: const BorderSide(color: AppTheme.divider),
                     ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                child: SizedBox(
+                  height: 36,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      // 'All' option
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text('All', style: TextStyle(
+                            fontSize: 12,
+                            color: _amountFilter == null ? Colors.white : AppTheme.textGrey,
+                            fontWeight: _amountFilter == null ? FontWeight.bold : FontWeight.normal,
+                          )),
+                          selected: _amountFilter == null,
+                          selectedColor: AppTheme.primary,
+                          backgroundColor: AppTheme.white,
+                          onSelected: (val) {
+                            if (val) {
+                              setState(() {
+                                _amountFilter = null;
+                              });
+                            }
+                          },
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: _amountFilter == null ? AppTheme.primary : AppTheme.divider,
+                            ),
+                          ),
+                          showCheckmark: false,
+                        ),
+                      ),
+                      // Dynamic amounts
+                      ...uniqueAmounts.map((amount) {
+                        final selected = _amountFilter == amount;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(fmtFilter.format(amount), style: TextStyle(
+                              fontSize: 12,
+                              color: selected ? Colors.white : AppTheme.textGrey,
+                              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                            )),
+                            selected: selected,
+                            selectedColor: AppTheme.primary,
+                            backgroundColor: AppTheme.white,
+                            onSelected: (val) {
+                              setState(() {
+                                _amountFilter = val ? amount : null;
+                              });
+                            },
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(
+                                color: selected ? AppTheme.primary : AppTheme.divider,
+                              ),
+                            ),
+                            showCheckmark: false,
+                          ),
+                        );
+                      }),
+                    ],
                   ),
                 ),
               ),
@@ -348,11 +433,11 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
               const SizedBox(height: 16),
               Text(subtitle,
                   style: const TextStyle(
-                      color: AppTheme.textGrey, fontSize: 13)),
-              const SizedBox(height: 8),
+                      color: AppTheme.textGrey, fontSize: 12)),
+              const SizedBox(height: 6),
               TextField(
                 controller: ctrl,
-                maxLines: 3,
+                maxLines: 2,
                 onChanged: (_) => setLocal(() {}),
                 decoration: InputDecoration(
                   hintText: required
@@ -360,6 +445,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                       : 'Add a note... (optional)',
                   filled: true,
                   fillColor: AppTheme.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
                     borderSide:
@@ -370,23 +456,48 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
             ],
           ),
           actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel',
-                  style: TextStyle(color: AppTheme.textGrey)),
-            ),
-            ElevatedButton.icon(
-              onPressed: required && ctrl.text.trim().isEmpty
-                  ? null
-                  : () => Navigator.pop(ctx, ctrl.text.trim()),
-              icon: Icon(confirmIcon, size: 16),
-              label: Text(confirmLabel),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: confirmColor,
-                disabledBackgroundColor: AppTheme.divider,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8)),
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppTheme.textGrey,
+                        side: const BorderSide(color: AppTheme.divider),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 44,
+                    child: ElevatedButton.icon(
+                      onPressed: required && ctrl.text.trim().isEmpty
+                          ? null
+                          : () => Navigator.pop(ctx, ctrl.text.trim()),
+                      icon: Icon(confirmIcon, size: 14),
+                      label: Text(confirmLabel),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: confirmColor,
+                        disabledBackgroundColor: AppTheme.divider,
+                        minimumSize: const Size(0, 44),
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -401,7 +512,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
         NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: AppTheme.white,
         borderRadius: BorderRadius.circular(12),
@@ -440,38 +551,61 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
               StatusBadge(status: l.status),
             ],
           ),
-          const Divider(height: 20),
+          const Divider(height: 16),
 
-          // Loan details
-          InfoRow(label: 'Amount', value: fmt.format(l.amount)),
-          if (l.tenureMonths != null)
-            InfoRow(
-                label: 'Tenure', value: '${l.tenureMonths} months'),
-          if (l.guarantorName != null)
-            InfoRow(
-                label: 'Guarantor',
-                value: '${l.guarantorName} · ${l.guarantorPhone ?? ""}'),
-          InfoRow(
-              label: 'Applied',
-              value: DateFormat('d MMM yyyy').format(l.appliedDate),
-              last: l.repaymentDueDate == null && l.rejectionReason == null),
-          if (l.rejectionReason != null)
-            InfoRow(
-                label: 'Reason',
-                value: l.rejectionReason!,
-                last: true),
-          if (l.repaymentDueDate != null)
-            InfoRow(
-              label: 'Due Date',
-              value: 'On or before ${DateFormat('d MMM yyyy').format(l.repaymentDueDate!)}',
-              last: l.disbursementMode == null,
+          // Loan details (compact layout)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Amount: ${fmt.format(l.amount)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                    if (l.tenureMonths != null)
+                      Text('${l.tenureMonths} months tenure',
+                          style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                if (l.guarantorName != null) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Guarantor: ', style: TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                      Expanded(
+                        child: Text(l.guarantorName!,
+                            style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Applied: ${DateFormat('d MMM yyyy').format(l.appliedDate)}',
+                        style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                    if (l.repaymentDueDate != null)
+                      Text('Due: ${DateFormat('d MMM yyyy').format(l.repaymentDueDate!)}',
+                          style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                  ],
+                ),
+                if (l.rejectionReason != null) ...[
+                  const SizedBox(height: 6),
+                  Text('Reason: ${l.rejectionReason}',
+                      style: const TextStyle(color: AppTheme.error, fontSize: 13, fontWeight: FontWeight.w500)),
+                ],
+                if (l.disbursementMode != null) ...[
+                  const SizedBox(height: 6),
+                  Text('Mode: Disbursed via ${l.disbursementMode}',
+                      style: const TextStyle(color: AppTheme.accent, fontSize: 13, fontWeight: FontWeight.bold)),
+                ],
+              ],
             ),
-          if (l.disbursementMode != null)
-            InfoRow(
-              label: 'Mode',
-              value: 'Disbursed via ${l.disbursementMode}',
-              last: true,
-            ),
+          ),
 
           // Actions
           if (_loading)
