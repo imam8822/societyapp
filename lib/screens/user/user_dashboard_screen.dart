@@ -577,8 +577,8 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
       color: const Color(0xFF0C0E1A),
       child: contribAsync.when(
         loading: () => const ShimmerListLoader(count: 8),
-        error: (e, _) => ErrorRetry(
-            message: apiError(e),
+        error: (e, _) => NetworkErrorWidget(
+            error: e,
             onRetry: () => ref.invalidate(myContributionsProvider)),
         data: (list) => RefreshIndicator(
           color: const Color(0xFFC084FC),
@@ -610,8 +610,8 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
       color: const Color(0xFF0C0E1A),
       child: profileAsync.when(
         loading: () => const ShimmerListLoader(count: 6),
-        error: (e, _) => ErrorRetry(
-            message: apiError(e),
+        error: (e, _) => NetworkErrorWidget(
+            error: e,
             onRetry: () => ref.invalidate(myProfileProvider)),
         data: (profile) => RefreshIndicator(
           color: const Color(0xFFC084FC),
