@@ -57,7 +57,11 @@ String apiError(dynamic e) {
         e.type == DioExceptionType.receiveTimeout) {
       return 'Connection timed out. Check your network.';
     }
-    if (e.type == DioExceptionType.connectionError) {
+    if (e.type == DioExceptionType.connectionError ||
+        e.type == DioExceptionType.unknown) {
+      if (e.error != null && e.error.toString().contains('SocketException')) {
+        return 'No internet connection. Please check your network.';
+      }
       return 'Cannot reach server. Check your network.';
     }
   }

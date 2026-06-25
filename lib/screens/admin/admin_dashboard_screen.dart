@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 import '../../core/constants.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/data_providers.dart';
@@ -9,6 +10,7 @@ import '../../widgets/shared_widgets.dart';
 import 'admin_screens.dart';
 import 'screenshot_review_screen.dart';
 import 'statistics_screen.dart';
+import '../../core/api/api_client.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -95,6 +97,24 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       backgroundColor: AppTheme.bgGrey,
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
+        leading: dashAsync.valueOrNull?.logoBase64 != null
+            ? Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: DecorationImage(
+                      image: MemoryImage(
+                        base64Decode(dashAsync.valueOrNull!.logoBase64!.contains(',')
+                            ? dashAsync.valueOrNull!.logoBase64!.split(',')[1]
+                            : dashAsync.valueOrNull!.logoBase64!),
+                      ),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              )
+            : null,
         actions: [
           Consumer(
             builder: (context, ref, child) {
@@ -138,7 +158,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             onPressed: () => context.push('/admin/settings'),
           ),
           IconButton(
-            icon: const Icon(Icons.power_settings_new_rounded),
+            icon: const Icon(Icons.power_settings_new),
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
               if (context.mounted) context.go('/login');
@@ -149,7 +169,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       body: dashAsync.when(
         loading: () => const ShimmerListLoader(count: 5),
         error: (e, _) => ErrorRetry(
-            message: e.toString(),
+            message: apiError(e),
             onRetry: () => ref.invalidate(adminDashboardProvider)),
         data: (dash) => RefreshIndicator(
           color: AppTheme.primary,
@@ -303,6 +323,36 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                 ],
               ),
 
+              const SizedBox(height: 16),
+
+              // ── Quick Actions ──────────────────────
+              const SectionHeader(title: 'Quick Actions'),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  Expanded(
+                    child: _QuickActionCard(
+                      icon: Icons.payments_rounded,
+                      label: 'Collect Cash',
+                      color: const Color(0xFF2ECC71),
+                      onTap: () async {
+                        final result = await context.push<bool>('/admin/collect-cash');
+                        if (result == true) ref.invalidate(adminDashboardProvider);
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _QuickActionCard(
+                      icon: Icons.person_add_rounded,
+                      label: 'Add Member',
+                      color: AppTheme.primary,
+                      onTap: () => context.push('/admin/members/add'),
+                    ),
+                  ),
+                ],
+              ),
+
             ],
           ),
         ),
@@ -405,6 +455,53 @@ class _AlertBanner extends StatelessWidget {
                         fontSize: 13))),
             Icon(Icons.chevron_right_rounded, color: color, size: 18),
           ]),
+        ),
+      );
+}
+
+// ── Quick action card ──────────────────────────────────────────
+class _QuickActionCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _QuickActionCard({
+    required this.icon,
+    required this.label,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) => AnimatedPressable(
+        onTap: onTap,
+        scale: 0.96,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
+          decoration: BoxDecoration(
+            color: AppTheme.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppTheme.divider),
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(height: 10),
+              Text(label,
+                  style: const TextStyle(
+                      color: AppTheme.textDark,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13)),
+            ],
+          ),
         ),
       );
 }

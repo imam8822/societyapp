@@ -74,7 +74,7 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
         decoration: const BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
@@ -83,7 +83,7 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             // Handle bar
             Container(width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 16),
             Row(children: [
               CircleAvatar(
@@ -101,14 +101,16 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
               const Spacer(),
               IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
             ]),
-            const Divider(height: 24),
+            const Divider(height: 24, color: AppTheme.divider),
             TextFormField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
                 labelText: 'Mobile Number',
-                prefixIcon: Icon(Icons.phone_outlined),
+                prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.textGrey),
+                labelStyle: TextStyle(color: AppTheme.textGrey),
               ),
+              style: const TextStyle(color: AppTheme.textDark),
               validator: (v) => v!.length < 10 ? 'Enter valid mobile' : null,
             ),
             const SizedBox(height: 14),
@@ -117,8 +119,10 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
                 labelText: 'Email (optional)',
-                prefixIcon: Icon(Icons.email_outlined),
+                prefixIcon: Icon(Icons.email_outlined, color: AppTheme.textGrey),
+                labelStyle: TextStyle(color: AppTheme.textGrey),
               ),
+              style: const TextStyle(color: AppTheme.textDark),
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -126,12 +130,14 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
               obscureText: _obscure,
               decoration: InputDecoration(
                 labelText: 'New Password (leave blank to keep)',
-                prefixIcon: const Icon(Icons.lock_outlined),
+                prefixIcon: const Icon(Icons.lock_outlined, color: AppTheme.textGrey),
+                labelStyle: const TextStyle(color: AppTheme.textGrey),
                 suffixIcon: IconButton(
-                  icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                  icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: AppTheme.textGrey),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
+              style: const TextStyle(color: AppTheme.textDark),
               validator: (v) => v!.isNotEmpty && v.length < 6 ? 'Min 6 characters' : null,
             ),
             const SizedBox(height: 24),

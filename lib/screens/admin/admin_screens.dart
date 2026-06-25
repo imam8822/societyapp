@@ -36,7 +36,7 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppTheme.primary)),
         error: (e, _) => ErrorRetry(
-            message: e.toString(),
+            message: apiError(e),
             onRetry: () => ref.invalidate(allLoansProvider)),
         data: (loans) {
           final uniqueAmounts = loans.map((l) => l.amount).toSet().toList()..sort();
@@ -382,122 +382,50 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
         builder: (ctx, setLocal) => AlertDialog(
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: confirmColor.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(confirmIcon, color: confirmColor, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Text(title,
-                  style: const TextStyle(
-                      fontSize: 16, fontWeight: FontWeight.w700)),
-            ],
-          ),
+          title: Text(title),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Loan summary
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: AppTheme.bgGrey,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  children: [
-                    _DialogRow(
-                        label: 'Applicant',
-                        value: widget.loan.applicantName),
-                    _DialogRow(
-                        label: 'Amount',
-                        value:
-                            '₹${NumberFormat('#,##,###').format(widget.loan.amount)}'),
-                    if (widget.loan.tenureMonths != null)
-                      _DialogRow(
-                          label: 'Tenure',
-                          value: '${widget.loan.tenureMonths} months'),
-                    if (widget.loan.guarantorName != null)
-                      _DialogRow(
-                          label: 'Guarantor',
-                          value: widget.loan.guarantorName!,
-                          last: true),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
+              Text('Applicant: ${widget.loan.applicantName}'),
+              Text('Amount: ₹${NumberFormat('#,##,###').format(widget.loan.amount)}'),
+              if (widget.loan.tenureMonths != null)
+                Text('Tenure: ${widget.loan.tenureMonths} months'),
+              if (widget.loan.guarantorName != null)
+                Text('Guarantor: ${widget.loan.guarantorName}'),
+              const SizedBox(height: 12),
               Text(subtitle,
-                  style: const TextStyle(
-                      color: AppTheme.textGrey, fontSize: 12)),
-              const SizedBox(height: 6),
+                  style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+              const SizedBox(height: 12),
               TextField(
                 controller: ctrl,
                 maxLines: 2,
                 onChanged: (_) => setLocal(() {}),
                 decoration: InputDecoration(
-                  hintText: required
-                      ? 'Enter reason...'
-                      : 'Add a note... (optional)',
-                  filled: true,
-                  fillColor: AppTheme.white,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide:
-                        const BorderSide(color: AppTheme.divider),
-                  ),
+                  labelText: required ? 'Enter reason...' : 'Add a note... (optional)',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  isDense: true,
                 ),
               ),
             ],
           ),
           actions: [
-            Row(
-              children: [
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.textGrey,
-                        side: const BorderSide(color: AppTheme.divider),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                      ),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: SizedBox(
-                    height: 44,
-                    child: ElevatedButton.icon(
-                      onPressed: required && ctrl.text.trim().isEmpty
-                          ? null
-                          : () => Navigator.pop(ctx, ctrl.text.trim()),
-                      icon: Icon(confirmIcon, size: 14),
-                      label: Text(confirmLabel),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: confirmColor,
-                        disabledBackgroundColor: AppTheme.divider,
-                        minimumSize: const Size(0, 44),
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8)),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: required && ctrl.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.pop(ctx, ctrl.text.trim()),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: confirmColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                minimumSize: const Size(100, 44),
+              ),
+              child: Text(confirmLabel),
             ),
           ],
         ),

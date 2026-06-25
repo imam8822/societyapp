@@ -49,7 +49,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       body: membersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
         error: (e, _) => ErrorRetry(
-          message: e.toString(),
+          message: apiError(e),
           onRetry: () => ref.invalidate(membersProvider),
         ),
         data: (members) {

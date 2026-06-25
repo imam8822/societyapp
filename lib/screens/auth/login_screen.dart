@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:convert';
 import '../../core/constants.dart';
+import '../../core/api/api_client.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -28,9 +30,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   static const _itemCount = 5; // logo, title, subtitle, fields, button
   static const _stagger = 80; // ms between each item
 
+  String? _societyName;
+  String? _logoBase64;
+
   @override
   void initState() {
     super.initState();
+    _fetchPublicSettings();
     _entryCtrl = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 400 + (_itemCount - 1) * _stagger),
@@ -62,6 +68,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
 
     _entryCtrl.forward();
+  }
+
+  Future<void> _fetchPublicSettings() async {
+    try {
+      final res = await ApiClient.instance.get('/settings/public');
+      if (mounted && res.data != null) {
+        setState(() {
+          _societyName = res.data['societyName'];
+          _logoBase64 = res.data['logoBase64'];
+        });
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch public settings: $e');
+    }
   }
 
   @override
@@ -150,25 +170,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   _animated(
                     0,
                     Container(
-                      width: 60,
-                      height: 60,
+                      width: 80,
+                      height: 80,
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppTheme.primary, Color(0xFF5B21B6)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(16),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: AppTheme.primary.withValues(alpha: 0.4),
-                            blurRadius: 20,
-                            offset: const Offset(0, 8),
+                            color: AppTheme.primary.withOpacity(0.3),
+                            blurRadius: 24,
+                            offset: const Offset(0, 10),
                           ),
                         ],
                       ),
-                      child: const Icon(Icons.currency_rupee,
-                          color: Colors.white, size: 30),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 28),
@@ -176,9 +197,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   // ── Title
                   _animated(
                     1,
-                    const Text(
-                      'Welcome back',
-                      style: TextStyle(
+                    Text(
+                      _societyName ?? 'Welcome back',
+                      style: const TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.w800,
                           color: AppTheme.textDark,
@@ -228,13 +249,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             ),
                           ),
                           onSubmitted: (_) => _login(),
-                        ),
-                        const SizedBox(height: 10),
-                        // Debug server URL
-                        Text(
-                          'Server: ${AppConstants.baseUrl}',
-                          style: const TextStyle(
-                              fontSize: 10, color: AppTheme.textGrey),
                         ),
                       ],
                     ),
@@ -347,12 +361,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
               ),
             ),
           ),
-
-          // Full-screen overlay while navigating — themed AppLoader
-          if (_loading)
-            Positioned.fill(
-              child: AppLoader(message: 'Signing you in…'),
-            ),
         ],
       ),
     );

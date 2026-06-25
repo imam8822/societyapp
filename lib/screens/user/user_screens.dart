@@ -27,7 +27,7 @@ class ContributionHistoryScreen extends ConsumerWidget {
       body: contribAsync.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
         error: (e, _) => ErrorRetry(
-            message: e.toString(),
+            message: apiError(e),
             onRetry: () => ref.invalidate(myContributionsProvider)),
         data: (list) => list.isEmpty
             ? const EmptyState(
@@ -287,23 +287,35 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
 
           // ── Loan Amount ──────────────────────────────
           _Section(title: 'Loan Amount', children: [
-            DropdownButtonFormField<LoanOption>(
-              value: _selectedOption,
-              isExpanded: true,
-              hint: const Text('Select amount'),
-              decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.currency_rupee_rounded)),
-              items: data.loanOptions.map((o) => DropdownMenuItem(
-                value: o,
-                child: Text(
-                  '${o.label}  (${o.minTenureRequired} months required)',
-                  overflow: TextOverflow.ellipsis,
+            InkWell(
+              onTap: () => _showAmountBottomSheet(data),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: AppTheme.bgGrey,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppTheme.divider),
                 ),
-              )).toList(),
-              onChanged: (v) => setState(() {
-                _selectedOption = v;
-                _selectedGuarantor = null;
-              }),
+                child: Row(
+                  children: [
+                    const Icon(Icons.currency_rupee_rounded, color: AppTheme.primary, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedOption != null 
+                            ? '${_selectedOption!.label} (${_selectedOption!.minTenureRequired} months req)' 
+                            : 'Select amount',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: _selectedOption != null ? AppTheme.textDark : AppTheme.textGrey,
+                        ),
+                      ),
+                    ),
+                    const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textGrey),
+                  ],
+                ),
+              ),
             ),
 
             // Eligibility feedback + repayment summary
@@ -403,20 +415,45 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                         ),
                       ]),
                     )
-                  : DropdownButtonFormField<GuarantorOption>(
-                      value: _selectedGuarantor,
-                      isExpanded: true,
-                      hint: const Text('Select guarantor'),
-                      decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.people_outlined)),
-                      items: data.availableGuarantors.map((g) => DropdownMenuItem(
-                        value: g,
-                        child: Text('${g.fullName} (${g.phone})',
-                            overflow: TextOverflow.ellipsis),
-                      )).toList(),
-                      onChanged: (v) => setState(() => _selectedGuarantor = v),
-                      validator: (v) =>
-                          _needsGuarantor && v == null ? 'Select guarantor' : null,
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        InkWell(
+                          onTap: () => _showGuarantorBottomSheet(data),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: AppTheme.bgGrey,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: (_needsGuarantor && _submitting && _selectedGuarantor == null) ? AppTheme.error : AppTheme.divider),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.people_outlined, color: AppTheme.primary, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedGuarantor != null 
+                                        ? '${_selectedGuarantor!.fullName} (${_selectedGuarantor!.phone})' 
+                                        : 'Select guarantor',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: _selectedGuarantor != null ? AppTheme.textDark : AppTheme.textGrey,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textGrey),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_needsGuarantor && _submitting && _selectedGuarantor == null)
+                          const Padding(
+                            padding: EdgeInsets.only(left: 12, top: 8),
+                            child: Text('Please select a guarantor', style: TextStyle(color: AppTheme.error, fontSize: 12)),
+                          ),
+                      ],
                     ),
             ]),
           if (_needsGuarantor) const SizedBox(height: 14),
@@ -439,6 +476,176 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       ),
     );
   }
+
+  void _showAmountBottomSheet(LoanFormData data) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.bgGrey,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: AppTheme.divider, borderRadius: BorderRadius.circular(2)),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Text('Select Loan Amount', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+              ),
+              const Divider(height: 1, color: AppTheme.divider),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: data.loanOptions.length,
+                  itemBuilder: (ctx, i) {
+                    final o = data.loanOptions[i];
+                    final isSelected = _selectedOption?.id == o.id;
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedOption = o;
+                          _selectedGuarantor = null;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.primary.withValues(alpha: 0.05) : Colors.transparent,
+                          border: Border(bottom: BorderSide(color: AppTheme.divider.withValues(alpha: 0.5))),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppTheme.primary : AppTheme.white,
+                                shape: BoxShape.circle,
+                                border: isSelected ? null : Border.all(color: AppTheme.divider),
+                              ),
+                              child: Icon(Icons.currency_rupee_rounded, 
+                                  color: isSelected ? Colors.white : AppTheme.textGrey, size: 18),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(o.label, style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      color: isSelected ? AppTheme.primary : AppTheme.textDark)),
+                                  const SizedBox(height: 4),
+                                  Text('${o.minTenureRequired} months paid required', 
+                                      style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                            if (isSelected) const Icon(Icons.check_circle_rounded, color: AppTheme.primary),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showGuarantorBottomSheet(LoanFormData data) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.bgGrey,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: AppTheme.divider, borderRadius: BorderRadius.circular(2)),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Text('Select Guarantor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+              ),
+              const Divider(height: 1, color: AppTheme.divider),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: data.availableGuarantors.length,
+                  itemBuilder: (ctx, i) {
+                    final g = data.availableGuarantors[i];
+                    final isSelected = _selectedGuarantor?.id == g.id;
+                    return InkWell(
+                      onTap: () {
+                        setState(() => _selectedGuarantor = g);
+                        Navigator.pop(ctx);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isSelected ? AppTheme.primary.withValues(alpha: 0.05) : Colors.transparent,
+                          border: Border(bottom: BorderSide(color: AppTheme.divider.withValues(alpha: 0.5))),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isSelected ? AppTheme.primary : AppTheme.white,
+                                shape: BoxShape.circle,
+                                border: isSelected ? null : Border.all(color: AppTheme.divider),
+                              ),
+                              child: Icon(Icons.person_rounded, 
+                                  color: isSelected ? Colors.white : AppTheme.textGrey, size: 18),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(g.fullName, style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      color: isSelected ? AppTheme.primary : AppTheme.textDark)),
+                                  const SizedBox(height: 4),
+                                  Text(g.phone, style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                            if (isSelected) const Icon(Icons.check_circle_rounded, color: AppTheme.primary),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _Section extends StatelessWidget {
@@ -451,7 +658,7 @@ class _Section extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: AppTheme.white,
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: AppTheme.divider),
     ),
@@ -485,7 +692,7 @@ class LoanStatusScreen extends ConsumerWidget {
         loading: () => const Center(
             child: CircularProgressIndicator(color: AppTheme.primary)),
         error: (e, _) => ErrorRetry(
-            message: e.toString(),
+            message: apiError(e),
             onRetry: () => ref.invalidate(myLoansProvider)),
         data: (loans) => loans.isEmpty
             ? const EmptyState(

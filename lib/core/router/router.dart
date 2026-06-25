@@ -6,6 +6,7 @@ import 'package:society_app/screens/admin/admin_dashboard_screen.dart';
 import 'package:society_app/screens/admin/admin_screens.dart';
 import 'package:society_app/screens/admin/members_screen.dart';
 import 'package:society_app/screens/admin/screenshot_review_screen.dart';
+import 'package:society_app/screens/admin/collect_cash_screen.dart';
 import 'package:society_app/screens/auth/login_screen.dart';
 import 'package:society_app/screens/user/pay_screen.dart';
 import 'package:society_app/screens/user/loan_repay_screen.dart';
@@ -48,6 +49,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/admin', builder: (_, __) => const AdminDashboardScreen()),
       GoRoute(
           path: '/admin/members', builder: (_, __) => const MembersScreen()),
+      GoRoute(
+          path: '/admin/collect-cash',
+          builder: (_, __) => const CollectCashScreen()),
       GoRoute(
           path: '/admin/members/add',
           builder: (_, __) => const AddMemberScreen()),

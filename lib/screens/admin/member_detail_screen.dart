@@ -212,7 +212,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                   ),
                   if (_member.hasActiveLoan) ...[
                     _InfoRow(
-                        icon: Icons.monetization_on_outlined,
+                        icon: Icons.currency_rupee_rounded,
                         label: 'Active Loan',
                         value: fmt.format(_member.activeLoanAmount),
                         valueColor: AppTheme.primary),

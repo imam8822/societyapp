@@ -68,38 +68,9 @@ class _ExportStatementDialogState extends ConsumerState<ExportStatementDialog> {
         final uri = Uri.file(savePath);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: [
-                const Icon(Icons.check_circle, color: Colors.white),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Export Successful', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                      Text('Saved to: $fileName', style: const TextStyle(fontSize: 12, color: Colors.white70)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+            content: Text('Export Successful! Saved to: $fileName'),
             backgroundColor: AppTheme.primary,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
             duration: const Duration(seconds: 5),
-            action: SnackBarAction(
-              label: 'OPEN',
-              textColor: Colors.white,
-              onPressed: () async {
-                // Ignore the error if it can't open
-                try {
-                  // If url_launcher is available
-                  // await launchUrl(uri);
-                } catch (_) {}
-              },
-            ),
           ),
         );
       }

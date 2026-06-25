@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 import '../../providers/auth_provider.dart';
 import '../../providers/data_providers.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../models/dashboard_models.dart';
 import '../../models/contribution_models.dart';
+import '../../core/api/api_client.dart';
 
 class UserDashboardScreen extends ConsumerStatefulWidget {
   const UserDashboardScreen({super.key});
@@ -33,11 +35,21 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
         leading: Padding(
           padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
           child: Container(
-            decoration: const BoxDecoration(
-              color: Color(0xFF1E213F),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E213F),
               shape: BoxShape.circle,
+              image: dashAsync.valueOrNull?.logoBase64 != null
+                  ? DecorationImage(
+                      image: MemoryImage(
+                        base64Decode(dashAsync.valueOrNull!.logoBase64!.contains(',')
+                            ? dashAsync.valueOrNull!.logoBase64!.split(',')[1]
+                            : dashAsync.valueOrNull!.logoBase64!),
+                      ),
+                      fit: BoxFit.cover,
+                    )
+                  : null,
             ),
-            child: Center(
+            child: dashAsync.valueOrNull?.logoBase64 == null ? Center(
               child: Text(
                 dashAsync.valueOrNull?.fullName.isNotEmpty == true
                     ? dashAsync.valueOrNull!.fullName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
@@ -48,7 +60,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
+            ) : null,
           ),
         ),
         title: Text(
@@ -102,7 +114,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.power_settings_new_rounded, color: Colors.white),
+            icon: const Icon(Icons.power_settings_new, color: Colors.white),
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
               if (context.mounted) context.go('/login');
@@ -171,7 +183,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
     return dashAsync.when(
       loading: () => const ShimmerListLoader(count: 6),
       error: (e, _) => ErrorRetry(
-          message: e.toString(),
+          message: apiError(e),
           onRetry: () => ref.invalidate(userDashboardProvider)),
       data: (dash) => RefreshIndicator(
         color: const Color(0xFFC084FC),
@@ -319,7 +331,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                           Colors.white,
                         ),
                         _buildAccountTabItem(
-                          Icons.monetization_on_outlined,
+                          Icons.currency_rupee_rounded,
                           'Loans',
                           dash.activeLoan != null ? fmt.format(dash.activeLoan!.outstandingAmount) : '₹0',
                           Colors.white,
@@ -333,68 +345,76 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
             const SizedBox(height: 14),
 
             // ── Pay June Contribution 1-Click Banner ──
-            if (!dash.currentMonthPaid) ...[
-              AnimatedPressable(
-                onTap: () => context.push('/pay'),
-                scale: 0.97,
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
+            if (!dash.currentMonthPaid)
+              Builder(builder: (context) {
+                final hasPendingReview = dash.recentContributions.any((c) => !c.isVerified);
+                return Column(
+                  children: [
+                    AnimatedPressable(
+                      onTap: hasPendingReview ? null : () => context.push('/pay'),
+                      scale: hasPendingReview ? 1.0 : 0.97,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.15),
-                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            if (!hasPendingReview)
+                              BoxShadow(
+                                color: const Color(0xFF7C3AED).withValues(alpha: 0.3),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                          ],
                         ),
-                        child: const Icon(Icons.flash_on, color: Colors.yellow, size: 24),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: Row(
                           children: [
-                            const Text(
-                              'Monthly contribution pending',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(hasPendingReview ? Icons.hourglass_empty_rounded : Icons.flash_on, color: Colors.yellow, size: 24),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    hasPendingReview ? 'Payment under review' : 'Monthly contribution pending',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    hasPendingReview ? 'Admin is verifying your screenshot' : 'Tap to pay ₹${dash.pendingAmount.toStringAsFixed(0)} via UPI',
+                                    style: const TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Tap to pay ₹${dash.pendingAmount.toStringAsFixed(0)} via UPI',
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
+                            if (!hasPendingReview)
+                              const Icon(Icons.chevron_right_rounded, color: Colors.white),
                           ],
                         ),
                       ),
-                      const Icon(Icons.chevron_right_rounded, color: Colors.white),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-            ],
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+                );
+              }),
 
 
 
@@ -558,7 +578,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
       child: contribAsync.when(
         loading: () => const ShimmerListLoader(count: 8),
         error: (e, _) => ErrorRetry(
-            message: e.toString(),
+            message: apiError(e),
             onRetry: () => ref.invalidate(myContributionsProvider)),
         data: (list) => RefreshIndicator(
           color: const Color(0xFFC084FC),
@@ -591,7 +611,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
       child: profileAsync.when(
         loading: () => const ShimmerListLoader(count: 6),
         error: (e, _) => ErrorRetry(
-            message: e.toString(),
+            message: apiError(e),
             onRetry: () => ref.invalidate(myProfileProvider)),
         data: (profile) => RefreshIndicator(
           color: const Color(0xFFC084FC),
@@ -655,39 +675,22 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
 
               const SectionHeader(title: 'Financial Summary'),
               const SizedBox(height: 12),
-              Column(
+              Row(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _DarkStatCard(
-                          label: 'Total Invested',
-                          value: fmt.format(profile.totalInvested),
-                          icon: Icons.account_balance_wallet_outlined,
-                        ),
-                      ),
-                    ],
+                  Expanded(
+                    child: _DarkStatCard(
+                      label: 'Total Invested',
+                      value: fmt.format(profile.totalInvested),
+                      icon: Icons.account_balance_wallet_outlined,
+                    ),
                   ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _DarkStatCard(
-                          label: 'Contributions',
-                          value: '${profile.totalContributions} months',
-                          icon: Icons.assignment_turned_in_outlined,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _DarkStatCard(
-                          label: 'Pending Dues',
-                          value: fmt.format(profile.pendingAmount),
-                          icon: Icons.error_outline_rounded,
-                          iconColor: profile.pendingAmount > 0 ? Colors.red : const Color(0xFF10B981),
-                        ),
-                      ),
-                    ],
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _DarkStatCard(
+                      label: 'Contributions',
+                      value: '${profile.totalContributions} months',
+                      icon: Icons.assignment_turned_in_outlined,
+                    ),
                   ),
                 ],
               ),

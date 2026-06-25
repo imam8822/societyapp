@@ -3,12 +3,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppConstants {
   // static const String baseUrl = 'http://societyappapi-abfrh7bqeeb0cyeb.canadacentral-01.azurewebsites.net/api';
-   //static const String baseUrl = 'https://localhost:51019/api';
-  static const String baseUrl = 'http://societyapp1.runasp.net/api';
+   static const String baseUrl = 'https://localhost:51019/api';
+  //static const String baseUrl = 'http://societyapp1.runasp.net/api';
 
   static const String tokenKey = 'auth_token';
   static const String roleKey = 'auth_role';
   static const String userIdKey = 'auth_user_id';
+  
   static const String userNameKey = 'auth_user_name';
 }
 
@@ -61,6 +62,12 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20),
             side: const BorderSide(color: divider),
+          ),
+        ),
+        dialogTheme: const DialogThemeData(
+          backgroundColor: white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(16)),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(

@@ -10,6 +10,7 @@ import '../../models/payment_models.dart';
 import '../../providers/data_providers.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../core/api/api_services.dart';
+import '../../core/api/api_client.dart';
 
 class ScreenshotReviewScreen extends ConsumerWidget {
   const ScreenshotReviewScreen({super.key});
@@ -63,7 +64,7 @@ class _ContributionsTab extends ConsumerWidget {
       loading: () =>
           const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
       error: (e, _) => ErrorRetry(
-        message: e.toString(),
+        message: apiError(e),
         onRetry: () => ref.invalidate(pendingScreenshotsProvider),
       ),
       data: (list) {
@@ -109,7 +110,7 @@ class _LoanRepaymentsTab extends ConsumerWidget {
       loading: () =>
           const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
       error: (e, _) => ErrorRetry(
-        message: e.toString(),
+        message: apiError(e),
         onRetry: () => ref.invalidate(pendingLoanRepaymentsProvider),
       ),
       data: (list) {

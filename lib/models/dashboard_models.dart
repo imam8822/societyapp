@@ -14,6 +14,7 @@ class UserDashboard {
   final bool hasRepaidLoanThisMonth;
   final bool guarantorRequired;
   final String societyName;
+  final String? logoBase64;
   final LoanApplication? activeLoan;
   final List<Contribution> recentContributions;
 
@@ -30,6 +31,7 @@ class UserDashboard {
     required this.hasRepaidLoanThisMonth,
     required this.guarantorRequired,
     required this.societyName,
+    this.logoBase64,
     this.activeLoan,
     required this.recentContributions,
   });
@@ -47,6 +49,7 @@ class UserDashboard {
         hasRepaidLoanThisMonth: j['hasRepaidLoanThisMonth'] ?? false,
         guarantorRequired: j['guarantorRequired'] ?? true,
         societyName: j['societyName'] ?? 'My Society',
+        logoBase64: j['logoBase64'],
         activeLoan: j['activeLoan'] != null
             ? LoanApplication.fromJson(j['activeLoan']) : null,
         recentContributions: (j['recentContributions'] as List? ?? [])
@@ -55,6 +58,7 @@ class UserDashboard {
 }
 
 class AdminDashboard {
+  final String? logoBase64;
   final int totalMembers;
   final int activeMembers;
   final double totalCollected;    // renamed from totalPoolAmount
@@ -72,6 +76,7 @@ class AdminDashboard {
   final List<LoanApplication> loansToDisburse;
 
   AdminDashboard({
+    this.logoBase64,
     required this.totalMembers,
     required this.activeMembers,
     required this.totalCollected,
@@ -90,6 +95,7 @@ class AdminDashboard {
   });
 
   factory AdminDashboard.fromJson(Map<String, dynamic> j) => AdminDashboard(
+        logoBase64: j['logoBase64'],
         totalMembers: j['totalMembers'] ?? 0,
         activeMembers: j['activeMembers'] ?? 0,
         totalCollected: (j['totalCollected'] as num?)?.toDouble() ?? 0,
