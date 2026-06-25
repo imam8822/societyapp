@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppConstants {
-  // static const String baseUrl = 'http://societyappapi-abfrh7bqeeb0cyeb.canadacentral-01.azurewebsites.net/api';
   //static const String baseUrl = 'https://localhost:51019/api';
-  static const String baseUrl = 'http://societyapp1.runasp.net/api';
+  static const String baseUrl = 'http://societyweb.runasp.net/api';
 
   static const String tokenKey = 'auth_token';
   static const String refreshTokenKey = 'auth_refresh_token';
