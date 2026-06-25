@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../core/api/auth_api.dart';
 import '../core/api/api_client.dart';
 import '../core/storage/storage_service.dart';
+import '../core/api/api_services.dart';
 
 class AuthState {
   final bool isLoggedIn;
@@ -65,6 +67,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
         role: res.role,
         userName: res.fullName,
       );
+
+      try {
+        await FirebaseMessaging.instance.requestPermission();
+        final fcmToken = await FirebaseMessaging.instance.getToken();
+        if (fcmToken != null) {
+          await NotificationApi.saveFcmToken(fcmToken);
+        }
+      } catch (_) {
+        // Ignore FCM errors so login still succeeds
+      }
+
       return true;
     } catch (e) {
       state = state.copyWith(isLoading: false, error: apiError(e));

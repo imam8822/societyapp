@@ -43,7 +43,7 @@ class UserSummary {
     fullName: j['fullName'],
     phone: j['phone'],
     email: j['email'] ?? '',
-    role: j['role'] is int ? (j['role'] == 0 ? 'Admin' : 'User') : '${j['role']}',
+    role: j['role'] is int ? (j['role'] == 0 ? 'Admin' : j['role'] == 1 ? 'User' : j['role'] == 2 ? 'SuperAdmin' : 'Auditor') : '${j['role']}',
     isActive: j['isActive'] ?? true,
     joinedDate: DateTime.parse(j['joinedDate']),
     address: j['address'],

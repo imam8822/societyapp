@@ -71,15 +71,15 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        iconTheme: const IconThemeData(color: AppTheme.textDark),
-        title: const Text(
+        iconTheme: IconThemeData(color: context.colors.textDark),
+        title: Text(
           'Transactions & Stats',
           style: TextStyle(
-            color: AppTheme.textDark,
+            color: context.colors.textDark,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -93,26 +93,26 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
           : _error != null
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.error_outline, color: AppTheme.error, size: 48),
+                      Icon(Icons.error_outline, color: context.colors.error, size: 48),
                       const SizedBox(height: 16),
-                      Text(_error!, style: const TextStyle(color: AppTheme.textGrey)),
+                      Text(_error!, style: TextStyle(color: context.colors.textGrey)),
                       const SizedBox(height: 16),
                       ElevatedButton(
                         onPressed: _loadData,
-                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primary),
+                        style: ElevatedButton.styleFrom(backgroundColor: context.colors.primary),
                         child: const Text('Retry', style: TextStyle(color: Colors.white)),
                       )
                     ],
                   ),
                 )
               : RefreshIndicator(
-                  color: AppTheme.primary,
+                  color: context.colors.primary,
                   onRefresh: _loadData,
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -143,12 +143,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                         const SizedBox(height: 32),
 
                         // Chart
-                        const Text(
+                        Text(
                           '6-Month Trend',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textDark,
+                            color: context.colors.textDark,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -156,7 +156,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                           height: 250,
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppTheme.white,
+                            color: context.colors.surfaceWhite,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
@@ -171,12 +171,12 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                         const SizedBox(height: 32),
 
                         // Ledger
-                        const Text(
+                        Text(
                           'Recent Transactions',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppTheme.textDark,
+                            color: context.colors.textDark,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -220,7 +220,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
         maxY: maxVal,
-        barTouchData: BarTouchData(enabled: true),
+        barTouchData: const BarTouchData(enabled: true),
         titlesData: FlTitlesData(
           show: true,
           bottomTitles: AxisTitles(
@@ -232,8 +232,8 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   padding: const EdgeInsets.only(top: 8.0),
                   child: Text(
                     stats[value.toInt()].month,
-                    style: const TextStyle(
-                      color: AppTheme.textGrey,
+                    style: TextStyle(
+                      color: context.colors.textGrey,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -265,7 +265,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
               ),
               BarChartRodData(
                 toY: s.outflow,
-                color: AppTheme.error,
+                color: context.colors.error,
                 width: 12,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(4),
@@ -292,7 +292,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -312,12 +312,12 @@ class _StatCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: isPositive
                       ? const Color(0xFF16A34A).withValues(alpha: 0.1)
-                      : AppTheme.error.withValues(alpha: 0.1),
+                      : context.colors.error.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   isPositive ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-                  color: isPositive ? const Color(0xFF16A34A) : AppTheme.error,
+                  color: isPositive ? const Color(0xFF16A34A) : context.colors.error,
                   size: 20,
                 ),
               ),
@@ -325,8 +325,8 @@ class _StatCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: const TextStyle(
-                    color: AppTheme.textGrey,
+                  style: TextStyle(
+                    color: context.colors.textGrey,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -341,10 +341,10 @@ class _StatCard extends StatelessWidget {
               symbol: '₹',
               decimalDigits: 0,
             ).format(amount),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textDark,
+              color: context.colors.textDark,
             ),
           ),
         ],
@@ -362,10 +362,10 @@ class _TransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isAddition = transaction.amount >= 0;
-    final color = isAddition ? const Color(0xFF16A34A) : AppTheme.error;
+    final color = isAddition ? const Color(0xFF16A34A) : context.colors.error;
     
     return Container(
-      color: AppTheme.white,
+      color: context.colors.surfaceWhite,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -388,9 +388,9 @@ class _TransactionTile extends StatelessWidget {
               children: [
                 Text(
                   _formatType(transaction.type),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textDark,
+                    color: context.colors.textDark,
                     fontSize: 15,
                   ),
                 ),
@@ -398,16 +398,16 @@ class _TransactionTile extends StatelessWidget {
                 if (transaction.userName != null)
                   Text(
                     transaction.userName!,
-                    style: const TextStyle(
-                      color: AppTheme.textGrey,
+                    style: TextStyle(
+                      color: context.colors.textGrey,
                       fontSize: 13,
                     ),
                   ),
                 if (transaction.remarks != null)
                   Text(
                     transaction.remarks!,
-                    style: const TextStyle(
-                      color: AppTheme.textGrey,
+                    style: TextStyle(
+                      color: context.colors.textGrey,
                       fontSize: 12,
                       fontStyle: FontStyle.italic,
                     ),
@@ -415,8 +415,8 @@ class _TransactionTile extends StatelessWidget {
                 const SizedBox(height: 4),
                 Text(
                   DateFormat('MMM d, y • h:mm a').format(transaction.createdAt),
-                  style: const TextStyle(
-                    color: AppTheme.textGrey,
+                  style: TextStyle(
+                    color: context.colors.textGrey,
                     fontSize: 12,
                   ),
                 ),
@@ -437,8 +437,8 @@ class _TransactionTile extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 'Bal: ${formatAmount(transaction.balanceAfter)}',
-                style: const TextStyle(
-                  color: AppTheme.textGrey,
+                style: TextStyle(
+                  color: context.colors.textGrey,
                   fontSize: 12,
                 ),
               ),

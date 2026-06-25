@@ -96,7 +96,7 @@ class _PayScreenState extends ConsumerState<PayScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Pay Monthly Contribution')),
       body: LoadingOverlay(
         isLoading: _loading,
@@ -142,45 +142,45 @@ class _PayScreenState extends ConsumerState<PayScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'This code is pre-filled as the payment note in UPI. Do NOT change it.',
                                 style: TextStyle(
-                                    color: AppTheme.textGrey, fontSize: 13),
+                                    color: context.colors.textGrey, fontSize: 13),
                               ),
                               const SizedBox(height: 14),
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
-                                  color: AppTheme.primaryLight,
+                                  color: context.colors.primaryLight,
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
-                                      color: AppTheme.primary.withOpacity(0.3)),
+                                      color: context.colors.primary.withValues(alpha: 0.3)),
                                 ),
                                 child: Column(
                                   children: [
                                     Text(
                                       _token!.token,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 28,
                                         fontWeight: FontWeight.w800,
-                                        color: AppTheme.primary,
+                                        color: context.colors.primary,
                                         letterSpacing: 3,
                                       ),
                                     ),
                                     const SizedBox(height: 6),
-                                    const Row(
+                                    Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
                                         Icon(Icons.lock_outline_rounded,
                                             size: 13,
-                                            color: AppTheme.textGrey),
-                                        SizedBox(width: 4),
+                                            color: context.colors.textGrey),
+                                        const SizedBox(width: 4),
                                         Text(
                                           'Locked — do not change in UPI app',
                                           style: TextStyle(
-                                              color: AppTheme.textGrey,
+                                              color: context.colors.textGrey,
                                               fontSize: 12),
                                         ),
                                       ],
@@ -192,13 +192,13 @@ class _PayScreenState extends ConsumerState<PayScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.schedule_rounded,
-                                      size: 13, color: AppTheme.textGrey),
+                                  Icon(Icons.schedule_rounded,
+                                      size: 13, color: context.colors.textGrey),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Expires in ${_token!.expiresInText}',
-                                    style: const TextStyle(
-                                        color: AppTheme.textGrey,
+                                    style: TextStyle(
+                                        color: context.colors.textGrey,
                                         fontSize: 12),
                                   ),
                                 ],
@@ -216,10 +216,10 @@ class _PayScreenState extends ConsumerState<PayScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Amount and note are pre-filled. Do NOT change them in the UPI app.',
                                 style: TextStyle(
-                                    color: AppTheme.textGrey, fontSize: 13),
+                                    color: context.colors.textGrey, fontSize: 13),
                               ),
                               const SizedBox(height: 14),
                               ElevatedButton.icon(
@@ -241,10 +241,10 @@ class _PayScreenState extends ConsumerState<PayScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 "After paying, upload the success screenshot. We'll verify it automatically.",
                                 style: TextStyle(
-                                    color: AppTheme.textGrey, fontSize: 13),
+                                    color: context.colors.textGrey, fontSize: 13),
                               ),
                               const SizedBox(height: 14),
                               OutlinedButton.icon(
@@ -253,16 +253,16 @@ class _PayScreenState extends ConsumerState<PayScreen> {
                                 label: const Text('Select Screenshot'),
                                 style: OutlinedButton.styleFrom(
                                   minimumSize: const Size(double.infinity, 50),
-                                  side: const BorderSide(
-                                      color: AppTheme.primary),
-                                  foregroundColor: AppTheme.primary,
+                                  side: BorderSide(
+                                      color: context.colors.primary),
+                                  foregroundColor: context.colors.primary,
                                 ),
                               ),
                               if (_error != null) ...[
                                 const SizedBox(height: 10),
                                 Text(_error!,
-                                    style: const TextStyle(
-                                        color: AppTheme.error, fontSize: 13)),
+                                    style: TextStyle(
+                                        color: context.colors.error, fontSize: 13)),
                               ],
                             ],
                           ),
@@ -288,13 +288,13 @@ class _AmountBreakdownCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: hasPenalty
-            ? AppTheme.warning.withValues(alpha: 0.1)
-            : AppTheme.primaryLight,
+            ? context.colors.warning.withValues(alpha: 0.1)
+            : context.colors.primaryLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: hasPenalty
-              ? AppTheme.warning.withValues(alpha: 0.3)
-              : AppTheme.primary.withValues(alpha: 0.3),
+              ? context.colors.warning.withValues(alpha: 0.3)
+              : context.colors.primary.withValues(alpha: 0.3),
         ),
       ),
       child: Column(
@@ -307,8 +307,8 @@ class _AmountBreakdownCard extends StatelessWidget {
                     ? Icons.warning_amber_rounded
                     : Icons.check_circle_outline_rounded,
                 color: hasPenalty
-                    ? AppTheme.warning
-                    : AppTheme.primary,
+                    ? context.colors.warning
+                    : context.colors.primary,
                 size: 18,
               ),
               const SizedBox(width: 8),
@@ -319,34 +319,24 @@ class _AmountBreakdownCard extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   color: hasPenalty
-                      ? AppTheme.warning
-                      : AppTheme.primary,
+                      ? context.colors.warning
+                      : context.colors.primary,
                   fontSize: 14,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          _row('Monthly contribution',
-              '₹${token.amount.toStringAsFixed(0)}'),
-          if (hasPenalty)
-            _row(
-              'Penalty (late payment)',
-              '+ ₹${token.penaltyAmount.toStringAsFixed(0)}',
-              highlight: true,
-            ),
+          _row(context, 'Monthly contribution', '₹${token.amount.toStringAsFixed(0)}'),
+          _row(context, 'Penalty', '₹${token.penaltyAmount.toStringAsFixed(0)}', highlight: token.penaltyAmount > 0),
           const Divider(height: 16),
-          _row(
-            'Total to pay',
-            '₹${token.totalAmount.toStringAsFixed(0)}',
-            bold: true,
-          ),
+          _row(context, 'Total Payable', '₹${token.totalAmount.toStringAsFixed(0)}', bold: true),
         ],
       ),
     );
   }
 
-  Widget _row(String label, String value,
+  Widget _row(BuildContext context, String label, String value,
       {bool bold = false, bool highlight = false}) =>
       Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
@@ -354,18 +344,18 @@ class _AmountBreakdownCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-                style: const TextStyle(
-                    fontSize: 13, color: AppTheme.textDark)),
+                style: TextStyle(
+                    fontSize: 13, color: context.colors.textDark)),
             Text(value,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight:
                       bold ? FontWeight.w700 : FontWeight.w500,
                   color: highlight
-                      ? AppTheme.warning
+                      ? context.colors.warning
                       : bold
-                          ? AppTheme.textDark
-                          : AppTheme.textGrey,
+                          ? context.colors.textDark
+                          : context.colors.textGrey,
                 )),
           ],
         ),
@@ -385,9 +375,9 @@ class _StepCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,8 +387,8 @@ class _StepCard extends StatelessWidget {
               Container(
                 width: 28,
                 height: 28,
-                decoration: const BoxDecoration(
-                  color: AppTheme.primary,
+                decoration: BoxDecoration(
+                  color: context.colors.primary,
                   shape: BoxShape.circle,
                 ),
                 child: Center(
@@ -412,10 +402,10 @@ class _StepCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: AppTheme.textDark)),
+                        color: context.colors.textDark)),
               ),
             ],
           ),
@@ -426,4 +416,4 @@ class _StepCard extends StatelessWidget {
     );
   }
 }
-
+

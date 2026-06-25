@@ -22,10 +22,10 @@ class ContributionHistoryScreen extends ConsumerWidget {
     final contribAsync = ref.watch(myContributionsProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Contribution History')),
       body: contribAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+        loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => ErrorRetry(
             message: apiError(e),
             onRetry: () => ref.invalidate(myContributionsProvider)),
@@ -54,9 +54,9 @@ class _ContributionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         children: [
@@ -67,13 +67,13 @@ class _ContributionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(c.monthName,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
-                            color: AppTheme.textDark)),
+                            color: context.colors.textDark)),
                     const SizedBox(height: 2),
                     Text(DateFormat('d MMM yyyy').format(c.paidDate),
-                        style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                        style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
                   ],
                 ),
               ),
@@ -81,10 +81,10 @@ class _ContributionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text('₹${c.amount.toStringAsFixed(0)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: AppTheme.textDark)),
+                          color: context.colors.textDark)),
                   const SizedBox(height: 4),
                   StatusBadge(status: c.isVerified ? 'Verified' : 'Pending'),
                 ],
@@ -95,13 +95,13 @@ class _ContributionCard extends StatelessWidget {
             const Divider(height: 20),
             Row(
               children: [
-                const Icon(Icons.tag_rounded, size: 14, color: AppTheme.textGrey),
+                Icon(Icons.tag_rounded, size: 14, color: context.colors.textGrey),
                 const SizedBox(width: 4),
                 Text(c.transactionReference ?? '-',
-                    style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                    style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
                 const Spacer(),
                 Text(c.mode,
-                    style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                    style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
               ],
             ),
           ],
@@ -213,25 +213,25 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       Row(children: [
         Icon(icon,
             size: 14,
-            color: highlight ? AppTheme.primary : AppTheme.textGrey),
+            color: highlight ? context.colors.primary : context.colors.textGrey),
         const SizedBox(width: 6),
         Text('$label: ',
-            style: const TextStyle(
-                fontSize: 12, color: AppTheme.textGrey)),
+            style: TextStyle(
+                fontSize: 12, color: context.colors.textGrey)),
         Text(value,
             style: TextStyle(
                 fontSize: 12,
                 fontWeight: highlight ? FontWeight.w700 : FontWeight.w500,
-                color: highlight ? AppTheme.primary : AppTheme.textDark)),
+                color: highlight ? context.colors.primary : context.colors.textDark)),
       ]);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Apply for Loan')),
       body: _loadingForm
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
           : _formData == null
               ? Center(
                   child: ErrorRetry(
@@ -261,12 +261,12 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                   : const Color(0xFF10B981).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _needsGuarantor ? AppTheme.warning : const Color(0xFF10B981)),
+                color: _needsGuarantor ? context.colors.warning : const Color(0xFF10B981)),
             ),
             child: Row(children: [
               Icon(
                 _needsGuarantor ? Icons.info_outline_rounded : Icons.check_circle_outline_rounded,
-                color: _needsGuarantor ? AppTheme.warning : const Color(0xFF10B981),
+                color: _needsGuarantor ? context.colors.warning : const Color(0xFF10B981),
                 size: 20,
               ),
               const SizedBox(width: 10),
@@ -277,7 +277,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                       : 'Your investment of ${_fmt.format(data.userTotalInvested)} covers this loan — no guarantor needed.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: _needsGuarantor ? AppTheme.warning : const Color(0xFF10B981),
+                    color: _needsGuarantor ? context.colors.warning : const Color(0xFF10B981),
                   ),
                 ),
               ),
@@ -293,13 +293,13 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 decoration: BoxDecoration(
-                  color: AppTheme.bgGrey,
+                  color: context.colors.bgGrey,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.divider),
+                  border: Border.all(color: context.colors.divider),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.currency_rupee_rounded, color: AppTheme.primary, size: 20),
+                    Icon(Icons.currency_rupee_rounded, color: context.colors.primary, size: 20),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
@@ -308,11 +308,11 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                             : 'Select amount',
                         style: TextStyle(
                           fontSize: 15,
-                          color: _selectedOption != null ? AppTheme.textDark : AppTheme.textGrey,
+                          color: _selectedOption != null ? context.colors.textDark : context.colors.textGrey,
                         ),
                       ),
                     ),
-                    const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textGrey),
+                    Icon(Icons.keyboard_arrow_down_rounded, color: context.colors.textGrey),
                   ],
                 ),
               ),
@@ -326,20 +326,20 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryLight,
+                    color: context.colors.primaryLight,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.primary.withValues(alpha: 0.3)),
+                    border: Border.all(color: context.colors.primary.withValues(alpha: 0.3)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(children: [
-                        const Icon(Icons.check_circle_outline,
-                            color: AppTheme.primary, size: 16),
+                        Icon(Icons.check_circle_outline,
+                            color: context.colors.primary, size: 16),
                         const SizedBox(width: 6),
-                        const Text('You are eligible!',
+                        Text('You are eligible!',
                             style: TextStyle(
-                                color: AppTheme.primary,
+                                color: context.colors.primary,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13)),
                       ]),
@@ -373,18 +373,18 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppTheme.error.withValues(alpha: 0.15),
+                    color: context.colors.error.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppTheme.error),
+                    border: Border.all(color: context.colors.error),
                   ),
                   child: Row(children: [
-                    const Icon(Icons.lock_outline, color: AppTheme.error, size: 16),
+                    Icon(Icons.lock_outline, color: context.colors.error, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         'You need ${_selectedOption!.minTenureRequired} months paid for ${_selectedOption!.label}. '
                         'You have ${data.userPaidMonths} months.',
-                        style: const TextStyle(color: AppTheme.error, fontSize: 12),
+                        style: TextStyle(color: context.colors.error, fontSize: 12),
                       ),
                     ),
                   ]),
@@ -400,17 +400,17 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                   ? Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: AppTheme.error.withValues(alpha: 0.15),
+                        color: context.colors.error.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Row(children: [
+                      child: Row(children: [
                         Icon(Icons.warning_amber_rounded,
-                            color: AppTheme.error, size: 18),
-                        SizedBox(width: 8),
+                            color: context.colors.error, size: 18),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'No eligible guarantors available.',
-                            style: TextStyle(color: AppTheme.error, fontSize: 12),
+                            style: TextStyle(color: context.colors.error, fontSize: 12),
                           ),
                         ),
                       ]),
@@ -424,13 +424,13 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                             decoration: BoxDecoration(
-                              color: AppTheme.bgGrey,
+                              color: context.colors.bgGrey,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: (_needsGuarantor && _submitting && _selectedGuarantor == null) ? AppTheme.error : AppTheme.divider),
+                              border: Border.all(color: (_needsGuarantor && _submitting && _selectedGuarantor == null) ? context.colors.error : context.colors.divider),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.people_outlined, color: AppTheme.primary, size: 20),
+                                Icon(Icons.people_outlined, color: context.colors.primary, size: 20),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Text(
@@ -439,19 +439,19 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                                         : 'Select guarantor',
                                     style: TextStyle(
                                       fontSize: 15,
-                                      color: _selectedGuarantor != null ? AppTheme.textDark : AppTheme.textGrey,
+                                      color: _selectedGuarantor != null ? context.colors.textDark : context.colors.textGrey,
                                     ),
                                   ),
                                 ),
-                                const Icon(Icons.keyboard_arrow_down_rounded, color: AppTheme.textGrey),
+                                Icon(Icons.keyboard_arrow_down_rounded, color: context.colors.textGrey),
                               ],
                             ),
                           ),
                         ),
                         if (_needsGuarantor && _submitting && _selectedGuarantor == null)
-                          const Padding(
-                            padding: EdgeInsets.only(left: 12, top: 8),
-                            child: Text('Please select a guarantor', style: TextStyle(color: AppTheme.error, fontSize: 12)),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12, top: 8),
+                            child: Text('Please select a guarantor', style: TextStyle(color: context.colors.error, fontSize: 12)),
                           ),
                       ],
                     ),
@@ -480,7 +480,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
   void _showAmountBottomSheet(LoanFormData data) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -494,13 +494,13 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
               Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 8),
                 width: 40, height: 4,
-                decoration: BoxDecoration(color: AppTheme.divider, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: context.colors.divider, borderRadius: BorderRadius.circular(2)),
               ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Text('Select Loan Amount', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Text('Select Loan Amount', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textDark)),
               ),
-              const Divider(height: 1, color: AppTheme.divider),
+              Divider(height: 1, color: context.colors.divider),
               Flexible(
                 child: ListView.builder(
                   shrinkWrap: true,
@@ -519,20 +519,20 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.primary.withValues(alpha: 0.05) : Colors.transparent,
-                          border: Border(bottom: BorderSide(color: AppTheme.divider.withValues(alpha: 0.5))),
+                          color: isSelected ? context.colors.primary.withValues(alpha: 0.05) : Colors.transparent,
+                          border: Border(bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5))),
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: isSelected ? AppTheme.primary : AppTheme.white,
+                                color: isSelected ? context.colors.primary : context.colors.surfaceWhite,
                                 shape: BoxShape.circle,
-                                border: isSelected ? null : Border.all(color: AppTheme.divider),
+                                border: isSelected ? null : Border.all(color: context.colors.divider),
                               ),
                               child: Icon(Icons.currency_rupee_rounded, 
-                                  color: isSelected ? Colors.white : AppTheme.textGrey, size: 18),
+                                  color: isSelected ? Colors.white : context.colors.textGrey, size: 18),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -542,14 +542,14 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                                   Text(o.label, style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                      color: isSelected ? AppTheme.primary : AppTheme.textDark)),
+                                      color: isSelected ? context.colors.primary : context.colors.textDark)),
                                   const SizedBox(height: 4),
                                   Text('${o.minTenureRequired} months paid required', 
-                                      style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                                      style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
                                 ],
                               ),
                             ),
-                            if (isSelected) const Icon(Icons.check_circle_rounded, color: AppTheme.primary),
+                            if (isSelected) Icon(Icons.check_circle_rounded, color: context.colors.primary),
                           ],
                         ),
                       ),
@@ -567,7 +567,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
   void _showGuarantorBottomSheet(LoanFormData data) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -581,13 +581,13 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
               Container(
                 margin: const EdgeInsets.only(top: 12, bottom: 8),
                 width: 40, height: 4,
-                decoration: BoxDecoration(color: AppTheme.divider, borderRadius: BorderRadius.circular(2)),
+                decoration: BoxDecoration(color: context.colors.divider, borderRadius: BorderRadius.circular(2)),
               ),
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Text('Select Guarantor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Text('Select Guarantor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textDark)),
               ),
-              const Divider(height: 1, color: AppTheme.divider),
+              Divider(height: 1, color: context.colors.divider),
               Flexible(
                 child: ListView.builder(
                   shrinkWrap: true,
@@ -603,20 +603,20 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                         decoration: BoxDecoration(
-                          color: isSelected ? AppTheme.primary.withValues(alpha: 0.05) : Colors.transparent,
-                          border: Border(bottom: BorderSide(color: AppTheme.divider.withValues(alpha: 0.5))),
+                          color: isSelected ? context.colors.primary.withValues(alpha: 0.05) : Colors.transparent,
+                          border: Border(bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5))),
                         ),
                         child: Row(
                           children: [
                             Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: isSelected ? AppTheme.primary : AppTheme.white,
+                                color: isSelected ? context.colors.primary : context.colors.surfaceWhite,
                                 shape: BoxShape.circle,
-                                border: isSelected ? null : Border.all(color: AppTheme.divider),
+                                border: isSelected ? null : Border.all(color: context.colors.divider),
                               ),
                               child: Icon(Icons.person_rounded, 
-                                  color: isSelected ? Colors.white : AppTheme.textGrey, size: 18),
+                                  color: isSelected ? Colors.white : context.colors.textGrey, size: 18),
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -626,13 +626,13 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                                   Text(g.fullName, style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                      color: isSelected ? AppTheme.primary : AppTheme.textDark)),
+                                      color: isSelected ? context.colors.primary : context.colors.textDark)),
                                   const SizedBox(height: 4),
-                                  Text(g.phone, style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                                  Text(g.phone, style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
                                 ],
                               ),
                             ),
-                            if (isSelected) const Icon(Icons.check_circle_rounded, color: AppTheme.primary),
+                            if (isSelected) Icon(Icons.check_circle_rounded, color: context.colors.primary),
                           ],
                         ),
                       ),
@@ -658,16 +658,16 @@ class _Section extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: AppTheme.white,
+      color: context.colors.surfaceWhite,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppTheme.divider),
+      border: Border.all(color: context.colors.divider),
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(title.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textGrey,
+              color: context.colors.textGrey,
               letterSpacing: 0.5)),
       const SizedBox(height: 12),
       ...children,
@@ -686,11 +686,11 @@ class LoanStatusScreen extends ConsumerWidget {
     final loansAsync = ref.watch(myLoansProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('My Loans')),
       body: loansAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary)),
+        loading: () => Center(
+            child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => ErrorRetry(
             message: apiError(e),
             onRetry: () => ref.invalidate(myLoansProvider)),
@@ -719,9 +719,9 @@ class _LoanDetailCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -730,10 +730,10 @@ class _LoanDetailCard extends StatelessWidget {
             Expanded(
               child: Text(
                 '₹${loan.amount.toStringAsFixed(0)}',
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark),
+                    color: context.colors.textDark),
               ),
             ),
             StatusBadge(status: loan.status),
@@ -785,8 +785,8 @@ class _LoanDetailCard extends StatelessWidget {
                     : 'Repay Loan'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF2563EB),
-                  disabledBackgroundColor: AppTheme.divider,
-                  disabledForegroundColor: AppTheme.textGrey,
+                  disabledBackgroundColor: context.colors.divider,
+                  disabledForegroundColor: context.colors.textGrey,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),

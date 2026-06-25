@@ -27,7 +27,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       if (!loggedIn && !onLogin) return '/login';
       if (loggedIn && onLogin) {
-        return role == 'Admin' ? '/admin' : '/home';
+        return (role == 'Admin' || role == 'SuperAdmin' || role == 'Auditor') ? '/admin' : '/home';
       }
       return null;
     },

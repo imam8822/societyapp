@@ -20,7 +20,7 @@ class ScreenshotReviewScreen extends ConsumerWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: AppTheme.bgGrey,
+        backgroundColor: context.colors.bgGrey,
         appBar: AppBar(
           title: const Text('Screenshot Reviews'),
           actions: [
@@ -32,11 +32,11 @@ class ScreenshotReviewScreen extends ConsumerWidget {
               },
             ),
           ],
-          bottom: const TabBar(
-            labelColor: AppTheme.primary,
-            unselectedLabelColor: AppTheme.textGrey,
-            indicatorColor: AppTheme.primary,
-            tabs: [
+          bottom: TabBar(
+            labelColor: context.colors.primary,
+            unselectedLabelColor: context.colors.textGrey,
+            indicatorColor: context.colors.primary,
+            tabs: const [
               Tab(text: 'Contributions'),
               Tab(text: 'Loan Repayments'),
             ],
@@ -62,28 +62,28 @@ class _ContributionsTab extends ConsumerWidget {
 
     return state.when(
       loading: () =>
-          const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+          Center(child: CircularProgressIndicator(color: context.colors.primary)),
       error: (e, _) => ErrorRetry(
         message: apiError(e),
         onRetry: () => ref.invalidate(pendingScreenshotsProvider),
       ),
       data: (list) {
         if (list.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.check_circle_outline_rounded,
-                    size: 64, color: AppTheme.primary),
-                SizedBox(height: 16),
+                    size: 64, color: context.colors.primary),
+                const SizedBox(height: 16),
                 Text('All caught up!',
                     style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark)),
-                SizedBox(height: 6),
+                        color: context.colors.textDark)),
+                const SizedBox(height: 6),
                 Text('No contribution screenshots pending review.',
-                    style: TextStyle(color: AppTheme.textGrey)),
+                    style: TextStyle(color: context.colors.textGrey)),
               ],
             ),
           );
@@ -108,28 +108,28 @@ class _LoanRepaymentsTab extends ConsumerWidget {
 
     return state.when(
       loading: () =>
-          const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+          Center(child: CircularProgressIndicator(color: context.colors.primary)),
       error: (e, _) => ErrorRetry(
         message: apiError(e),
         onRetry: () => ref.invalidate(pendingLoanRepaymentsProvider),
       ),
       data: (list) {
         if (list.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.check_circle_outline_rounded,
-                    size: 64, color: AppTheme.primary),
-                SizedBox(height: 16),
+                    size: 64, color: context.colors.primary),
+                const SizedBox(height: 16),
                 Text('All caught up!',
                     style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: AppTheme.textDark)),
-                SizedBox(height: 6),
+                        color: context.colors.textDark)),
+                const SizedBox(height: 6),
                 Text('No loan repayment screenshots pending review.',
-                    style: TextStyle(color: AppTheme.textGrey)),
+                    style: TextStyle(color: context.colors.textGrey)),
               ],
             ),
           );
@@ -155,7 +155,7 @@ class _ScreenshotCard extends ConsumerStatefulWidget {
 }
 
 class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
-  bool _expanded = false;
+  final bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -166,9 +166,9 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,11 +180,11 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: AppTheme.primaryLight,
+                  backgroundColor: context.colors.primaryLight,
                   child: Text(
                     item.userName.isNotEmpty ? item.userName[0].toUpperCase() : '?',
-                    style: const TextStyle(
-                        color: AppTheme.primary, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        color: context.colors.primary, fontWeight: FontWeight.w700),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -193,13 +193,13 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(item.userName,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
-                              color: AppTheme.textDark)),
+                              color: context.colors.textDark)),
                       Text(item.userPhone,
-                          style: const TextStyle(
-                              color: AppTheme.textGrey, fontSize: 12)),
+                          style: TextStyle(
+                              color: context.colors.textGrey, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -208,12 +208,12 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryLight,
+                    color: context.colors.primaryLight,
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(item.monthName,
-                      style: const TextStyle(
-                          color: AppTheme.primary,
+                      style: TextStyle(
+                          color: context.colors.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600)),
                 ),
@@ -222,7 +222,7 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
           ),
 
           const SizedBox(height: 12),
-          const Divider(height: 1, color: AppTheme.divider),
+          Divider(height: 1, color: context.colors.divider),
           const SizedBox(height: 12),
 
           // ── Amount row ────────────────────────────────
@@ -233,26 +233,26 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                 _AmountChip(
                     label: 'Contribution',
                     value: fmt.format(item.amount),
-                    color: AppTheme.primary),
+                    color: context.colors.primary),
                 if (item.penaltyAmount > 0) ...[
                   const SizedBox(width: 8),
                   _AmountChip(
                       label: 'Penalty',
                       value: fmt.format(item.penaltyAmount),
-                      color: AppTheme.error),
+                      color: context.colors.error),
                 ],
                 const Spacer(),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Total',
+                    Text('Total',
                         style:
-                            TextStyle(color: AppTheme.textGrey, fontSize: 11)),
+                            TextStyle(color: context.colors.textGrey, fontSize: 11)),
                     Text(fmt.format(item.totalAmount),
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: AppTheme.textDark)),
+                            color: context.colors.textDark)),
                   ],
                 ),
               ],
@@ -267,7 +267,7 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
             child: Row(
               children: [
                 if (item.aiVerificationStatus.toLowerCase() == 'pendingreview')
-                  _StatusChip(label: 'Pending Review', isOk: false)
+                  const _StatusChip(label: 'Pending Review', isOk: false)
                 else ...[
                   _StatusChip(
                       label: 'OCR: ${item.ocrStatus}',
@@ -281,20 +281,20 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                   const Spacer(),
                   GestureDetector(
                     onTap: () => _showFullImage(context, item),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Text(
                           'Show screenshot',
                           style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.primary),
+                              color: context.colors.primary),
                         ),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Icon(
                           Icons.visibility_rounded,
                           size: 16,
-                          color: AppTheme.primary,
+                          color: context.colors.primary,
                         ),
                       ],
                     ),
@@ -347,20 +347,20 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: AppTheme.warning.withOpacity(0.08),
+                  color: context.colors.warning.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.warning.withOpacity(0.3)),
+                  border: Border.all(color: context.colors.warning.withValues(alpha: 0.3)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded,
-                        size: 15, color: AppTheme.warning),
+                    Icon(Icons.warning_amber_rounded,
+                        size: 15, color: context.colors.warning),
                     const SizedBox(width: 6),
                     Text(
                       'AI detected ${fmt.format(item.aiExtractedAmount)}, expected ${fmt.format(item.totalAmount)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 12,
-                          color: AppTheme.warning,
+                          color: context.colors.warning,
                           fontWeight: FontWeight.w500),
                     ),
                   ],
@@ -385,8 +385,8 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                       icon: const Icon(Icons.close_rounded, size: 16),
                       label: const Text('Reject'),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.error,
-                        side: const BorderSide(color: AppTheme.error),
+                        foregroundColor: context.colors.error,
+                        side: BorderSide(color: context.colors.error),
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8)),
                       ),
@@ -403,7 +403,7 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                       icon: const Icon(Icons.check_rounded, size: 16),
                       label: const Text('Approve'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primary,
+                        backgroundColor: context.colors.primary,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8)),
@@ -445,16 +445,16 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
 
   Widget _imageFallback(double? height) => Container(
         height: height ?? 160,
-        color: AppTheme.bgGrey,
-        child: const Center(
+        color: context.colors.bgGrey,
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.broken_image_outlined,
-                  color: AppTheme.textGrey, size: 32),
-              SizedBox(height: 4),
+                  color: context.colors.textGrey, size: 32),
+              const SizedBox(height: 4),
               Text('Image unavailable',
-                  style: TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                  style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
             ],
           ),
         ),
@@ -512,9 +512,9 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                   Text('Amount: ${fmt.format(item.totalAmount)}'),
                   if (!approve) ...[
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'The member will need to re-upload their payment screenshot.',
-                      style: TextStyle(color: AppTheme.textGrey, fontSize: 13),
+                      style: TextStyle(color: context.colors.textGrey, fontSize: 13),
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -536,7 +536,7 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: approve ? AppTheme.primary : AppTheme.error,
+                    backgroundColor: approve ? context.colors.primary : context.colors.error,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
@@ -557,7 +557,7 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                             content: Text(approve
                                 ? 'Payment approved for ${item.userName}'
                                 : 'Payment rejected for ${item.userName}'),
-                            backgroundColor: approve ? AppTheme.primary : AppTheme.error,
+                            backgroundColor: approve ? context.colors.primary : context.colors.error,
                           ),
                         );
                       }
@@ -566,7 +566,7 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Error: ${e.toString()}'),
-                            backgroundColor: AppTheme.error,
+                            backgroundColor: context.colors.error,
                           ),
                         );
                       }
@@ -599,7 +599,7 @@ class _LoanRepaymentCard extends ConsumerStatefulWidget {
 }
 
 class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
-  bool _expanded = false;
+  final bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
@@ -610,9 +610,9 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppTheme.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -624,11 +624,11 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
               children: [
                 CircleAvatar(
                   radius: 20,
-                  backgroundColor: AppTheme.primaryLight,
+                  backgroundColor: context.colors.primaryLight,
                   child: Text(
                     item.userName.isNotEmpty ? item.userName[0].toUpperCase() : '?',
-                    style: const TextStyle(
-                        color: AppTheme.primary, fontWeight: FontWeight.w700),
+                    style: TextStyle(
+                        color: context.colors.primary, fontWeight: FontWeight.w700),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -637,13 +637,13 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(item.userName,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
-                              color: AppTheme.textDark)),
+                              color: context.colors.textDark)),
                       Text(item.userPhone,
-                          style: const TextStyle(
-                              color: AppTheme.textGrey, fontSize: 12)),
+                          style: TextStyle(
+                              color: context.colors.textGrey, fontSize: 12)),
                     ],
                   ),
                 ),
@@ -652,7 +652,7 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
           ),
 
           const SizedBox(height: 12),
-          const Divider(height: 1, color: AppTheme.divider),
+          Divider(height: 1, color: context.colors.divider),
           const SizedBox(height: 12),
 
           // ── Amount row ────────────────────────────────
@@ -663,19 +663,19 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                 _AmountChip(
                     label: 'Loan Repayment',
                     value: fmt.format(item.amount),
-                    color: AppTheme.primary),
+                    color: context.colors.primary),
                 const Spacer(),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    const Text('Total',
+                    Text('Total',
                         style:
-                            TextStyle(color: AppTheme.textGrey, fontSize: 11)),
+                            TextStyle(color: context.colors.textGrey, fontSize: 11)),
                     Text(fmt.format(item.amount),
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
-                            color: AppTheme.textDark)),
+                            color: context.colors.textDark)),
                   ],
                 ),
               ],
@@ -690,7 +690,7 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
             child: Row(
               children: [
                 if (item.aiVerificationStatus.toLowerCase() == 'pendingreview')
-                  _StatusChip(label: 'Pending Review', isOk: false)
+                  const _StatusChip(label: 'Pending Review', isOk: false)
                 else ...[
                   _StatusChip(
                       label: 'OCR: ${item.ocrStatus}',
@@ -704,20 +704,20 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                   const Spacer(),
                   GestureDetector(
                     onTap: () => _showFullImage(context, item),
-                    child: const Row(
+                    child: Row(
                       children: [
                         Text(
                           'Show screenshot',
                           style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.primary),
+                              color: context.colors.primary),
                         ),
-                        SizedBox(width: 4),
+                        const SizedBox(width: 4),
                         Icon(
                           Icons.visibility_rounded,
                           size: 16,
-                          color: AppTheme.primary,
+                          color: context.colors.primary,
                         ),
                       ],
                     ),
@@ -736,13 +736,13 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.bgGrey,
+                  color: context.colors.bgGrey,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Text(
                   item.aiSummary!,
                   style:
-                      const TextStyle(fontSize: 12, color: AppTheme.textDark),
+                      TextStyle(fontSize: 12, color: context.colors.textDark),
                 ),
               ),
             ),
@@ -760,8 +760,8 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                 Expanded(
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.error,
-                      side: const BorderSide(color: AppTheme.error),
+                      foregroundColor: context.colors.error,
+                      side: BorderSide(color: context.colors.error),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
                     ),
@@ -774,7 +774,7 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                 Expanded(
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
+                      backgroundColor: context.colors.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8)),
@@ -815,16 +815,16 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
 
   Widget _imageFallback(double? height) => Container(
         height: height ?? 160,
-        color: AppTheme.bgGrey,
-        child: const Center(
+        color: context.colors.bgGrey,
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.broken_image_outlined,
-                  color: AppTheme.textGrey, size: 32),
-              SizedBox(height: 4),
+                  color: context.colors.textGrey, size: 32),
+              const SizedBox(height: 4),
               Text('Image unavailable',
-                  style: TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                  style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
             ],
           ),
         ),
@@ -879,9 +879,9 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                   Text('Amount: ${fmt.format(item.amount)}'),
                   if (!approve) ...[
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'The member will need to re-upload their payment screenshot.',
-                      style: TextStyle(color: AppTheme.textGrey, fontSize: 13),
+                      style: TextStyle(color: context.colors.textGrey, fontSize: 13),
                     ),
                     const SizedBox(height: 12),
                     TextField(
@@ -903,7 +903,7 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: approve ? AppTheme.primary : AppTheme.error,
+                    backgroundColor: approve ? context.colors.primary : context.colors.error,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8)),
@@ -924,7 +924,7 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                             content: Text(approve
                                 ? 'Repayment approved for ${item.userName}'
                                 : 'Repayment rejected for ${item.userName}'),
-                            backgroundColor: approve ? AppTheme.primary : AppTheme.error,
+                            backgroundColor: approve ? context.colors.primary : context.colors.error,
                           ),
                         );
                       }
@@ -933,7 +933,7 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text('Error: ${e.toString()}'),
-                            backgroundColor: AppTheme.error,
+                            backgroundColor: context.colors.error,
                           ),
                         );
                       }
@@ -969,7 +969,7 @@ class _AmountChip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: const TextStyle(color: AppTheme.textGrey, fontSize: 11)),
+              style: TextStyle(color: context.colors.textGrey, fontSize: 11)),
           Text(value,
               style: TextStyle(
                   color: color, fontWeight: FontWeight.w700, fontSize: 14)),
@@ -986,16 +986,16 @@ class _StatusChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: (isOk ? AppTheme.primary : AppTheme.warning).withOpacity(0.1),
+          color: (isOk ? context.colors.primary : context.colors.warning).withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
               color:
-                  (isOk ? AppTheme.primary : AppTheme.warning).withOpacity(0.3)),
+                  (isOk ? context.colors.primary : context.colors.warning).withValues(alpha: 0.3)),
         ),
         child: Text(label,
             style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: isOk ? AppTheme.primary : AppTheme.warning)),
+                color: isOk ? context.colors.primary : context.colors.warning)),
       );
 }

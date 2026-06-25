@@ -19,6 +19,51 @@ class ApiClient {
       headers: {'Content-Type': 'application/json'},
     ));
 
+    // ── Retry Interceptor ──
+    dio.interceptors.add(InterceptorsWrapper(
+      onError: (error, handler) async {
+        if (error.requestOptions.method != 'GET') {
+          return handler.next(error);
+        }
+
+        // Check if it is a transient error
+        bool isTransient = false;
+        if (error.type == DioExceptionType.connectionTimeout ||
+            error.type == DioExceptionType.receiveTimeout ||
+            error.type == DioExceptionType.sendTimeout ||
+            error.type == DioExceptionType.connectionError ||
+            (error.response != null && error.response!.statusCode! >= 500)) {
+          isTransient = true;
+        }
+
+        if (!isTransient) {
+          return handler.next(error);
+        }
+
+        int retryCount = error.requestOptions.extra['retryCount'] ?? 0;
+        if (retryCount >= 3) {
+          debugPrint('[ApiClient] ❌ Exhausted all 3 retries for ${error.requestOptions.path}');
+          // NetworkErrorWidget will be shown downstream
+          return handler.next(error);
+        }
+
+        retryCount++;
+        error.requestOptions.extra['retryCount'] = retryCount;
+
+        // Exponential backoff: 1s, 2s, 4s
+        int delaySeconds = 1 << (retryCount - 1);
+        debugPrint('[ApiClient] ⚠️ Transient error on ${error.requestOptions.path}. Retrying in ${delaySeconds}s (Attempt $retryCount/3)...');
+        await Future.delayed(Duration(seconds: delaySeconds));
+
+        try {
+          final retryRes = await dio.fetch(error.requestOptions);
+          return handler.resolve(retryRes);
+        } catch (e) {
+          return handler.next(e is DioException ? e : error);
+        }
+      },
+    ));
+
     // ── Auth interceptor — attach JWT to every request ──
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {

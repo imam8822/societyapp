@@ -1,15 +1,11 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api/api_client.dart';
 import '../core/api/api_services.dart';
 import '../core/constants.dart';
-import '../models/user_models.dart';
-import '../providers/auth_provider.dart';
 
 class ExportStatementDialog extends ConsumerStatefulWidget {
   const ExportStatementDialog({super.key});
@@ -69,7 +65,7 @@ class _ExportStatementDialogState extends ConsumerState<ExportStatementDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Export Successful! Saved to: $fileName'),
-            backgroundColor: AppTheme.primary,
+            backgroundColor: context.colors.primary,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -79,7 +75,7 @@ class _ExportStatementDialogState extends ConsumerState<ExportStatementDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Export failed: ${apiError(e)}'), 
-            backgroundColor: AppTheme.error,
+            backgroundColor: context.colors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
@@ -107,7 +103,7 @@ class _ExportStatementDialogState extends ConsumerState<ExportStatementDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Format Selection
-            const Text('Format', style: TextStyle(color: AppTheme.textGrey, fontWeight: FontWeight.bold, fontSize: 13)),
+            Text('Format', style: TextStyle(color: context.colors.textGrey, fontWeight: FontWeight.bold, fontSize: 13)),
             const SizedBox(height: 6),
             Row(
               children: [
@@ -134,7 +130,7 @@ class _ExportStatementDialogState extends ConsumerState<ExportStatementDialog> {
             const SizedBox(height: 16),
             
             // Date Range
-            const Text('Date Range (Optional)', style: TextStyle(color: AppTheme.textGrey, fontWeight: FontWeight.bold, fontSize: 13)),
+            Text('Date Range (Optional)', style: TextStyle(color: context.colors.textGrey, fontWeight: FontWeight.bold, fontSize: 13)),
             const SizedBox(height: 6),
             InkWell(
               onTap: _pickDateRange,
@@ -142,12 +138,12 @@ class _ExportStatementDialogState extends ConsumerState<ExportStatementDialog> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppTheme.divider),
+                  border: Border.all(color: context.colors.divider),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.calendar_month, color: AppTheme.primary, size: 18),
+                    Icon(Icons.calendar_month, color: context.colors.primary, size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -194,7 +190,7 @@ class _ExportStatementDialogState extends ConsumerState<ExportStatementDialog> {
             Expanded(
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
+                  backgroundColor: context.colors.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -236,23 +232,23 @@ class _FormatButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: isSelected ? AppTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
+          color: isSelected ? context.colors.primary.withValues(alpha: 0.1) : Colors.transparent,
           border: Border.all(
-            color: isSelected ? AppTheme.primary : AppTheme.divider,
+            color: isSelected ? context.colors.primary : context.colors.divider,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Column(
           children: [
-            Icon(icon, size: 20, color: isSelected ? AppTheme.primary : AppTheme.textGrey),
+            Icon(icon, size: 20, color: isSelected ? context.colors.primary : context.colors.textGrey),
             const SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                color: isSelected ? AppTheme.primary : AppTheme.textGrey,
+                color: isSelected ? context.colors.primary : context.colors.textGrey,
               ),
             ),
           ],

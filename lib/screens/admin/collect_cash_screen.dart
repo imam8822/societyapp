@@ -79,16 +79,16 @@ class CollectCashScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: AppTheme.bgGrey,
+        backgroundColor: context.colors.bgGrey,
         appBar: AppBar(
-          backgroundColor: AppTheme.bgGrey,
+          backgroundColor: context.colors.bgGrey,
           title: const Text('Collect Cash',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-          bottom: const TabBar(
-            labelColor: AppTheme.primary,
-            unselectedLabelColor: AppTheme.textGrey,
-            indicatorColor: AppTheme.primary,
-            tabs: [
+          bottom: TabBar(
+            labelColor: context.colors.primary,
+            unselectedLabelColor: context.colors.textGrey,
+            indicatorColor: context.colors.primary,
+            tabs: const [
               Tab(text: 'Contributions'),
               Tab(text: 'Loan Repayments'),
             ],
@@ -212,10 +212,10 @@ class _ContributionsTabState extends State<_ContributionsTab> {
 
             return Container(
               height: MediaQuery.of(ctx).size.height * 0.7,
-              decoration: const BoxDecoration(
-                color: AppTheme.white,
+              decoration: BoxDecoration(
+                color: context.colors.surfaceWhite,
                 borderRadius:
-                    BorderRadius.vertical(top: Radius.circular(20)),
+                    const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Column(
                 children: [
@@ -224,23 +224,23 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.divider,
+                      color: context.colors.divider,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Select Member',
+                  Text('Select Member',
                       style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: AppTheme.textDark)),
+                          color: context.colors.textDark)),
                   Padding(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 8),
                     child: Text(
                       '${_members.length} member${_members.length == 1 ? '' : 's'} with pending dues',
-                      style: const TextStyle(
-                          color: AppTheme.textGrey, fontSize: 12),
+                      style: TextStyle(
+                          color: context.colors.textGrey, fontSize: 12),
                     ),
                   ),
                   Padding(
@@ -264,24 +264,24 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                               )
                             : null,
                         filled: true,
-                        fillColor: AppTheme.bgGrey,
+                        fillColor: context.colors.bgGrey,
                         contentPadding:
                             const EdgeInsets.symmetric(
                                 vertical: 0, horizontal: 12),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                              color: AppTheme.divider),
+                          borderSide: BorderSide(
+                              color: context.colors.divider),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                              color: AppTheme.divider),
+                          borderSide: BorderSide(
+                              color: context.colors.divider),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                              color: AppTheme.primary, width: 1.5),
+                          borderSide: BorderSide(
+                              color: context.colors.primary, width: 1.5),
                         ),
                       ),
                     ),
@@ -289,51 +289,53 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                   const SizedBox(height: 8),
                   Expanded(
                     child: filtered.isEmpty
-                        ? const Center(
+                        ? Center(
                             child: Text('No members found',
                                 style: TextStyle(
-                                    color: AppTheme.textGrey)))
+                                    color: context.colors.textGrey)))
                         : ListView.separated(
                             padding: const EdgeInsets.symmetric(
                                 vertical: 4),
                             itemCount: filtered.length,
                             separatorBuilder: (_, __) =>
-                                const Divider(
+                                Divider(
                                     height: 1,
                                     indent: 56,
-                                    color: AppTheme.divider),
+                                    color: context.colors.divider),
                             itemBuilder: (_, i) {
                               final m = filtered[i];
                               final isSelected =
                                   _selectedMember?.id == m.id;
-                              return ListTile(
+                              return Material(
+                                color: Colors.transparent,
+                                child: ListTile(
                                 leading: CircleAvatar(
                                   radius: 18,
                                   backgroundColor: isSelected
-                                      ? AppTheme.primary
-                                      : AppTheme.primaryLight,
+                                      ? context.colors.primary
+                                      : context.colors.primaryLight,
                                   child: Text(
                                     m.fullName[0].toUpperCase(),
                                     style: TextStyle(
                                       color: isSelected
                                           ? Colors.white
-                                          : AppTheme.primary,
+                                          : context.colors.primary,
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14,
                                     ),
                                   ),
                                 ),
                                 title: Text(m.fullName,
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
-                                        color: AppTheme.textDark)),
+                                        color: context.colors.textDark)),
                                 subtitle: Row(
                                   children: [
                                     Text(m.phone,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                             color:
-                                                AppTheme.textGrey,
+                                                context.colors.textGrey,
                                             fontSize: 12)),
                                     const SizedBox(width: 8),
                                     Container(
@@ -342,15 +344,15 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                               horizontal: 6,
                                               vertical: 1),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.error
+                                        color: context.colors.error
                                             .withValues(alpha: 0.1),
                                         borderRadius:
                                             BorderRadius.circular(4),
                                       ),
                                       child: Text(
                                         '${_fmt.format(m.pendingAmount)} • ${m.unpaidMonthsCount}mo',
-                                        style: const TextStyle(
-                                            color: AppTheme.error,
+                                        style: TextStyle(
+                                            color: context.colors.error,
                                             fontSize: 10,
                                             fontWeight:
                                                 FontWeight.w600),
@@ -359,15 +361,16 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                   ],
                                 ),
                                 trailing: isSelected
-                                    ? const Icon(
+                                    ? Icon(
                                         Icons.check_circle,
-                                        color: AppTheme.primary,
+                                        color: context.colors.primary,
                                         size: 20)
                                     : null,
                                 onTap: () {
                                   _onMemberSelected(m);
                                   Navigator.pop(ctx);
                                 },
+                                ),
                               );
                             },
                           ),
@@ -421,7 +424,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
           SnackBar(
             content: Text(
                 '${_selectedMonthIndices.length} month(s) recorded for ${_selectedMember!.fullName}'),
-            backgroundColor: AppTheme.primary,
+            backgroundColor: context.colors.primary,
           ),
         );
         Navigator.pop(context, true);
@@ -431,7 +434,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(apiError(e)),
-            backgroundColor: AppTheme.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -443,9 +446,9 @@ class _ContributionsTabState extends State<_ContributionsTab> {
   @override
   Widget build(BuildContext context) {
     return _loadingData
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(
-                  color: AppTheme.primary))
+                  color: context.colors.primary))
           : _members.isEmpty
               ? Center(
                   child: Column(
@@ -454,16 +457,16 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                       Icon(Icons.check_circle_outline,
                           color: Colors.green.shade400, size: 64),
                       const SizedBox(height: 16),
-                      const Text('All Caught Up!',
+                      Text('All Caught Up!',
                           style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
-                              color: AppTheme.textDark)),
+                              color: context.colors.textDark)),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                           'No members have pending dues.',
                           style: TextStyle(
-                              color: AppTheme.textGrey)),
+                              color: context.colors.textGrey)),
                     ],
                   ),
                 )
@@ -477,10 +480,10 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             colors: [
-                              AppTheme.primary,
-                              Color(0xFF2ECC71)
+                              context.colors.primary,
+                              const Color(0xFF2ECC71)
                             ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -518,11 +521,11 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 14, vertical: 14),
                             decoration: BoxDecoration(
-                              color: AppTheme.bgGrey,
+                              color: context.colors.bgGrey,
                               borderRadius:
                                   BorderRadius.circular(10),
                               border: Border.all(
-                                  color: AppTheme.divider),
+                                  color: context.colors.divider),
                             ),
                             child: Row(
                               children: [
@@ -530,12 +533,12 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                   CircleAvatar(
                                     radius: 16,
                                     backgroundColor:
-                                        AppTheme.primaryLight,
+                                        context.colors.primaryLight,
                                     child: Text(
                                       _selectedMember!.fullName[0]
                                           .toUpperCase(),
-                                      style: const TextStyle(
-                                          color: AppTheme.primary,
+                                      style: TextStyle(
+                                          color: context.colors.primary,
                                           fontWeight:
                                               FontWeight.w700,
                                           fontSize: 13),
@@ -550,7 +553,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                         Text(
                                             _selectedMember!
                                                 .fullName,
-                                            style: const TextStyle(
+                                            style: TextStyle(
                                                 fontWeight:
                                                     FontWeight.w600,
                                                 fontSize: 14,
@@ -561,7 +564,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                             Text(
                                                 _selectedMember!
                                                     .phone,
-                                                style: const TextStyle(
+                                                style: TextStyle(
                                                     color: AppTheme
                                                         .textGrey,
                                                     fontSize: 12)),
@@ -570,7 +573,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                             Text(
                                               '${_fmt.format(_selectedMember!.pendingAmount)} due',
                                               style:
-                                                  const TextStyle(
+                                                  TextStyle(
                                                       color: AppTheme
                                                           .error,
                                                       fontSize: 11,
@@ -584,25 +587,25 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                     ),
                                   ),
                                 ] else ...[
-                                  const Icon(
+                                  Icon(
                                       Icons
                                           .person_search_rounded,
-                                      color: AppTheme.textGrey,
+                                      color: context.colors.textGrey,
                                       size: 20),
                                   const SizedBox(width: 10),
-                                  const Expanded(
+                                  Expanded(
                                     child: Text(
                                         'Tap to select member',
                                         style: TextStyle(
                                             color:
-                                                AppTheme.textGrey,
+                                                context.colors.textGrey,
                                             fontSize: 14)),
                                   ),
                                 ],
-                                const Icon(
+                                Icon(
                                     Icons
                                         .keyboard_arrow_down_rounded,
-                                    color: AppTheme.textGrey),
+                                    color: context.colors.textGrey),
                               ],
                             ),
                           ),
@@ -668,7 +671,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                     ),
                                     style: TextButton.styleFrom(
                                       foregroundColor:
-                                          AppTheme.primary,
+                                          context.colors.primary,
                                       padding:
                                           EdgeInsets.zero,
                                       minimumSize:
@@ -714,10 +717,10 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                             width: chipWidth,
                                             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                                             decoration: BoxDecoration(
-                                              color: selected ? AppTheme.primary : AppTheme.bgGrey,
+                                              color: selected ? context.colors.primary : context.colors.bgGrey,
                                               borderRadius: BorderRadius.circular(8),
                                               border: Border.all(
-                                                color: selected ? AppTheme.primary : AppTheme.divider,
+                                                color: selected ? context.colors.primary : context.colors.divider,
                                               ),
                                             ),
                                             child: Row(
@@ -726,14 +729,14 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                                 Icon(
                                                   selected ? Icons.check_circle : Icons.circle_outlined,
                                                   size: 16,
-                                                  color: selected ? Colors.white : AppTheme.textGrey,
+                                                  color: selected ? Colors.white : context.colors.textGrey,
                                                 ),
                                                 const SizedBox(width: 6),
                                                 Flexible(
                                                   child: Text(
                                                     m.label,
                                                     style: TextStyle(
-                                                      color: selected ? Colors.white : AppTheme.textGrey,
+                                                      color: selected ? Colors.white : context.colors.textGrey,
                                                       fontWeight: FontWeight.w600,
                                                       fontSize: 12,
                                                     ),
@@ -745,7 +748,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                                   Text(
                                                     '+${_fmt.format(m.penaltyAmount)}',
                                                     style: TextStyle(
-                                                      color: selected ? Colors.white70 : AppTheme.warning,
+                                                      color: selected ? Colors.white70 : context.colors.warning,
                                                       fontSize: 10,
                                                       fontWeight: FontWeight.w500,
                                                     ),
@@ -775,20 +778,20 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                   '${_selectedMonthIndices.length} × ${_fmt.format(_monthlyAmount)}',
                                   _fmt.format(
                                       _totalContribution)),
-                              const Divider(
-                                  color: AppTheme.divider,
+                              Divider(
+                                  color: context.colors.divider,
                                   height: 16),
                               _summaryRow('Penalty', '',
                                   _fmt.format(_totalPenalty)),
-                              const Divider(
-                                  color: AppTheme.divider,
+                              Divider(
+                                  color: context.colors.divider,
                                   height: 16),
                               _summaryRow(
                                 'Total',
                                 '',
                                 _fmt.format(_grandTotal),
                                 bold: true,
-                                color: AppTheme.primary,
+                                color: context.colors.primary,
                               ),
                             ],
                           ),
@@ -846,7 +849,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                             ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor:
-                                  AppTheme.primary,
+                                  context.colors.primary,
                               foregroundColor: Colors.white,
                               shape: RoundedRectangleBorder(
                                 borderRadius:
@@ -872,22 +875,22 @@ class _ContributionsTabState extends State<_ContributionsTab> {
               children: [
                 Text(label,
                     style: TextStyle(
-                        color: color ?? AppTheme.textGrey,
+                        color: color ?? context.colors.textGrey,
                         fontSize: 13,
                         fontWeight: bold
                             ? FontWeight.w700
                             : FontWeight.w500)),
                 if (detail.isNotEmpty)
                   Text(detail,
-                      style: const TextStyle(
-                          color: AppTheme.textGrey,
+                      style: TextStyle(
+                          color: context.colors.textGrey,
                           fontSize: 11)),
               ],
             ),
           ),
           Text(value,
               style: TextStyle(
-                  color: color ?? AppTheme.textDark,
+                  color: color ?? context.colors.textDark,
                   fontWeight:
                       bold ? FontWeight.w700 : FontWeight.w600,
                   fontSize: bold ? 16 : 14)),
@@ -899,17 +902,17 @@ class _ContributionsTabState extends State<_ContributionsTab> {
       Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.white,
+          color: context.colors.surfaceWhite,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.divider),
+          border: Border.all(color: context.colors.divider),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(title,
-                style: const TextStyle(
+                style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textGrey,
+                    color: context.colors.textGrey,
                     fontSize: 12)),
             const SizedBox(height: 12),
             child,
@@ -961,9 +964,9 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
 
             return Container(
               height: MediaQuery.of(ctx).size.height * 0.7,
-              decoration: const BoxDecoration(
-                color: AppTheme.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              decoration: BoxDecoration(
+                color: context.colors.surfaceWhite,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
               ),
               child: Column(
                 children: [
@@ -972,21 +975,21 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: AppTheme.divider,
+                      color: context.colors.divider,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  const Text('Select Active Loan',
+                  Text('Select Active Loan',
                       style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: AppTheme.textDark)),
+                          color: context.colors.textDark)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     child: Text(
                       '${activeLoans.length} active loan${activeLoans.length == 1 ? '' : 's'}',
-                      style: const TextStyle(color: AppTheme.textGrey, fontSize: 12),
+                      style: TextStyle(color: context.colors.textGrey, fontSize: 12),
                     ),
                   ),
                   Padding(
@@ -996,9 +999,9 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                       onChanged: (_) => setLocal(() {}),
                       decoration: InputDecoration(
                         hintText: 'Search by name or phone...',
-                        prefixIcon: const Icon(Icons.search, color: AppTheme.textGrey),
+                        prefixIcon: Icon(Icons.search, color: context.colors.textGrey),
                         filled: true,
-                        fillColor: AppTheme.bgGrey,
+                        fillColor: context.colors.bgGrey,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide.none,
@@ -1014,14 +1017,16 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                       separatorBuilder: (_, __) => const Divider(height: 1),
                       itemBuilder: (ctx, i) {
                         final l = filtered[i];
-                        return ListTile(
+                        return Material(
+                          color: Colors.transparent,
+                          child: ListTile(
                           contentPadding: const EdgeInsets.symmetric(vertical: 4),
                           leading: CircleAvatar(
-                            backgroundColor: AppTheme.primary.withOpacity(0.1),
+                            backgroundColor: context.colors.primary.withValues(alpha: 0.1),
                             child: Text(
                               l.applicantName.isNotEmpty ? l.applicantName[0].toUpperCase() : '?',
-                              style: const TextStyle(
-                                  color: AppTheme.primary, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                  color: context.colors.primary, fontWeight: FontWeight.bold),
                             ),
                           ),
                           title: Text(l.applicantName,
@@ -1038,6 +1043,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                             });
                             Navigator.pop(ctx);
                           },
+                        ),
                         );
                       },
                     ),
@@ -1074,7 +1080,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Repayment of ${_fmt.format(amount)} recorded for ${_selectedLoan!.applicantName}'),
-            backgroundColor: AppTheme.primary,
+            backgroundColor: context.colors.primary,
           ),
         );
         ref.invalidate(allLoansProvider);
@@ -1090,7 +1096,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(apiError(e)),
-            backgroundColor: AppTheme.error,
+            backgroundColor: context.colors.error,
           ),
         );
       }
@@ -1104,21 +1110,21 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
     final allLoansAsync = ref.watch(allLoansProvider);
     
     return allLoansAsync.when(
-      loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+      loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
       error: (e, _) => Center(child: Text(apiError(e))),
       data: (loans) {
         // Filter for active (Disbursed) loans with outstanding amount > 0
         final activeLoans = loans.where((l) => l.status == 'Disbursed' && l.outstandingAmount > 0).toList();
         
         if (activeLoans.isEmpty) {
-          return const Center(
+          return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.check_circle_outline, size: 64, color: AppTheme.accent),
-                SizedBox(height: 16),
+                Icon(Icons.check_circle_outline, size: 64, color: context.colors.accent),
+                const SizedBox(height: 16),
                 Text('No active loans pending repayment.',
-                    style: TextStyle(color: AppTheme.textGrey, fontSize: 16)),
+                    style: TextStyle(color: context.colors.textGrey, fontSize: 16)),
               ],
             ),
           );
@@ -1130,16 +1136,16 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
             children: [
               Container(
                 width: double.infinity,
-                color: AppTheme.primary.withOpacity(0.05),
+                color: context.colors.primary.withValues(alpha: 0.05),
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, color: AppTheme.primary),
+                    Icon(Icons.info_outline, color: context.colors.primary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Collect cash repayments for active loans.',
-                        style: TextStyle(color: AppTheme.primary.withOpacity(0.8), fontSize: 13),
+                        style: TextStyle(color: context.colors.primary.withValues(alpha: 0.8), fontSize: 13),
                       ),
                     ),
                   ],
@@ -1151,8 +1157,8 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Select Member',
-                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textDark)),
+                    Text('Select Member',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textDark)),
                     const SizedBox(height: 8),
                     InkWell(
                       onTap: () => _pickLoan(activeLoans),
@@ -1160,25 +1166,25 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                         decoration: BoxDecoration(
-                          color: AppTheme.white,
+                          color: context.colors.surfaceWhite,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.primary.withOpacity(0.3)),
+                          border: Border.all(color: context.colors.primary.withValues(alpha: 0.3)),
                         ),
                         child: Row(
                           children: [
                             Icon(Icons.person_outline,
-                                color: _selectedLoan != null ? AppTheme.primary : AppTheme.textGrey),
+                                color: _selectedLoan != null ? context.colors.primary : context.colors.textGrey),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 _selectedLoan?.applicantName ?? 'Tap to select member...',
                                 style: TextStyle(
-                                  color: _selectedLoan != null ? AppTheme.textDark : AppTheme.textGrey,
+                                  color: _selectedLoan != null ? context.colors.textDark : context.colors.textGrey,
                                   fontWeight: _selectedLoan != null ? FontWeight.w600 : FontWeight.normal,
                                 ),
                               ),
                             ),
-                            const Icon(Icons.keyboard_arrow_down, color: AppTheme.textGrey),
+                            Icon(Icons.keyboard_arrow_down, color: context.colors.textGrey),
                           ],
                         ),
                       ),
@@ -1189,30 +1195,30 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppTheme.white,
+                          color: context.colors.surfaceWhite,
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.divider),
+                          border: Border.all(color: context.colors.divider),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('Loan Details',
-                                style: TextStyle(fontWeight: FontWeight.w600, color: AppTheme.textGrey, fontSize: 12)),
+                            Text('Loan Details',
+                                style: TextStyle(fontWeight: FontWeight.w600, color: context.colors.textGrey, fontSize: 12)),
                             const SizedBox(height: 12),
                             _summaryRow('Loan Amount', '', _fmt.format(_selectedLoan!.amount)),
                             const SizedBox(height: 8),
-                            _summaryRow('Total Repaid', '', _fmt.format(_selectedLoan!.totalRepaid), color: AppTheme.accent),
+                            _summaryRow('Total Repaid', '', _fmt.format(_selectedLoan!.totalRepaid), color: context.colors.accent),
                             const SizedBox(height: 8),
                             const Divider(),
                             const SizedBox(height: 8),
-                            _summaryRow('Outstanding Balance', '', _fmt.format(_selectedLoan!.outstandingAmount), bold: true, color: AppTheme.error),
+                            _summaryRow('Outstanding Balance', '', _fmt.format(_selectedLoan!.outstandingAmount), bold: true, color: context.colors.error),
                           ],
                         ),
                       ),
                       
                       const SizedBox(height: 24),
-                      const Text('Repayment Amount',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textDark)),
+                      Text('Repayment Amount',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textDark)),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _amountCtrl,
@@ -1221,25 +1227,25 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                           hintText: 'Enter amount',
                           prefixText: '₹ ',
                           filled: true,
-                          fillColor: AppTheme.white,
+                          fillColor: context.colors.surfaceWhite,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.divider),
+                            borderSide: BorderSide(color: context.colors.divider),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.divider),
+                            borderSide: BorderSide(color: context.colors.divider),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.primary),
+                            borderSide: BorderSide(color: context.colors.primary),
                           ),
                         ),
                       ),
                       
                       const SizedBox(height: 16),
-                      const Text('Remarks (Optional)',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textDark)),
+                      Text('Remarks (Optional)',
+                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textDark)),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _remarksCtrl,
@@ -1247,14 +1253,14 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                         decoration: InputDecoration(
                           hintText: 'E.g., Cash collected at society office',
                           filled: true,
-                          fillColor: AppTheme.white,
+                          fillColor: context.colors.surfaceWhite,
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.divider),
+                            borderSide: BorderSide(color: context.colors.divider),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
-                            borderSide: const BorderSide(color: AppTheme.divider),
+                            borderSide: BorderSide(color: context.colors.divider),
                           ),
                         ),
                       ),
@@ -1273,7 +1279,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                           ),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: AppTheme.primary,
+                            backgroundColor: context.colors.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -1303,18 +1309,18 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
               children: [
                 Text(label,
                     style: TextStyle(
-                        color: color ?? AppTheme.textGrey,
+                        color: color ?? context.colors.textGrey,
                         fontSize: 13,
                         fontWeight: bold ? FontWeight.w700 : FontWeight.w500)),
                 if (detail.isNotEmpty)
                   Text(detail,
-                      style: const TextStyle(color: AppTheme.textGrey, fontSize: 11)),
+                      style: TextStyle(color: context.colors.textGrey, fontSize: 11)),
               ],
             ),
           ),
           Text(value,
               style: TextStyle(
-                  color: color ?? AppTheme.textDark,
+                  color: color ?? context.colors.textDark,
                   fontWeight: bold ? FontWeight.w700 : FontWeight.w600,
                   fontSize: bold ? 16 : 14)),
         ],

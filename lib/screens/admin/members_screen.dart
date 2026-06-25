@@ -34,20 +34,20 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     final membersAsync = ref.watch(membersProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Members')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await context.push('/admin/members/add');
           ref.invalidate(membersProvider);
         },
-        backgroundColor: AppTheme.primary,
+        backgroundColor: context.colors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.person_add_rounded),
         label: const Text('Add Member'),
       ),
       body: membersAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+        loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => ErrorRetry(
           message: apiError(e),
           onRetry: () => ref.invalidate(membersProvider),
@@ -80,19 +80,19 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                           )
                         : null,
                     filled: true,
-                    fillColor: AppTheme.white,
+                    fillColor: context.colors.surfaceWhite,
                     contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: AppTheme.divider),
+                      borderSide: BorderSide(color: context.colors.divider),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: AppTheme.divider),
+                      borderSide: BorderSide(color: context.colors.divider),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: AppTheme.primary, width: 1.5),
+                      borderSide: BorderSide(color: context.colors.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -104,7 +104,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                 child: Row(children: [
                   Text(
                     '${filtered.length} member${filtered.length == 1 ? '' : 's'}',
-                    style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
+                    style: TextStyle(fontSize: 12, color: context.colors.textGrey),
                   ),
                 ]),
               ),
@@ -112,9 +112,9 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
               // ── List ────────────────────────────────────
               Expanded(
                 child: filtered.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text('No members found',
-                            style: TextStyle(color: AppTheme.textGrey)))
+                            style: TextStyle(color: context.colors.textGrey)))
                     : ListView.separated(
                         padding: const EdgeInsets.fromLTRB(0, 4, 0, 100),
                         itemCount: filtered.length,
@@ -156,11 +156,11 @@ class _MemberTile extends StatelessWidget {
           // Avatar
           CircleAvatar(
             radius: 18,
-            backgroundColor: AppTheme.primaryLight,
+            backgroundColor: context.colors.primaryLight,
             child: Text(
               member.fullName[0].toUpperCase(),
-              style: const TextStyle(
-                color: AppTheme.primary,
+              style: TextStyle(
+                color: context.colors.primary,
                 fontWeight: FontWeight.w700,
                 fontSize: 14,
               ),
@@ -177,10 +177,10 @@ class _MemberTile extends StatelessWidget {
                   Flexible(
                     child: Text(
                       member.fullName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
-                        color: AppTheme.textDark,
+                        color: context.colors.textDark,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -190,20 +190,20 @@ class _MemberTile extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                       decoration: BoxDecoration(
-                        color: AppTheme.primaryLight,
+                        color: context.colors.primaryLight,
                         borderRadius: BorderRadius.circular(4),
                       ),
-                      child: const Text('Admin',
+                      child: Text('Admin',
                           style: TextStyle(
                               fontSize: 9,
-                              color: AppTheme.primary,
+                              color: context.colors.primary,
                               fontWeight: FontWeight.w600)),
                     ),
                   ],
                 ]),
                 Text(
                   member.phone,
-                  style: const TextStyle(color: AppTheme.textGrey, fontSize: 12),
+                  style: TextStyle(color: context.colors.textGrey, fontSize: 12),
                 ),
               ],
             ),
@@ -214,13 +214,13 @@ class _MemberTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: AppTheme.error.withOpacity(0.08),
+                color: context.colors.error.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 '₹${member.pendingAmount.toStringAsFixed(0)} due',
-                style: const TextStyle(
-                  color: AppTheme.error,
+                style: TextStyle(
+                  color: context.colors.error,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -230,7 +230,7 @@ class _MemberTile extends StatelessWidget {
             const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF2ECC71)),
 
           const SizedBox(width: 6),
-          const Icon(Icons.chevron_right, size: 16, color: AppTheme.textGrey),
+          Icon(Icons.chevron_right, size: 16, color: context.colors.textGrey),
         ]),
       ),
     );
@@ -312,9 +312,10 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
         context.pop();
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(apiError(e))));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -323,7 +324,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Add New Member')),
       body: LoadingOverlay(
         isLoading: _loading,
@@ -370,22 +371,22 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(children: [
-                      const Icon(Icons.calendar_today_outlined,
-                          color: AppTheme.textGrey, size: 20),
+                      Icon(Icons.calendar_today_outlined,
+                          color: context.colors.textGrey, size: 20),
                       const SizedBox(width: 12),
                       Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        const Text('Joining Date *',
-                            style: TextStyle(fontSize: 12, color: AppTheme.textGrey)),
+                        Text('Joining Date *',
+                            style: TextStyle(fontSize: 12, color: context.colors.textGrey)),
                         Text(
                           '${_joinedDate.day}/${_joinedDate.month}/${_joinedDate.year}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 15,
-                              color: AppTheme.textDark,
+                              color: context.colors.textDark,
                               fontWeight: FontWeight.w500),
                         ),
                       ]),
                       const Spacer(),
-                      const Icon(Icons.arrow_drop_down, color: AppTheme.textGrey),
+                      Icon(Icons.arrow_drop_down, color: context.colors.textGrey),
                     ]),
                   ),
                 ),
@@ -395,9 +396,9 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
               ]),
               const SizedBox(height: 14),
               _card('Pre-existing Investment', [
-                const Text(
+                Text(
                   'If this member was paying contributions before joining the app, enter the total amount already invested.',
-                  style: TextStyle(color: AppTheme.textGrey, fontSize: 13),
+                  style: TextStyle(color: context.colors.textGrey, fontSize: 13),
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
@@ -413,7 +414,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
               const SizedBox(height: 14),
               _card('Referral (Optional)', [
                 DropdownButtonFormField<UserDropdownItem>(
-                  value: _selectedReferral,
+                  initialValue: _selectedReferral,
                   isExpanded: true,
                   hint: const Text('Select who referred this member',
                       overflow: TextOverflow.ellipsis),
@@ -447,15 +448,15 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   Widget _card(String title, List<Widget> children) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.white,
+          color: context.colors.surfaceWhite,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.divider),
+          border: Border.all(color: context.colors.divider),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textGrey,
+                  color: context.colors.textGrey,
                   fontSize: 12)),
           const SizedBox(height: 14),
           ...children,

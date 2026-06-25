@@ -41,14 +41,14 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     final dateFmt = DateFormat('dd MMM yyyy');
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       body: CustomScrollView(
         slivers: [
           // ── Header ──────────────────────────────────────
           SliverAppBar(
             expandedHeight: 180,
             pinned: true,
-            backgroundColor: AppTheme.primary,
+            backgroundColor: context.colors.primary,
             actions: [
               IconButton(
                 icon: const Icon(Icons.edit_outlined, color: Colors.white),
@@ -58,9 +58,9 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
             ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   gradient: LinearGradient(
-                    colors: [AppTheme.primary, Color(0xFF2ECC71)],
+                    colors: [context.colors.primary, const Color(0xFF2ECC71)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -124,7 +124,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                   _StatBox(
                       label: 'Total Invested',
                       value: fmt.format(_member.totalInvested),
-                      color: AppTheme.primary),
+                      color: context.colors.primary),
                   const SizedBox(width: 10),
                   _StatBox(
                       label: 'Months Paid',
@@ -135,7 +135,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                     label: 'Pending',
                     value: fmt.format(_member.pendingAmount),
                     color: _member.pendingAmount > 0
-                        ? AppTheme.error
+                        ? context.colors.error
                         : const Color(0xFF2ECC71),
                   ),
                 ]),
@@ -170,7 +170,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                     value: _member.isActive ? 'Active' : 'Inactive',
                     valueColor: _member.isActive
                         ? const Color(0xFF2ECC71)
-                        : AppTheme.error,
+                        : context.colors.error,
                   ),
                 ]),
                 const SizedBox(height: 14),
@@ -195,7 +195,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                         icon: Icons.warning_amber_outlined,
                         label: 'Pending',
                         value: fmt.format(_member.pendingAmount),
-                        valueColor: AppTheme.error,
+                        valueColor: context.colors.error,
                         bold: true),
                 ]),
                 const SizedBox(height: 14),
@@ -208,19 +208,19 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
                     value: _member.isEligibleForLoan ? 'Yes' : 'Not yet',
                     valueColor: _member.isEligibleForLoan
                         ? const Color(0xFF2ECC71)
-                        : AppTheme.textGrey,
+                        : context.colors.textGrey,
                   ),
                   if (_member.hasActiveLoan) ...[
                     _InfoRow(
                         icon: Icons.currency_rupee_rounded,
                         label: 'Active Loan',
                         value: fmt.format(_member.activeLoanAmount),
-                        valueColor: AppTheme.primary),
+                        valueColor: context.colors.primary),
                     _InfoRow(
                         icon: Icons.pending_outlined,
                         label: 'To Repay',
                         value: fmt.format(_member.loanAmountToRepay),
-                        valueColor: AppTheme.error),
+                        valueColor: context.colors.error),
                     if (_member.nextInstallmentDueDate != null)
                       _InfoRow(
                           icon: Icons.event_outlined,
@@ -259,9 +259,9 @@ class _StatBox extends StatelessWidget {
           padding:
               const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
           decoration: BoxDecoration(
-            color: AppTheme.white,
+            color: context.colors.surfaceWhite,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.divider),
+            border: Border.all(color: context.colors.divider),
           ),
           child: Column(children: [
             Text(value,
@@ -271,8 +271,8 @@ class _StatBox extends StatelessWidget {
                     color: color)),
             const SizedBox(height: 4),
             Text(label,
-                style: const TextStyle(
-                    fontSize: 10, color: AppTheme.textGrey),
+                style: TextStyle(
+                    fontSize: 10, color: context.colors.textGrey),
                 textAlign: TextAlign.center),
           ]),
         ),
@@ -288,16 +288,16 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppTheme.white,
+          color: context.colors.surfaceWhite,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.divider),
+          border: Border.all(color: context.colors.divider),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(title.toUpperCase(),
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
-                  color: AppTheme.textGrey,
+                  color: context.colors.textGrey,
                   letterSpacing: 0.5)),
           const SizedBox(height: 12),
           ...rows,
@@ -321,11 +321,11 @@ class _InfoRow extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 7),
         child: Row(children: [
-          Icon(icon, size: 18, color: AppTheme.textGrey),
+          Icon(icon, size: 18, color: context.colors.textGrey),
           const SizedBox(width: 10),
           Text(label,
-              style: const TextStyle(
-                  color: AppTheme.textGrey, fontSize: 13)),
+              style: TextStyle(
+                  color: context.colors.textGrey, fontSize: 13)),
           const Spacer(),
           Expanded(  // ← was Flexible, now Expanded to force right alignment
             child: Text(
@@ -334,7 +334,7 @@ class _InfoRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-                color: valueColor ?? AppTheme.textDark,
+                color: valueColor ?? context.colors.textDark,
               ),
             ),
           ),

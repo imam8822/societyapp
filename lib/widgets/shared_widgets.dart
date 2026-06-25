@@ -173,10 +173,10 @@ class _ShimmerBoxState extends State<ShimmerBox>
             gradient: LinearGradient(
               begin: Alignment(_anim.value - 1, 0),
               end: Alignment(_anim.value + 1, 0),
-              colors: const [
-                AppTheme.white,
-                AppTheme.divider,
-                AppTheme.white,
+              colors: [
+                context.colors.surfaceWhite,
+                context.colors.divider,
+                context.colors.surfaceWhite,
               ],
             ),
           ),
@@ -208,9 +208,9 @@ class ShimmerListLoader extends StatelessWidget {
                 height: cardHeight,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.white,
+                  color: context.colors.surfaceWhite,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppTheme.divider),
+                  border: Border.all(color: context.colors.divider),
                 ),
                 child: Row(
                   children: [
@@ -268,20 +268,20 @@ class StatCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: bgColor ?? AppTheme.white,
+          color: bgColor ?? context.colors.surfaceWhite,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppTheme.divider),
+          border: Border.all(color: context.colors.divider),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: (iconColor ?? AppTheme.primary).withValues(alpha: 0.1),
+                color: (iconColor ?? context.colors.primary).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(icon,
-                  color: iconColor ?? AppTheme.primary, size: 20),
+                  color: iconColor ?? context.colors.primary, size: 20),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -294,18 +294,18 @@ class StatCard extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(value,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: AppTheme.textDark)),
+                            color: context.colors.textDark)),
                   ),
                   const SizedBox(height: 2),
                   FittedBox(
                     fit: BoxFit.scaleDown,
                     alignment: Alignment.centerLeft,
                     child: Text(label,
-                        style: const TextStyle(
-                            fontSize: 12, color: AppTheme.textGrey, fontWeight: FontWeight.w500)),
+                        style: TextStyle(
+                            fontSize: 12, color: context.colors.textGrey, fontWeight: FontWeight.w500)),
                   ),
                 ],
               ),
@@ -334,16 +334,16 @@ class SectionHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(title,
-            style: const TextStyle(
+            style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textDark)),
+                color: context.colors.textDark)),
         if (actionLabel != null)
           TextButton(
             onPressed: onAction,
             child: Text(actionLabel!,
-                style: const TextStyle(
-                    fontSize: 13, color: AppTheme.primary)),
+                style: TextStyle(
+                    fontSize: 13, color: context.colors.primary)),
           ),
       ],
     );
@@ -415,19 +415,19 @@ class EmptyState extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, size: 56, color: AppTheme.divider),
+            Icon(icon, size: 56, color: context.colors.divider),
             const SizedBox(height: 16),
             Text(title,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textGrey),
+                    color: context.colors.textGrey),
                 textAlign: TextAlign.center),
             if (subtitle != null) ...[
               const SizedBox(height: 6),
               Text(subtitle!,
-                  style: const TextStyle(
-                      fontSize: 13, color: AppTheme.textGrey),
+                  style: TextStyle(
+                      fontSize: 13, color: context.colors.textGrey),
                   textAlign: TextAlign.center),
             ]
           ],
@@ -463,7 +463,7 @@ class LoadingOverlay extends StatelessWidget {
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 4, sigmaY: 4),
                 child: Container(
-                  color: AppTheme.bgGrey.withValues(alpha: 0.65),
+                  color: context.colors.bgGrey.withValues(alpha: 0.65),
                   child: AppLoader(message: message),
                 ),
               ),
@@ -514,12 +514,12 @@ class _AppLoaderState extends State<AppLoader>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
         decoration: BoxDecoration(
-          color: AppTheme.white,
+          color: context.colors.surfaceWhite,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppTheme.divider),
+          border: Border.all(color: context.colors.divider),
           boxShadow: [
             BoxShadow(
-              color: AppTheme.primary.withValues(alpha: 0.15),
+              color: context.colors.primary.withValues(alpha: 0.15),
               blurRadius: 30,
               offset: const Offset(0, 10),
             ),
@@ -539,7 +539,7 @@ class _AppLoaderState extends State<AppLoader>
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppTheme.primary.withValues(alpha: 0.2),
+                        color: context.colors.primary.withValues(alpha: 0.2),
                         blurRadius: 15,
                         spreadRadius: 2,
                       ),
@@ -547,13 +547,13 @@ class _AppLoaderState extends State<AppLoader>
                   ),
                 ),
                 // Circular Progress
-                const SizedBox(
+                SizedBox(
                   width: 48,
                   height: 48,
                   child: CircularProgressIndicator(
                     strokeWidth: 3.5,
-                    color: AppTheme.primary,
-                    backgroundColor: AppTheme.primaryLight,
+                    color: context.colors.primary,
+                    backgroundColor: context.colors.primaryLight,
                     strokeCap: StrokeCap.round,
                   ),
                 ),
@@ -566,8 +566,8 @@ class _AppLoaderState extends State<AppLoader>
                       child: Container(
                         width: 10,
                         height: 10,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.accent,
+                        decoration: BoxDecoration(
+                          color: context.colors.accent,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -579,10 +579,10 @@ class _AppLoaderState extends State<AppLoader>
             const SizedBox(height: 18),
             Text(
               widget.message ?? 'Loading...',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: AppTheme.textDark,
+                color: context.colors.textDark,
                 letterSpacing: 0.2,
               ),
             ),
@@ -619,13 +619,13 @@ class InfoRow extends StatelessWidget {
               Expanded(
                   flex: 2,
                   child: Text(label,
-                      style: const TextStyle(
-                          color: AppTheme.textGrey, fontSize: 13))),
+                      style: TextStyle(
+                          color: context.colors.textGrey, fontSize: 13))),
               Expanded(
                   flex: 3,
                   child: Text(value,
-                      style: const TextStyle(
-                          color: AppTheme.textDark,
+                      style: TextStyle(
+                          color: context.colors.textDark,
                           fontSize: 13,
                           fontWeight: FontWeight.w500),
                       textAlign: TextAlign.end)),
@@ -655,12 +655,12 @@ class ErrorRetry extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.wifi_off_rounded,
-                size: 48, color: AppTheme.textGrey),
+            Icon(Icons.wifi_off_rounded,
+                size: 48, color: context.colors.textGrey),
             const SizedBox(height: 16),
             Text(message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: AppTheme.textGrey)),
+                style: TextStyle(color: context.colors.textGrey)),
             const SizedBox(height: 16),
             OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
           ],
@@ -726,10 +726,10 @@ class _ResultBannerState extends State<ResultBanner>
     final bool isSuccess = widget.success;
 
     final Color statusColor = isSuccess
-        ? AppTheme.accent // Emerald Green
+        ? context.colors.accent // Emerald Green
         : isPending
-            ? AppTheme.primary // Vibrant Violet
-            : AppTheme.warning; // Amber
+            ? context.colors.primary // Vibrant Violet
+            : context.colors.warning; // Amber
 
     final IconData iconData = isSuccess
         ? Icons.check_circle_outline_rounded
@@ -746,7 +746,7 @@ class _ResultBannerState extends State<ResultBanner>
           margin: const EdgeInsets.only(bottom: 16),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: AppTheme.white,
+            color: context.colors.surfaceWhite,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: statusColor.withValues(alpha: 0.3), width: 1.5),
             boxShadow: [
@@ -777,8 +777,8 @@ class _ResultBannerState extends State<ResultBanner>
                       widget.message
                           .replaceAll('⏳ ', '')
                           .replaceAll('✅ ', ''), // clean up emojis
-                      style: const TextStyle(
-                        color: AppTheme.textDark,
+                      style: TextStyle(
+                        color: context.colors.textDark,
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.3,
@@ -794,21 +794,21 @@ class _ResultBannerState extends State<ResultBanner>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppTheme.bgGrey,
+                    color: context.colors.bgGrey,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppTheme.divider),
+                    border: Border.all(color: context.colors.divider),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Icon(Icons.auto_awesome_rounded,
-                          size: 16, color: AppTheme.textGrey),
+                      Icon(Icons.auto_awesome_rounded,
+                          size: 16, color: context.colors.textGrey),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           widget.aiSummary!,
-                          style: const TextStyle(
-                            color: AppTheme.textGrey,
+                          style: TextStyle(
+                            color: context.colors.textGrey,
                             fontSize: 13,
                             height: 1.5,
                           ),
@@ -871,7 +871,7 @@ class AppToast {
                       : isSuccess
                           ? const Color(0xFF10B981)
                           : const Color(0xFF1F2937))
-                  .withOpacity(0.3),
+                  .withValues(alpha: 0.3),
               blurRadius: 12,
               offset: const Offset(0, 6),
             ),

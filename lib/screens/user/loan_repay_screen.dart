@@ -100,7 +100,7 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
         locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Repay Loan')),
       body: LoadingOverlay(
         isLoading: _loading,
@@ -137,10 +137,10 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'This code is pre-filled as the payment note in UPI. Do NOT change it.',
                                 style: TextStyle(
-                                    color: AppTheme.textGrey, fontSize: 13),
+                                    color: context.colors.textGrey, fontSize: 13),
                               ),
                               const SizedBox(height: 14),
                               Container(
@@ -151,7 +151,7 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
                                   borderRadius: BorderRadius.circular(12),
                                   border: Border.all(
                                       color: const Color(0xFF2563EB)
-                                          .withOpacity(0.3)),
+                                          .withValues(alpha: 0.3)),
                                 ),
                                 child: Column(
                                   children: [
@@ -165,18 +165,18 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 6),
-                                    const Row(
+                                    Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
                                         Icon(Icons.lock_outline_rounded,
                                             size: 13,
-                                            color: AppTheme.textGrey),
-                                        SizedBox(width: 4),
+                                            color: context.colors.textGrey),
+                                        const SizedBox(width: 4),
                                         Text(
                                           'Locked — do not change in UPI app',
                                           style: TextStyle(
-                                              color: AppTheme.textGrey,
+                                              color: context.colors.textGrey,
                                               fontSize: 12),
                                         ),
                                       ],
@@ -188,13 +188,13 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(Icons.schedule_rounded,
-                                      size: 13, color: AppTheme.textGrey),
+                                  Icon(Icons.schedule_rounded,
+                                      size: 13, color: context.colors.textGrey),
                                   const SizedBox(width: 4),
                                   Text(
                                     'Expires in ${_token!.expiresInText}',
-                                    style: const TextStyle(
-                                        color: AppTheme.textGrey,
+                                    style: TextStyle(
+                                        color: context.colors.textGrey,
                                         fontSize: 12),
                                   ),
                                 ],
@@ -212,10 +212,10 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Amount and note are pre-filled. Do NOT change them in the UPI app.',
                                 style: TextStyle(
-                                    color: AppTheme.textGrey, fontSize: 13),
+                                    color: context.colors.textGrey, fontSize: 13),
                               ),
                               const SizedBox(height: 14),
                               ElevatedButton.icon(
@@ -241,10 +241,10 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 "After paying, upload the success screenshot. We'll verify it automatically.",
                                 style: TextStyle(
-                                    color: AppTheme.textGrey, fontSize: 13),
+                                    color: context.colors.textGrey, fontSize: 13),
                               ),
                               const SizedBox(height: 14),
                               OutlinedButton.icon(
@@ -262,8 +262,8 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
                               if (_error != null) ...[
                                 const SizedBox(height: 10),
                                 Text(_error!,
-                                    style: const TextStyle(
-                                        color: AppTheme.error,
+                                    style: TextStyle(
+                                        color: context.colors.error,
                                         fontSize: 13)),
                               ],
                             ],
@@ -310,28 +310,28 @@ class _LoanRepaymentAmountCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _row('Repayment amount',
+          _row(context, 'Repayment amount',
               '₹${token.amount.toStringAsFixed(0)}', bold: true),
         ],
       ),
     );
   }
 
-  Widget _row(String label, String value, {bool bold = false}) => Padding(
+  Widget _row(BuildContext context, String label, String value, {bool bold = false}) => Padding(
         padding: const EdgeInsets.symmetric(vertical: 3),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(label,
-                style: const TextStyle(
-                    fontSize: 13, color: AppTheme.textDark)),
+                style: TextStyle(
+                    fontSize: 13, color: context.colors.textDark)),
             Text(value,
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
                   color: bold
                       ? const Color(0xFF1E40AF)
-                      : AppTheme.textGrey,
+                      : context.colors.textGrey,
                 )),
           ],
         ),
@@ -351,9 +351,9 @@ class _StepCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,10 +378,10 @@ class _StepCard extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
-                        color: AppTheme.textDark)),
+                        color: context.colors.textDark)),
               ),
             ],
           ),

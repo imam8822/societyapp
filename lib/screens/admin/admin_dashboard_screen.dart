@@ -10,7 +10,6 @@ import '../../widgets/shared_widgets.dart';
 import 'admin_screens.dart';
 import 'screenshot_review_screen.dart';
 import 'statistics_screen.dart';
-import '../../core/api/api_client.dart';
 import '../../widgets/network_error_widget.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
@@ -95,7 +94,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
         leading: dashAsync.valueOrNull?.logoBase64 != null
@@ -173,7 +172,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             error: e,
             onRetry: () => ref.invalidate(adminDashboardProvider)),
         data: (dash) => RefreshIndicator(
-          color: AppTheme.primary,
+          color: context.colors.primary,
           onRefresh: () async => ref.invalidate(adminDashboardProvider),
           child: ListView(
             padding: const EdgeInsets.all(16),
@@ -182,8 +181,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               // ── Pool Card ─────────────────────────
               Container(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primary, Color(0xFF2ECC71)],
+                  gradient: LinearGradient(
+                    colors: [context.colors.primary, const Color(0xFF2ECC71)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -251,7 +250,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   _AlertBanner(
                     icon: Icons.pending_actions_rounded,
                     label: '${dash.pendingLoanApplications} loan application(s) awaiting review',
-                    color: AppTheme.warning,
+                    color: context.colors.warning,
                     onTap: () => setState(() => _currentIndex = 1),
                   ),
                 if (dash.loansAwaitingDisbursement > 0)
@@ -265,7 +264,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   _AlertBanner(
                     icon: Icons.image_search_rounded,
                     label: '${dash.pendingScreenshotReviews} screenshot(s) need manual verification',
-                    color: AppTheme.primary,
+                    color: context.colors.primary,
                     onTap: () => setState(() => _currentIndex = 2),
                   ),
                 const SizedBox(height: 16),
@@ -307,7 +306,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       label: 'Total Disbursed',
                       value: fmt.format(dash.totalDisbursed),
                       icon: Icons.currency_rupee_rounded,
-                      iconColor: AppTheme.warning,
+                      iconColor: context.colors.warning,
                       onTap: () => setState(() => _currentIndex = 3),
                     ),
                   ),
@@ -317,7 +316,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       label: 'Outstanding',
                       value: fmt.format(dash.outstandingAmount),
                       icon: Icons.pending_rounded,
-                      iconColor: AppTheme.error,
+                      iconColor: context.colors.error,
                       onTap: () => setState(() => _currentIndex = 3),
                     ),
                   ),
@@ -326,33 +325,35 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
 
               const SizedBox(height: 16),
 
-              // ── Quick Actions ──────────────────────
-              const SectionHeader(title: 'Quick Actions'),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: _QuickActionCard(
-                      icon: Icons.payments_rounded,
-                      label: 'Collect Cash',
-                      color: const Color(0xFF2ECC71),
-                      onTap: () async {
-                        final result = await context.push<bool>('/admin/collect-cash');
-                        if (result == true) ref.invalidate(adminDashboardProvider);
-                      },
+              if (ref.read(authProvider).role != 'Auditor') ...[
+                // ── Quick Actions ──────────────────────
+                const SectionHeader(title: 'Quick Actions'),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.payments_rounded,
+                        label: 'Collect Cash',
+                        color: const Color(0xFF2ECC71),
+                        onTap: () async {
+                          final result = await context.push<bool>('/admin/collect-cash');
+                          if (result == true) ref.invalidate(adminDashboardProvider);
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _QuickActionCard(
-                      icon: Icons.person_add_rounded,
-                      label: 'Add Member',
-                      color: AppTheme.primary,
-                      onTap: () => context.push('/admin/members/add'),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.person_add_rounded,
+                        label: 'Add Member',
+                        color: context.colors.primary,
+                        onTap: () => context.push('/admin/members/add'),
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
 
             ],
           ),
@@ -481,9 +482,9 @@ class _QuickActionCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
           decoration: BoxDecoration(
-            color: AppTheme.white,
+            color: context.colors.surfaceWhite,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppTheme.divider),
+            border: Border.all(color: context.colors.divider),
           ),
           child: Column(
             children: [
@@ -497,8 +498,8 @@ class _QuickActionCard extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               Text(label,
-                  style: const TextStyle(
-                      color: AppTheme.textDark,
+                  style: TextStyle(
+                      color: context.colors.textDark,
                       fontWeight: FontWeight.w600,
                       fontSize: 13)),
             ],
@@ -506,4 +507,4 @@ class _QuickActionCard extends StatelessWidget {
         ),
       );
 }
-
+

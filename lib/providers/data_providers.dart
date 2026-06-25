@@ -11,7 +11,7 @@ import 'package:society_app/models/contribution_models.dart';
 // ─────────────────────────────────────────────
 // User Dashboard
 // ─────────────────────────────────────────────
-final userDashboardProvider = FutureProvider.autoDispose<UserDashboard>((ref) {
+final userDashboardProvider = FutureProvider<UserDashboard>((ref) {
   return DashboardApi.getUserDashboard();
 });
 
@@ -19,7 +19,7 @@ final userDashboardProvider = FutureProvider.autoDispose<UserDashboard>((ref) {
 // Admin Dashboard
 // ─────────────────────────────────────────────
 final adminDashboardProvider =
-    FutureProvider.autoDispose<AdminDashboard>((ref) {
+    FutureProvider<AdminDashboard>((ref) {
   return DashboardApi.getAdminDashboard();
 });
 
@@ -27,7 +27,7 @@ final adminDashboardProvider =
 // Members list
 // ─────────────────────────────────────────────
 final membersProvider =
-    FutureProvider.autoDispose<List<UserSummary>>((ref) {
+    FutureProvider<List<UserSummary>>((ref) {
   return UserApi.getAllUsers();
 });
 
@@ -35,17 +35,17 @@ final membersProvider =
 // Loans
 // ─────────────────────────────────────────────
 final myLoansProvider =
-    FutureProvider.autoDispose<List<LoanApplication>>((ref) {
+    FutureProvider<List<LoanApplication>>((ref) {
   return LoanApi.getMyLoans();
 });
 
 final allLoansProvider =
-    FutureProvider.autoDispose<List<LoanApplication>>((ref) {
+    FutureProvider<List<LoanApplication>>((ref) {
   return LoanApi.getAllLoans();
 });
 
 final pendingLoansProvider =
-    FutureProvider.autoDispose<List<LoanApplication>>((ref) {
+    FutureProvider<List<LoanApplication>>((ref) {
   return LoanApi.getAllLoans(status: 'Pending');
 });
 
@@ -53,48 +53,40 @@ final pendingLoansProvider =
 // Payment / Screenshots
 // ─────────────────────────────────────────────
 final pendingScreenshotsProvider =
-    FutureProvider.autoDispose<List<PendingScreenshot>>((ref) {
+    FutureProvider<List<PendingScreenshot>>((ref) {
   return PaymentApi.getPendingReviews();
 });
 
 final pendingLoanRepaymentsProvider =
-    FutureProvider.autoDispose<List<PendingLoanRepayment>>((ref) {
+    FutureProvider<List<PendingLoanRepayment>>((ref) {
   return PaymentApi.getPendingLoanRepayments();
-});
-
-// ─────────────────────────────────────────────
-// Settings
-// ─────────────────────────────────────────────
-final settingsProvider =
-    FutureProvider.autoDispose<SocietySettings>((ref) {
-  return SettingsApi.getSettings();
 });
 
 // ─────────────────────────────────────────────
 // Eligible guarantors
 // ─────────────────────────────────────────────
 final eligibleGuarantorsProvider =
-    FutureProvider.autoDispose<List<UserSummary>>((ref) {
+    FutureProvider<List<UserSummary>>((ref) {
   return UserApi.getEligibleGuarantors();
 });
 
 // ─────────────────────────────────────────────
 // My Profile
 // ─────────────────────────────────────────────
-final myProfileProvider = FutureProvider.autoDispose<UserSummary>((ref) {
+final myProfileProvider = FutureProvider<UserSummary>((ref) {
   return UserApi.getMyProfile();
 });
 
 // ─────────────────────────────────────────────
 // My Contributions History
 // ─────────────────────────────────────────────
-final myContributionsProvider = FutureProvider.autoDispose<List<Contribution>>((ref) {
+final myContributionsProvider = FutureProvider<List<Contribution>>((ref) {
   return ContributionApi.getMyContributions();
 });
 
 // ─────────────────────────────────────────────
 // Notifications
 // ─────────────────────────────────────────────
-final notificationsProvider = FutureProvider.autoDispose<List<AppNotification>>((ref) {
+final notificationsProvider = FutureProvider<List<AppNotification>>((ref) {
   return NotificationApi.getMyNotifications();
 });

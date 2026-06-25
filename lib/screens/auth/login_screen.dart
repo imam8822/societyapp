@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:convert';
 import '../../core/constants.dart';
 import '../../core/api/api_client.dart';
 import '../../providers/auth_provider.dart';
@@ -39,7 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     _fetchPublicSettings();
     _entryCtrl = AnimationController(
       vsync: this,
-      duration: Duration(milliseconds: 400 + (_itemCount - 1) * _stagger),
+      duration: const Duration(milliseconds: 400 + (_itemCount - 1) * _stagger),
     );
 
     _fadeAnims = List.generate(_itemCount, (i) {
@@ -134,7 +133,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
       if (success) {
         final role = ref.read(authProvider).role;
-        context.go(role == 'Admin' ? '/admin' : '/home');
+        context.go((role == 'Admin' || role == 'SuperAdmin' || role == 'Auditor') ? '/admin' : '/home');
         return;
       }
 
@@ -155,7 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       body: Stack(
         children: [
           SafeArea(
@@ -173,7 +172,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       width: 100,
                       height: 100,
                       padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: Colors.transparent,
                       ),
                       child: Image.asset(
@@ -189,10 +188,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                     1,
                     Text(
                       _societyName ?? 'Welcome back',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontSize: 30,
                           fontWeight: FontWeight.w800,
-                          color: AppTheme.textDark,
+                          color: context.colors.textDark,
                           letterSpacing: -0.5),
                     ),
                   ),
@@ -201,10 +200,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   // ── Subtitle
                   _animated(
                     2,
-                    const Text(
+                    Text(
                       'Sign in to your society account',
                       style:
-                          TextStyle(fontSize: 15, color: AppTheme.textGrey),
+                          TextStyle(fontSize: 15, color: context.colors.textGrey),
                     ),
                   ),
                   const SizedBox(height: 40),
@@ -263,23 +262,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                             key: const ValueKey('error'),
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: AppTheme.error.withValues(alpha: 0.12),
+                              color: context.colors.error.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                               border: Border.all(
                                   color:
-                                      AppTheme.error.withValues(alpha: 0.3)),
+                                      context.colors.error.withValues(alpha: 0.3)),
                             ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.error_outline,
-                                    color: AppTheme.error, size: 18),
+                                Icon(Icons.error_outline,
+                                    color: context.colors.error, size: 18),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     _error!,
-                                    style: const TextStyle(
-                                        color: AppTheme.error, fontSize: 13),
+                                    style: TextStyle(
+                                        color: context.colors.error, fontSize: 13),
                                   ),
                                 ),
                               ],
@@ -303,21 +302,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           decoration: BoxDecoration(
                             gradient: _loading
                                 ? null
-                                : const LinearGradient(
+                                : LinearGradient(
                                     colors: [
-                                      AppTheme.primary,
-                                      Color(0xFF5B21B6)
+                                      context.colors.primary,
+                                      const Color(0xFF5B21B6)
                                     ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
-                            color: _loading ? AppTheme.white : null,
+                            color: _loading ? context.colors.surfaceWhite : null,
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: _loading
                                 ? []
                                 : [
                                     BoxShadow(
-                                      color: AppTheme.primary
+                                      color: context.colors.primary
                                           .withValues(alpha: 0.35),
                                       blurRadius: 16,
                                       offset: const Offset(0, 6),
@@ -326,11 +325,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                           ),
                           child: Center(
                             child: _loading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 20,
                                     width: 20,
                                     child: CircularProgressIndicator(
-                                        color: AppTheme.primary,
+                                        color: context.colors.primary,
                                         strokeWidth: 2),
                                   )
                                 : const Text(

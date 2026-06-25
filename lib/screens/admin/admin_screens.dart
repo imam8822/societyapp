@@ -9,6 +9,8 @@ import '../../core/constants.dart';
 import '../../models/loan_models.dart';
 import '../../models/payment_models.dart';
 import '../../providers/data_providers.dart';
+import '../../providers/settings_notifier.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/shared_widgets.dart';
 
 // ═════════════════════════════════════════════
@@ -30,11 +32,11 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
     final loansAsync = ref.watch(allLoansProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Loan Applications')),
       body: loansAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary)),
+        loading: () => Center(
+            child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => ErrorRetry(
             message: apiError(e),
             onRetry: () => ref.invalidate(allLoansProvider)),
@@ -68,17 +70,17 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                   onChanged: (val) => setState(() => _searchQuery = val),
                   decoration: InputDecoration(
                     hintText: 'Search by name or phone...',
-                    prefixIcon: const Icon(Icons.search, color: AppTheme.textGrey),
+                    prefixIcon: Icon(Icons.search, color: context.colors.textGrey),
                     filled: true,
-                    fillColor: AppTheme.white,
+                    fillColor: context.colors.surfaceWhite,
                     contentPadding: const EdgeInsets.symmetric(vertical: 0),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.divider),
+                      borderSide: BorderSide(color: context.colors.divider),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: AppTheme.divider),
+                      borderSide: BorderSide(color: context.colors.divider),
                     ),
                   ),
                 ),
@@ -96,12 +98,12 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                         child: ChoiceChip(
                           label: Text('All', style: TextStyle(
                             fontSize: 12,
-                            color: _amountFilter == null ? Colors.white : AppTheme.textGrey,
+                            color: _amountFilter == null ? Colors.white : context.colors.textGrey,
                             fontWeight: _amountFilter == null ? FontWeight.bold : FontWeight.normal,
                           )),
                           selected: _amountFilter == null,
-                          selectedColor: AppTheme.primary,
-                          backgroundColor: AppTheme.white,
+                          selectedColor: context.colors.primary,
+                          backgroundColor: context.colors.surfaceWhite,
                           onSelected: (val) {
                             if (val) {
                               setState(() {
@@ -112,7 +114,7 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                             side: BorderSide(
-                              color: _amountFilter == null ? AppTheme.primary : AppTheme.divider,
+                              color: _amountFilter == null ? context.colors.primary : context.colors.divider,
                             ),
                           ),
                           showCheckmark: false,
@@ -126,12 +128,12 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                           child: ChoiceChip(
                             label: Text(fmtFilter.format(amount), style: TextStyle(
                               fontSize: 12,
-                              color: selected ? Colors.white : AppTheme.textGrey,
+                              color: selected ? Colors.white : context.colors.textGrey,
                               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
                             )),
                             selected: selected,
-                            selectedColor: AppTheme.primary,
-                            backgroundColor: AppTheme.white,
+                            selectedColor: context.colors.primary,
+                            backgroundColor: context.colors.surfaceWhite,
                             onSelected: (val) {
                               setState(() {
                                 _amountFilter = val ? amount : null;
@@ -140,7 +142,7 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(20),
                               side: BorderSide(
-                                color: selected ? AppTheme.primary : AppTheme.divider,
+                                color: selected ? context.colors.primary : context.colors.divider,
                               ),
                             ),
                             showCheckmark: false,
@@ -161,7 +163,7 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                         icon: Icons.search_off,
                         title: 'No matching applications')
                     : RefreshIndicator(
-                        color: AppTheme.primary,
+                        color: context.colors.primary,
                         onRefresh: () async => ref.invalidate(allLoansProvider),
                         child: ListView.separated(
                           padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
@@ -230,7 +232,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
       title: 'Reject Loan',
       subtitle: 'Please provide a reason for rejection',
       confirmLabel: 'Reject',
-      confirmColor: AppTheme.error,
+      confirmColor: context.colors.error,
       confirmIcon: Icons.cancel_rounded,
       required: true,
     );
@@ -256,7 +258,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
       context: context,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        backgroundColor: AppTheme.white,
+        backgroundColor: context.colors.surfaceWhite,
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -268,24 +270,24 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF7C3AED).withOpacity(0.1),
+                      color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.payments_rounded, color: Color(0xFF7C3AED)),
                   ),
                   const SizedBox(width: 16),
-                  const Expanded(
+                  Expanded(
                     child: Text('Disburse Loan',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppTheme.textDark)),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.textDark)),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
               Text('Disburse ₹${NumberFormat('#,##,###').format(widget.loan.amount)} to ${widget.loan.applicantName}?',
-                  style: const TextStyle(fontSize: 15, color: AppTheme.textDark)),
+                  style: TextStyle(fontSize: 15, color: context.colors.textDark)),
               const SizedBox(height: 24),
-              const Text('Select Disbursement Mode:',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textGrey)),
+              Text('Select Disbursement Mode:',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textGrey)),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -296,9 +298,9 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFF16A34A).withOpacity(0.3)),
+                          border: Border.all(color: const Color(0xFF16A34A).withValues(alpha: 0.3)),
                           borderRadius: BorderRadius.circular(12),
-                          color: const Color(0xFF16A34A).withOpacity(0.05),
+                          color: const Color(0xFF16A34A).withValues(alpha: 0.05),
                         ),
                         child: const Column(
                           children: [
@@ -318,9 +320,9 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         decoration: BoxDecoration(
-                          border: Border.all(color: const Color(0xFF7C3AED).withOpacity(0.3)),
+                          border: Border.all(color: const Color(0xFF7C3AED).withValues(alpha: 0.3)),
                           borderRadius: BorderRadius.circular(12),
-                          color: const Color(0xFF7C3AED).withOpacity(0.05),
+                          color: const Color(0xFF7C3AED).withValues(alpha: 0.05),
                         ),
                         child: const Column(
                           children: [
@@ -338,7 +340,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
               TextButton(
                 onPressed: () => Navigator.pop(context, null),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.textGrey,
+                  foregroundColor: context.colors.textGrey,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
                 child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
@@ -395,7 +397,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                 Text('Guarantor: ${widget.loan.guarantorName}'),
               const SizedBox(height: 12),
               Text(subtitle,
-                  style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                  style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
               const SizedBox(height: 12),
               TextField(
                 controller: ctrl,
@@ -442,9 +444,9 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -453,11 +455,11 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
           Row(
             children: [
               CircleAvatar(
-                backgroundColor: AppTheme.primaryLight,
+                backgroundColor: context.colors.primaryLight,
                 child: Text(
                   l.applicantName.isNotEmpty ? l.applicantName[0] : '?',
-                  style: const TextStyle(
-                      color: AppTheme.primary, fontWeight: FontWeight.w700),
+                  style: TextStyle(
+                      color: context.colors.primary, fontWeight: FontWeight.w700),
                 ),
               ),
               const SizedBox(width: 12),
@@ -466,13 +468,13 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(l.applicantName,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: AppTheme.textDark)),
+                            color: context.colors.textDark)),
                     Text(l.applicantPhone,
-                        style: const TextStyle(
-                            color: AppTheme.textGrey, fontSize: 12)),
+                        style: TextStyle(
+                            color: context.colors.textGrey, fontSize: 12)),
                   ],
                 ),
               ),
@@ -494,7 +496,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
                     if (l.tenureMonths != null)
                       Text('${l.tenureMonths} months tenure',
-                          style: const TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                          style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -502,7 +504,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Guarantor: ', style: TextStyle(color: AppTheme.textGrey, fontSize: 13)),
+                      Text('Guarantor: ', style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
                       Expanded(
                         child: Text(l.guarantorName!,
                             style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
@@ -515,21 +517,21 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Applied: ${DateFormat('d MMM yyyy').format(l.appliedDate)}',
-                        style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                        style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
                     if (l.repaymentDueDate != null)
                       Text('Due: ${DateFormat('d MMM yyyy').format(l.repaymentDueDate!)}',
-                          style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                          style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
                   ],
                 ),
                 if (l.rejectionReason != null) ...[
                   const SizedBox(height: 6),
                   Text('Reason: ${l.rejectionReason}',
-                      style: const TextStyle(color: AppTheme.error, fontSize: 13, fontWeight: FontWeight.w500)),
+                      style: TextStyle(color: context.colors.error, fontSize: 13, fontWeight: FontWeight.w500)),
                 ],
                 if (l.disbursementMode != null) ...[
                   const SizedBox(height: 6),
                   Text('Mode: Disbursed via ${l.disbursementMode}',
-                      style: const TextStyle(color: AppTheme.accent, fontSize: 13, fontWeight: FontWeight.bold)),
+                      style: TextStyle(color: context.colors.accent, fontSize: 13, fontWeight: FontWeight.bold)),
                 ],
               ],
             ),
@@ -537,10 +539,10 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
 
           // Actions
           if (_loading)
-            const Padding(
-              padding: EdgeInsets.only(top: 16),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
               child: Center(
-                  child: CircularProgressIndicator(color: AppTheme.primary)),
+                  child: CircularProgressIndicator(color: context.colors.primary)),
             )
           else if (l.isPending) ...[
             const SizedBox(height: 16),
@@ -553,8 +555,8 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                     icon: const Icon(Icons.cancel_rounded, size: 16),
                     label: const Text('Reject'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.error,
-                      side: const BorderSide(color: AppTheme.error),
+                      foregroundColor: context.colors.error,
+                      side: BorderSide(color: context.colors.error),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
@@ -604,7 +606,7 @@ class _DialogRow extends StatelessWidget {
   final String value;
   final bool last;
   const _DialogRow(
-      {required this.label, required this.value, this.last = false});
+      {required this.label, required this.value}) : last = false;
 
   @override
   Widget build(BuildContext context) {
@@ -614,13 +616,13 @@ class _DialogRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: const TextStyle(
-                  fontSize: 12, color: AppTheme.textGrey)),
+              style: TextStyle(
+                  fontSize: 12, color: context.colors.textGrey)),
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textDark)),
+                  color: context.colors.textDark)),
         ],
       ),
     );
@@ -678,12 +680,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Reports')),
       body: Column(
         children: [
           Container(
-            color: AppTheme.white,
+            color: context.colors.surfaceWhite,
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -718,7 +720,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     if (_isMonthly) ...[
                       Expanded(
                         child: DropdownButtonFormField<int>(
-                          value: _selectedMonth,
+                          initialValue: _selectedMonth,
                           decoration: const InputDecoration(
                               contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 10)),
@@ -738,7 +740,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ],
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: _selectedYear,
+                        initialValue: _selectedYear,
                         decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 10)),
@@ -761,8 +763,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           Expanded(
             child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppTheme.primary))
+                ? Center(
+                    child: CircularProgressIndicator(color: context.colors.primary))
                 : _report == null
                     ? const EmptyState(
                         icon: Icons.bar_chart_rounded,
@@ -790,13 +792,13 @@ class _TabBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.primary : AppTheme.bgGrey,
+          color: selected ? context.colors.primary : context.colors.bgGrey,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(label,
             textAlign: TextAlign.center,
             style: TextStyle(
-                color: selected ? Colors.white : AppTheme.textGrey,
+                color: selected ? Colors.white : context.colors.textGrey,
                 fontWeight: FontWeight.w600)),
       ),
     );
@@ -826,7 +828,7 @@ class _MonthlyReportView extends StatelessWidget {
                     label: 'Unpaid',
                     value: '${report.unpaidCount}',
                     icon: Icons.cancel_outlined,
-                    iconColor: AppTheme.error)),
+                    iconColor: context.colors.error)),
             const SizedBox(width: 10),
             Expanded(
                 child: StatCard(
@@ -841,25 +843,25 @@ class _MonthlyReportView extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppTheme.white,
+                    color: context.colors.surfaceWhite,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.divider),
+                    border: Border.all(color: context.colors.divider),
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Text(c.userName,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontWeight: FontWeight.w500,
-                                color: AppTheme.textDark)),
+                                color: context.colors.textDark)),
                       ),
                       StatusBadge(
                           status: c.isVerified ? 'Verified' : 'Pending'),
                       const SizedBox(width: 8),
                       Text('₹${c.amount.toStringAsFixed(0)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textDark)),
+                              color: context.colors.textDark)),
                     ],
                   ),
                 ))
@@ -887,9 +889,9 @@ class _YearlyReportView extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppTheme.white,
+                color: context.colors.surfaceWhite,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppTheme.divider),
+                border: Border.all(color: context.colors.divider),
               ),
               child: Row(
                 children: [
@@ -898,19 +900,19 @@ class _YearlyReportView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(r.fullName,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textDark)),
+                                color: context.colors.textDark)),
                         Text('${r.monthsPaid}/12 months paid',
-                            style: const TextStyle(
-                                color: AppTheme.textGrey, fontSize: 12)),
+                            style: TextStyle(
+                                color: context.colors.textGrey, fontSize: 12)),
                       ],
                     ),
                   ),
                   Text('₹${r.totalSaved.toStringAsFixed(0)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.primary)),
+                          color: context.colors.primary)),
                 ],
               ),
             )),
@@ -943,7 +945,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSettings();
+    });
   }
 
   String _formatDate(DateTime dt) {
@@ -971,7 +975,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _loadSettings() async {
     setState(() => _loading = true);
     try {
-      final s = await SettingsApi.getSettings();
+      final notifier = ref.read(settingsNotifierProvider.notifier);
+      await notifier.fetchSettings();
+      final s = notifier.currentSettings!;
       _settings = s;
       _logoBase64 = s.logoBase64;
       _enableAi = s.enableAiVerification;
@@ -1025,11 +1031,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Society Settings')),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.primary))
+          ? Center(
+              child: CircularProgressIndicator(color: context.colors.primary))
           : LoadingOverlay(
               isLoading: _saving,
               child: ListView(
@@ -1039,17 +1045,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.white,
+                      color: context.colors.surfaceWhite,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.divider),
+                      border: Border.all(color: context.colors.divider),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('SOCIETY LOGO',
+                        Text('SOCIETY LOGO',
                             style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textGrey,
+                                color: context.colors.textGrey,
                                 fontSize: 12,
                                 letterSpacing: 0.5)),
                         const SizedBox(height: 16),
@@ -1059,10 +1065,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             child: Container(
                               width: 80, height: 80,
                               decoration: BoxDecoration(
-                                color: AppTheme.bgGrey,
+                                color: context.colors.bgGrey,
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
-                                    color: AppTheme.divider, width: 1.5),
+                                    color: context.colors.divider, width: 1.5),
                               ),
                               child: _logoBase64 != null
                                   ? ClipRRect(
@@ -1074,17 +1080,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                         fit: BoxFit.cover,
                                       ),
                                     )
-                                  : const Column(
+                                  : Column(
                                       mainAxisAlignment:
                                           MainAxisAlignment.center,
                                       children: [
                                         Icon(Icons.add_photo_alternate_outlined,
-                                            color: AppTheme.textGrey, size: 28),
-                                        SizedBox(height: 4),
+                                            color: context.colors.textGrey, size: 28),
+                                        const SizedBox(height: 4),
                                         Text('Add Logo',
                                             style: TextStyle(
                                                 fontSize: 10,
-                                                color: AppTheme.textGrey)),
+                                                color: context.colors.textGrey)),
                                       ],
                                     ),
                             ),
@@ -1094,17 +1100,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('Society Logo',
+                                Text('Society Logo',
                                     style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 14,
-                                        color: AppTheme.textDark)),
+                                        color: context.colors.textDark)),
                                 const SizedBox(height: 4),
-                                const Text(
+                                Text(
                                     'Shown on member dashboard.\nJPG or PNG, max 2MB.',
                                     style: TextStyle(
                                         fontSize: 12,
-                                        color: AppTheme.textGrey)),
+                                        color: context.colors.textGrey)),
                                 const SizedBox(height: 10),
                                 Row(children: [
                                   OutlinedButton.icon(
@@ -1133,9 +1139,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                                             horizontal: 12, vertical: 6),
                                         textStyle:
                                             const TextStyle(fontSize: 12),
-                                        foregroundColor: AppTheme.error,
-                                        side: const BorderSide(
-                                            color: AppTheme.error),
+                                        foregroundColor: context.colors.error,
+                                        side: BorderSide(
+                                            color: context.colors.error),
                                       ),
                                     ),
                                   ],
@@ -1148,15 +1154,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           Padding(
                             padding: const EdgeInsets.only(top: 10),
                             child: Row(children: [
-                              const Icon(Icons.info_outline,
-                                  size: 14, color: AppTheme.warning),
+                              Icon(Icons.info_outline,
+                                  size: 14, color: context.colors.warning),
                               const SizedBox(width: 6),
                               Text(
                                 _logoBase64 != null
                                     ? 'New logo selected — save to apply.'
                                     : 'Logo will be removed on save.',
-                                style: const TextStyle(
-                                    fontSize: 12, color: AppTheme.warning),
+                                style: TextStyle(
+                                    fontSize: 12, color: context.colors.warning),
                               ),
                             ]),
                           ),
@@ -1168,17 +1174,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.white,
+                      color: context.colors.surfaceWhite,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.divider),
+                      border: Border.all(color: context.colors.divider),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('GENERAL',
+                        Text('GENERAL',
                             style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textGrey,
+                                color: context.colors.textGrey,
                                 fontSize: 12,
                                 letterSpacing: 0.5)),
                         const SizedBox(height: 14),
@@ -1197,27 +1203,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.white,
+                      color: context.colors.surfaceWhite,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.divider),
+                      border: Border.all(color: context.colors.divider),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('AUTOMATION',
+                        Text('AUTOMATION',
                             style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textGrey,
+                                color: context.colors.textGrey,
                                 fontSize: 12,
                                 letterSpacing: 0.5)),
                         const SizedBox(height: 14),
-                        SwitchListTile(
-                          title: const Text('AI Auto-Verify', style: TextStyle(fontSize: 14)),
-                          subtitle: const Text('Automatically verify screenshots using Gemini AI', style: TextStyle(fontSize: 12, color: AppTheme.textGrey)),
-                          value: _enableAi,
-                          activeColor: AppTheme.primary,
-                          contentPadding: EdgeInsets.zero,
-                          onChanged: (val) => setState(() => _enableAi = val),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('AI Auto-Verify', style: TextStyle(fontSize: 14)),
+                                  const SizedBox(height: 2),
+                                  Text('Automatically verify screenshots using Gemini AI', style: TextStyle(fontSize: 12, color: context.colors.textGrey)),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: _enableAi,
+                              activeColor: context.colors.primary,
+                              onChanged: (val) => setState(() => _enableAi = val),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -1227,17 +1245,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.white,
+                      color: context.colors.surfaceWhite,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.divider),
+                      border: Border.all(color: context.colors.divider),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('UPI PAYMENT',
+                        Text('UPI PAYMENT',
                             style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textGrey,
+                                color: context.colors.textGrey,
                                 fontSize: 12,
                                 letterSpacing: 0.5)),
                         const SizedBox(height: 14),
@@ -1260,12 +1278,54 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'This name appears in GPay/PhonePe when members pay.',
                           style: TextStyle(
-                              color: AppTheme.textGrey, fontSize: 12),
+                              color: context.colors.textGrey, fontSize: 12),
                         ),
                       ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  // App Theme Settings
+                  const SectionHeader(title: 'App Theme'),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: context.colors.surfaceWhite,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: context.colors.divider),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final currentTheme = ref.watch(themeProvider);
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _ThemeOption(
+                                label: 'System',
+                                icon: Icons.brightness_auto,
+                                isSelected: currentTheme == ThemeMode.system,
+                                onTap: () => ref.read(themeProvider.notifier).setTheme(ThemeMode.system),
+                              ),
+                              _ThemeOption(
+                                label: 'Light',
+                                icon: Icons.light_mode,
+                                isSelected: currentTheme == ThemeMode.light,
+                                onTap: () => ref.read(themeProvider.notifier).setTheme(ThemeMode.light),
+                              ),
+                              _ThemeOption(
+                                label: 'Dark',
+                                icon: Icons.dark_mode,
+                                isSelected: currentTheme == ThemeMode.dark,
+                                onTap: () => ref.read(themeProvider.notifier).setTheme(ThemeMode.dark),
+                              ),
+                            ],
+                          );
+                        }
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -1274,26 +1334,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: AppTheme.white,
+                        color: context.colors.surfaceWhite,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppTheme.divider),
+                        border: Border.all(color: context.colors.divider),
                       ),
                       child: Row(children: [
-                        const Icon(Icons.history_rounded,
-                            size: 16, color: AppTheme.textGrey),
+                        Icon(Icons.history_rounded,
+                            size: 16, color: context.colors.textGrey),
                         const SizedBox(width: 8),
                         Expanded(
                           child: RichText(
                             text: TextSpan(
-                              style: const TextStyle(
-                                  fontSize: 12, color: AppTheme.textGrey),
+                              style: TextStyle(
+                                  fontSize: 12, color: context.colors.textGrey),
                               children: [
                                 const TextSpan(text: 'Last updated by '),
                                 TextSpan(
                                   text: _settings!.updatedByName ?? 'Unknown',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                       fontWeight: FontWeight.w600,
-                                      color: AppTheme.textDark),
+                                      color: context.colors.textDark),
                                 ),
                                 TextSpan(
                                   text:
@@ -1313,6 +1373,55 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 ],
               ),
             ),
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? context.colors.primary.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? context.colors.primary : Colors.transparent,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? context.colors.primary : context.colors.textGrey,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? context.colors.primary : context.colors.textGrey,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

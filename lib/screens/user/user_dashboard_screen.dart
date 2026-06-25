@@ -5,6 +5,8 @@ import 'package:intl/intl.dart';
 import 'dart:convert';
 import '../../providers/auth_provider.dart';
 import '../../providers/data_providers.dart';
+import '../../providers/theme_provider.dart';
+import '../../core/constants.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../models/dashboard_models.dart';
 import '../../models/contribution_models.dart';
@@ -721,6 +723,48 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                   ),
                 ),
               ),
+              const SizedBox(height: 24),
+
+              const SectionHeader(title: 'App Theme'),
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFF181B2F),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: const Color(0xFF282C4A)),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final currentTheme = ref.watch(themeProvider);
+                      return Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _ThemeOption(
+                            label: 'System',
+                            icon: Icons.brightness_auto,
+                            isSelected: currentTheme == ThemeMode.system,
+                            onTap: () => ref.read(themeProvider.notifier).setTheme(ThemeMode.system),
+                          ),
+                          _ThemeOption(
+                            label: 'Light',
+                            icon: Icons.light_mode,
+                            isSelected: currentTheme == ThemeMode.light,
+                            onTap: () => ref.read(themeProvider.notifier).setTheme(ThemeMode.light),
+                          ),
+                          _ThemeOption(
+                            label: 'Dark',
+                            icon: Icons.dark_mode,
+                            isSelected: currentTheme == ThemeMode.dark,
+                            onTap: () => ref.read(themeProvider.notifier).setTheme(ThemeMode.dark),
+                          ),
+                        ],
+                      );
+                    }
+                  ),
+                ),
+              ),
               const SizedBox(height: 32),
             ],
           ),
@@ -822,6 +866,55 @@ class _PayNowBanner extends StatelessWidget {
             ),
             const Icon(Icons.chevron_right_rounded,
                 color: Color(0xFF9094B6)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? context.colors.primary.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? context.colors.primary : Colors.transparent,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? context.colors.primary : context.colors.textGrey,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? context.colors.primary : context.colors.textGrey,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 12,
+              ),
+            ),
           ],
         ),
       ),
@@ -1102,8 +1195,7 @@ class _DarkStatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
-    this.iconColor,
-  });
+  }) : iconColor = null;
 
   @override
   Widget build(BuildContext context) {
