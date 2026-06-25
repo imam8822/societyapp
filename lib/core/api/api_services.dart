@@ -27,10 +27,10 @@ class DashboardApi {
 // Users
 // ─────────────────────────────────────────────
 class UserApi {
-  static Future<List<UserSummary>> getAllUsers({bool? active}) async {
+  static Future<List<UserSummary>> getAllUsers({bool? active, int page = 1, int limit = 50}) async {
     final res = await ApiClient.instance.get('/users',
-        queryParameters: active != null ? {'active': active} : null);
-    return (res.data as List).map((e) => UserSummary.fromJson(e)).toList();
+        queryParameters: {'page': page, 'limit': limit, if (active != null) 'active': active});
+    return (res.data['items'] as List).map((e) => UserSummary.fromJson(e)).toList();
   }
 
   static Future<UserSummary> getUserById(int id) async {
@@ -117,15 +117,16 @@ class LoanApi {
     return LoanFormData.fromJson(res.data);
   }
 
-  static Future<List<LoanApplication>> getMyLoans() async {
-    final res = await ApiClient.instance.get('/loans/my');
-    return (res.data as List).map((e) => LoanApplication.fromJson(e)).toList();
+  static Future<List<LoanApplication>> getMyLoans({int page = 1, int limit = 50}) async {
+    final res = await ApiClient.instance.get('/loans/my',
+        queryParameters: {'page': page, 'limit': limit});
+    return (res.data['items'] as List).map((e) => LoanApplication.fromJson(e)).toList();
   }
 
-  static Future<List<LoanApplication>> getAllLoans({String? status}) async {
+  static Future<List<LoanApplication>> getAllLoans({String? status, int page = 1, int limit = 50}) async {
     final res = await ApiClient.instance.get('/loans',
-        queryParameters: status != null ? {'status': status} : null);
-    return (res.data as List).map((e) => LoanApplication.fromJson(e)).toList();
+        queryParameters: {'page': page, 'limit': limit, if (status != null) 'status': status});
+    return (res.data['items'] as List).map((e) => LoanApplication.fromJson(e)).toList();
   }
 
   static Future<LoanApplication> getLoanById(int id) async {

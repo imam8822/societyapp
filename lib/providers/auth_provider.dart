@@ -54,6 +54,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final res = await AuthApi.login(phone, password);
       await StorageService.saveAuthData(
         token: res.token,
+        refreshToken: res.refreshToken,
         role: res.role,
         userId: res.userId.toString(),
         userName: res.fullName,

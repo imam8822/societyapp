@@ -684,9 +684,12 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                   double chipWidth;
                                   if (total == 1) {
                                     chipWidth = constraints.maxWidth;
-                                  } else {
-                                    // Two per row
+                                  } else if (total == 2 || total == 4) {
+                                    // Two per row looks better for 2 or 4
                                     chipWidth = (constraints.maxWidth - 8) / 2.01;
+                                  } else {
+                                    // Three per row
+                                    chipWidth = (constraints.maxWidth - 16) / 3.02;
                                   }
 
                                   return Wrap(
@@ -726,12 +729,15 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                                   color: selected ? Colors.white : AppTheme.textGrey,
                                                 ),
                                                 const SizedBox(width: 6),
-                                                Text(
-                                                  m.label,
-                                                  style: TextStyle(
-                                                    color: selected ? Colors.white : AppTheme.textGrey,
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 12,
+                                                Flexible(
+                                                  child: Text(
+                                                    m.label,
+                                                    style: TextStyle(
+                                                      color: selected ? Colors.white : AppTheme.textGrey,
+                                                      fontWeight: FontWeight.w600,
+                                                      fontSize: 12,
+                                                    ),
+                                                    overflow: TextOverflow.ellipsis,
                                                   ),
                                                 ),
                                                 if (m.penaltyAmount > 0) ...[

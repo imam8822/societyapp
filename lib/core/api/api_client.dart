@@ -31,8 +31,51 @@ class ApiClient {
         }
         return handler.next(options);
       },
-      onError: (error, handler) {
+      onError: (error, handler) async {
         debugPrint('[ApiClient] ❌ ${error.response?.statusCode} on ${error.requestOptions.path}');
+        
+        if (error.response?.statusCode == 401 && 
+            !error.requestOptions.path.contains('/auth/refresh') && 
+            !error.requestOptions.path.contains('/auth/login')) {
+          
+          final token = await StorageService.getToken();
+          final refreshToken = await StorageService.getRefreshToken();
+          
+          if (token != null && refreshToken != null) {
+            try {
+              final refreshDio = Dio(BaseOptions(baseUrl: AppConstants.baseUrl));
+              final res = await refreshDio.post('/auth/refresh', data: {
+                'token': token,
+                'refreshToken': refreshToken
+              });
+              
+              final newToken = res.data['token'];
+              final newRefreshToken = res.data['refreshToken'];
+              final role = res.data['role'];
+              final userId = res.data['userId'].toString();
+              final fullName = res.data['fullName'];
+              
+              await StorageService.saveAuthData(
+                token: newToken,
+                refreshToken: newRefreshToken,
+                role: role,
+                userId: userId,
+                userName: fullName
+              );
+
+              // Retry original request
+              error.requestOptions.headers['Authorization'] = 'Bearer $newToken';
+              final retryRes = await dio.fetch(error.requestOptions);
+              return handler.resolve(retryRes);
+            } catch (e) {
+              // Refresh failed, let the app handle logout
+              debugPrint('[ApiClient] Token refresh failed: $e');
+              await StorageService.clearAll();
+              reset();
+            }
+          }
+        }
+        
         return handler.next(error);
       },
     ));

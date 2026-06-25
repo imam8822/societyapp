@@ -11,6 +11,7 @@ import 'admin_screens.dart';
 import 'screenshot_review_screen.dart';
 import 'statistics_screen.dart';
 import '../../core/api/api_client.dart';
+import '../../widgets/network_error_widget.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -168,8 +169,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       ),
       body: dashAsync.when(
         loading: () => const ShimmerListLoader(count: 5),
-        error: (e, _) => ErrorRetry(
-            message: apiError(e),
+        error: (e, _) => NetworkErrorWidget(
+            error: e,
             onRetry: () => ref.invalidate(adminDashboardProvider)),
         data: (dash) => RefreshIndicator(
           color: AppTheme.primary,

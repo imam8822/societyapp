@@ -8,7 +8,7 @@ import '../../providers/data_providers.dart';
 import '../../widgets/shared_widgets.dart';
 import '../../models/dashboard_models.dart';
 import '../../models/contribution_models.dart';
-import '../../core/api/api_client.dart';
+import '../../widgets/network_error_widget.dart';
 
 class UserDashboardScreen extends ConsumerStatefulWidget {
   const UserDashboardScreen({super.key});
@@ -182,8 +182,8 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
   Widget _buildDashboard(AsyncValue<UserDashboard> dashAsync, NumberFormat fmt, DateTime now) {
     return dashAsync.when(
       loading: () => const ShimmerListLoader(count: 6),
-      error: (e, _) => ErrorRetry(
-          message: apiError(e),
+      error: (e, _) => NetworkErrorWidget(
+          error: e,
           onRetry: () => ref.invalidate(userDashboardProvider)),
       data: (dash) => RefreshIndicator(
         color: const Color(0xFFC084FC),

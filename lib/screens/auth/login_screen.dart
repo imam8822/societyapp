@@ -146,7 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = apiError(e);
         _loading = false;
       });
     }
@@ -170,25 +170,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                   _animated(
                     0,
                     Container(
-                      width: 80,
-                      height: 80,
+                      width: 100,
+                      height: 100,
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppTheme.primary.withOpacity(0.3),
-                            blurRadius: 24,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
+                        color: Colors.transparent,
                       ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.asset(
-                          'assets/images/logo.png',
-                          fit: BoxFit.cover,
-                        ),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
