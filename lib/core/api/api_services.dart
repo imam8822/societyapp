@@ -4,6 +4,8 @@ import '../../models/user_models.dart';
 import '../../models/contribution_models.dart';
 import '../../models/loan_models.dart';
 import '../../models/payment_models.dart';
+import '../../models/app_notification.dart';
+import '../../models/transaction_models.dart';
 
 
 // ─────────────────────────────────────────────
@@ -25,10 +27,11 @@ class DashboardApi {
 // Users
 // ─────────────────────────────────────────────
 class UserApi {
-  static Future<List<UserSummary>> getAllUsers({bool? active}) async {
+  static Future<List<UserSummary>> getAllUsers({bool? active, int page = 1, int limit = 50}) async {
     final res = await ApiClient.instance.get('/users',
-        queryParameters: active != null ? {'active': active} : null);
-    return (res.data as List).map((e) => UserSummary.fromJson(e)).toList();
+        queryParameters: {'page': page, 'limit': limit, if (active != null) 'active': active});
+    final items = res.data is List ? res.data as List : res.data['items'] as List;
+    return items.map((e) => UserSummary.fromJson(e)).toList();
   }
 
   static Future<UserSummary> getUserById(int id) async {
@@ -79,7 +82,7 @@ class ContributionApi {
   static Future<Contribution> addContribution(
       AddContributionRequest req) async {
     final res =
-        await ApiClient.instance.post('/contributions', data: req.toJson());
+        await ApiClient.instance.post('/contributions/cash', data: req.toJson());
     return Contribution.fromJson(res.data);
   }
 
@@ -115,15 +118,18 @@ class LoanApi {
     return LoanFormData.fromJson(res.data);
   }
 
-  static Future<List<LoanApplication>> getMyLoans() async {
-    final res = await ApiClient.instance.get('/loans/my');
-    return (res.data as List).map((e) => LoanApplication.fromJson(e)).toList();
+  static Future<List<LoanApplication>> getMyLoans({int page = 1, int limit = 50}) async {
+    final res = await ApiClient.instance.get('/loans/my',
+        queryParameters: {'page': page, 'limit': limit});
+    final items = res.data is List ? res.data as List : res.data['items'] as List;
+    return items.map((e) => LoanApplication.fromJson(e)).toList();
   }
 
-  static Future<List<LoanApplication>> getAllLoans({String? status}) async {
+  static Future<List<LoanApplication>> getAllLoans({String? status, int page = 1, int limit = 50}) async {
     final res = await ApiClient.instance.get('/loans',
-        queryParameters: status != null ? {'status': status} : null);
-    return (res.data as List).map((e) => LoanApplication.fromJson(e)).toList();
+        queryParameters: {'page': page, 'limit': limit, if (status != null) 'status': status});
+    final items = res.data is List ? res.data as List : res.data['items'] as List;
+    return items.map((e) => LoanApplication.fromJson(e)).toList();
   }
 
   static Future<LoanApplication> getLoanById(int id) async {
@@ -137,21 +143,17 @@ class LoanApi {
   }
 
   static Future<LoanApplication> reviewLoan(
-      int id, bool approve, String? rejectionReason, DateTime? repaymentDueDate) async {
+      int id, bool approve, String? remarks) async {
     final res = await ApiClient.instance.patch('/loans/$id/review', data: {
-      'approve': approve,
-      if (rejectionReason != null) 'rejectionReason': rejectionReason,
-      if (repaymentDueDate != null)
-        'repaymentDueDate': repaymentDueDate.toIso8601String(),
+      'approved': approve,
+      if (remarks != null) 'remarks': remarks,
     });
     return LoanApplication.fromJson(res.data);
   }
 
-  static Future<LoanApplication> disburseLoan(
-      int id, DateTime repaymentDueDate) async {
-    final res = await ApiClient.instance.patch('/loans/$id/disburse', data: {
-      'repaymentDueDate': repaymentDueDate.toIso8601String(),
-    });
+  static Future<LoanApplication> disburseLoan(int id, String mode) async {
+    // Due date auto-calculated on backend: 15th of month that is TenureMonths from today
+    final res = await ApiClient.instance.patch('/loans/$id/disburse?mode=$mode', data: {});
     return LoanApplication.fromJson(res.data);
   }
 
@@ -169,26 +171,16 @@ class LoanApi {
 // Payment / UPI
 // ─────────────────────────────────────────────
 class PaymentApi {
-  static Future<PaymentToken> generateToken(int month, int year) async {
-    final res = await ApiClient.instance
-        .post('/payment/token/generate', data: {'month': month, 'year': year});
+  /// Get existing valid token or create a new one — no params needed.
+  static Future<PaymentToken> getOrCreateToken() async {
+    final res = await ApiClient.instance.get('/payment/token');
     return PaymentToken.fromJson(res.data);
   }
 
-  static Future<PaymentToken?> getActiveToken(int month, int year) async {
-    try {
-      final res = await ApiClient.instance.get('/payment/token/active',
-          queryParameters: {'month': month, 'year': year});
-      return PaymentToken.fromJson(res.data);
-    } catch (_) {
-      return null;
-    }
-  }
-
-  static Future<ScreenshotResult> uploadScreenshot(
-      int tokenId, String base64Image) async {
+  /// Upload screenshot — backend finds active token automatically.
+  static Future<ScreenshotResult> uploadScreenshot(String base64Image) async {
     final res = await ApiClient.instance.post(
-        '/payment/token/$tokenId/upload-screenshot',
+        '/payment/upload-screenshot',
         data: {'screenshotBase64': base64Image});
     return ScreenshotResult.fromJson(res.data);
   }
@@ -200,10 +192,44 @@ class PaymentApi {
         .toList();
   }
 
+  /// Admin: approve or reject a contribution by contributionId (not tokenId).
   static Future<void> adminVerify(
-      int tokenId, bool approve, String? remarks) async {
+      int contributionId, bool approve, String? remarks) async {
     await ApiClient.instance
-        .patch('/payment/token/$tokenId/admin-verify', data: {
+        .patch('/payment/contributions/$contributionId/verify', data: {
+      'approve': approve,
+      if (remarks != null) 'remarks': remarks,
+    });
+  }
+
+  // ── Loan Repayment ──────────────────────────────────
+
+  /// Get or create a payment token for loan repayment.
+  static Future<PaymentToken> getOrCreateLoanToken(int loanId) async {
+    final res = await ApiClient.instance.get('/payment/loan-token/$loanId');
+    return PaymentToken.fromJson(res.data);
+  }
+
+  /// Upload screenshot for loan repayment verification.
+  static Future<ScreenshotResult> uploadLoanScreenshot(
+      int loanId, String base64Image) async {
+    final res = await ApiClient.instance.post(
+        '/payment/loan-screenshot/$loanId',
+        data: {'screenshotBase64': base64Image});
+    return ScreenshotResult.fromJson(res.data);
+  }
+
+  static Future<List<PendingLoanRepayment>> getPendingLoanRepayments() async {
+    final res = await ApiClient.instance.get('/payment/pending-loan-repayments');
+    return (res.data as List)
+        .map((e) => PendingLoanRepayment.fromJson(e))
+        .toList();
+  }
+
+  static Future<void> adminVerifyLoanRepayment(
+      int loanRepaymentId, bool approve, String? remarks) async {
+    await ApiClient.instance
+        .patch('/payment/loan-repayments/$loanRepaymentId/verify', data: {
       'approve': approve,
       if (remarks != null) 'remarks': remarks,
     });
@@ -225,3 +251,53 @@ class SettingsApi {
     return SocietySettings.fromJson(res.data);
   }
 }
+
+// ─────────────────────────────────────────────
+// Notifications
+// ─────────────────────────────────────────────
+class NotificationApi {
+  static Future<List<AppNotification>> getMyNotifications() async {
+    final res = await ApiClient.instance.get('/Notifications');
+    return (res.data as List).map((e) => AppNotification.fromJson(e)).toList();
+  }
+
+  static Future<void> markAsRead(int id) async {
+    await ApiClient.instance.put('/Notifications/$id/read');
+  }
+
+  static Future<void> saveFcmToken(String token) async {
+    await ApiClient.instance.post('/Notifications/fcm-token', data: {'token': token});
+  }
+}
+
+// ─────────────────────────────────────────────
+// Transactions (Ledger & Stats)
+// ─────────────────────────────────────────────
+class TransactionApi {
+  static Future<List<TransactionDto>> getTransactions({int limit = 100}) async {
+    final res = await ApiClient.instance.get('/transaction', queryParameters: {'limit': limit});
+    return (res.data as List).map((e) => TransactionDto.fromJson(e)).toList();
+  }
+
+  static Future<TransactionStatsDto> getStats() async {
+    final res = await ApiClient.instance.get('/transaction/stats');
+    return TransactionStatsDto.fromJson(res.data);
+  }
+
+  static Future<void> exportStatement({
+    DateTime? startDate,
+    DateTime? endDate,
+    required String format,
+    required String savePath,
+  }) async {
+    final Map<String, dynamic> params = {'format': format};
+    if (startDate != null) params['startDate'] = startDate.toIso8601String();
+    if (endDate != null) params['endDate'] = endDate.toIso8601String();
+
+    await ApiClient.instance.download(
+      '/transaction/export',
+      savePath,
+      queryParameters: params,
+    );
+  }
+}

@@ -42,13 +42,16 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
     setState(() => _loading = true);
     try {
       final data = <String, dynamic>{};
-      if (_phoneCtrl.text.trim() != widget.member.phone)
+      if (_phoneCtrl.text.trim() != widget.member.phone) {
         data['phone'] = _phoneCtrl.text.trim();
+      }
       if (_emailCtrl.text.trim().isNotEmpty &&
-          _emailCtrl.text.trim() != widget.member.email)
+          _emailCtrl.text.trim() != widget.member.email) {
         data['email'] = _emailCtrl.text.trim();
-      if (_passCtrl.text.isNotEmpty)
+      }
+      if (_passCtrl.text.isNotEmpty) {
         data['newPassword'] = _passCtrl.text;
+      }
 
       if (data.isEmpty) { Navigator.pop(context); return; }
 
@@ -60,9 +63,10 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
             const SnackBar(content: Text('Member updated successfully')));
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(e.toString())));
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -73,9 +77,9 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
     return Padding(
       padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: context.colors.surfaceWhite,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
         child: Form(
@@ -83,42 +87,46 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             // Handle bar
             Container(width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2))),
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
             const SizedBox(height: 16),
             Row(children: [
               CircleAvatar(
-                backgroundColor: AppTheme.primaryLight,
+                backgroundColor: context.colors.primaryLight,
                 child: Text(widget.member.fullName[0].toUpperCase(),
-                    style: const TextStyle(color: AppTheme.primary, fontWeight: FontWeight.w700)),
+                    style: TextStyle(color: context.colors.primary, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(width: 12),
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(widget.member.fullName,
-                    style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textDark)),
-                const Text('Edit contact & password',
-                    style: TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: context.colors.textDark)),
+                Text('Edit contact & password',
+                    style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
               ]),
               const Spacer(),
               IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
             ]),
-            const Divider(height: 24),
+            Divider(height: 24, color: context.colors.divider),
             TextFormField(
               controller: _phoneCtrl,
               keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Mobile Number',
-                prefixIcon: Icon(Icons.phone_outlined),
+                prefixIcon: Icon(Icons.phone_outlined, color: context.colors.textGrey),
+                labelStyle: TextStyle(color: context.colors.textGrey),
               ),
+              style: TextStyle(color: context.colors.textDark),
               validator: (v) => v!.length < 10 ? 'Enter valid mobile' : null,
             ),
             const SizedBox(height: 14),
             TextFormField(
               controller: _emailCtrl,
               keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Email (optional)',
-                prefixIcon: Icon(Icons.email_outlined),
+                prefixIcon: Icon(Icons.email_outlined, color: context.colors.textGrey),
+                labelStyle: TextStyle(color: context.colors.textGrey),
               ),
+              style: TextStyle(color: context.colors.textDark),
             ),
             const SizedBox(height: 14),
             TextFormField(
@@ -126,12 +134,14 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
               obscureText: _obscure,
               decoration: InputDecoration(
                 labelText: 'New Password (leave blank to keep)',
-                prefixIcon: const Icon(Icons.lock_outlined),
+                prefixIcon: Icon(Icons.lock_outlined, color: context.colors.textGrey),
+                labelStyle: TextStyle(color: context.colors.textGrey),
                 suffixIcon: IconButton(
-                  icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                  icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined, color: context.colors.textGrey),
                   onPressed: () => setState(() => _obscure = !_obscure),
                 ),
               ),
+              style: TextStyle(color: context.colors.textDark),
               validator: (v) => v!.isNotEmpty && v.length < 6 ? 'Min 6 characters' : null,
             ),
             const SizedBox(height: 24),

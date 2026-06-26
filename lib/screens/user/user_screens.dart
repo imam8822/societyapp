@@ -13,9 +13,6 @@ import 'package:society_app/widgets/shared_widgets.dart';
 // ═════════════════════════════════════════════
 // Contribution History
 // ═════════════════════════════════════════════
-final myContributionsProvider = FutureProvider.autoDispose<List<Contribution>>((ref) async {
-  return await ContributionApi.getMyContributions();
-});
 
 class ContributionHistoryScreen extends ConsumerWidget {
   const ContributionHistoryScreen({super.key});
@@ -25,12 +22,12 @@ class ContributionHistoryScreen extends ConsumerWidget {
     final contribAsync = ref.watch(myContributionsProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Contribution History')),
       body: contribAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.primary)),
+        loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => ErrorRetry(
-            message: e.toString(),
+            message: apiError(e),
             onRetry: () => ref.invalidate(myContributionsProvider)),
         data: (list) => list.isEmpty
             ? const EmptyState(
@@ -57,9 +54,9 @@ class _ContributionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         children: [
@@ -70,13 +67,13 @@ class _ContributionCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(c.monthName,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
-                            color: AppTheme.textDark)),
+                            color: context.colors.textDark)),
                     const SizedBox(height: 2),
                     Text(DateFormat('d MMM yyyy').format(c.paidDate),
-                        style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                        style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
                   ],
                 ),
               ),
@@ -84,10 +81,10 @@ class _ContributionCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text('₹${c.amount.toStringAsFixed(0)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: AppTheme.textDark)),
+                          color: context.colors.textDark)),
                   const SizedBox(height: 4),
                   StatusBadge(status: c.isVerified ? 'Verified' : 'Pending'),
                 ],
@@ -98,13 +95,13 @@ class _ContributionCard extends StatelessWidget {
             const Divider(height: 20),
             Row(
               children: [
-                const Icon(Icons.tag_rounded, size: 14, color: AppTheme.textGrey),
+                Icon(Icons.tag_rounded, size: 14, color: context.colors.textGrey),
                 const SizedBox(width: 4),
                 Text(c.transactionReference ?? '-',
-                    style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                    style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
                 const Spacer(),
                 Text(c.mode,
-                    style: const TextStyle(color: AppTheme.textGrey, fontSize: 12)),
+                    style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
               ],
             ),
           ],
@@ -134,7 +131,6 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
   bool _submitting = false;
 
   LoanOption? _selectedOption;
-  int? _selectedTenure;
   GuarantorOption? _selectedGuarantor;
 
   @override
@@ -154,15 +150,13 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       setState(() { _formData = data; _loadingForm = false; });
     } catch (e) {
       setState(() => _loadingForm = false);
-      if (mounted) ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(apiError(e))));
+      if (mounted) AppToast.showError(context, apiError(e));
     }
   }
 
+  // Use guarantorRequired flag from backend — already calculated per user
   bool get _needsGuarantor =>
-      _selectedOption != null &&
-      _formData != null &&
-      _selectedOption!.amount > _formData!.userTotalInvested;
+      _selectedOption != null && _selectedOption!.guarantorRequired;
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
@@ -174,10 +168,6 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       _snack('You are not eligible for this loan option');
       return;
     }
-    if (_selectedTenure == null) {
-      _snack('Please select repayment tenure');
-      return;
-    }
     if (_needsGuarantor && _selectedGuarantor == null) {
       _snack('Please select a guarantor');
       return;
@@ -186,8 +176,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
     setState(() => _submitting = true);
     try {
       await LoanApi.applyLoan(ApplyLoanRequest(
-        requestedAmount: _selectedOption!.amount,
-        tenureMonths: _selectedTenure!,
+        loanOptionId: _selectedOption!.id,
         guarantorId: _needsGuarantor ? _selectedGuarantor?.id : null,
       ));
       if (mounted) {
@@ -201,16 +190,48 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
     }
   }
 
-  void _snack(String msg) =>
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  void _snack(String msg) {
+    if (msg.contains('submitted') || msg.contains('success')) {
+      AppToast.showSuccess(context, msg);
+    } else {
+      AppToast.showError(context, msg);
+    }
+  }
+
+  /// Repayment due = on or before 15th of the month that is [tenureMonths] from today
+  /// e.g. Applied March 18 + 4 months → due on or before July 15
+  String _repaymentDate(int tenureMonths) {
+    final now = DateTime.now();
+    final dueMonth = DateTime(now.year, now.month + tenureMonths, 15);
+    const months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return 'On or before 15 ${months[dueMonth.month]} ${dueMonth.year}';
+  }
+
+  Widget _summaryRow(IconData icon, String label, String value,
+      {bool highlight = false}) =>
+      Row(children: [
+        Icon(icon,
+            size: 14,
+            color: highlight ? context.colors.primary : context.colors.textGrey),
+        const SizedBox(width: 6),
+        Text('$label: ',
+            style: TextStyle(
+                fontSize: 12, color: context.colors.textGrey)),
+        Text(value,
+            style: TextStyle(
+                fontSize: 12,
+                fontWeight: highlight ? FontWeight.w700 : FontWeight.w500,
+                color: highlight ? context.colors.primary : context.colors.textDark)),
+      ]);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Apply for Loan')),
       body: _loadingForm
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.primary))
+          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
           : _formData == null
               ? Center(
                   child: ErrorRetry(
@@ -235,15 +256,17 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: _needsGuarantor ? const Color(0xFFFFF8E1) : const Color(0xFFE8F5E9),
+              color: _needsGuarantor 
+                  ? const Color(0xFF261D15) 
+                  : const Color(0xFF10B981).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: _needsGuarantor ? AppTheme.warning : const Color(0xFF2ECC71)),
+                color: _needsGuarantor ? context.colors.warning : const Color(0xFF10B981)),
             ),
             child: Row(children: [
               Icon(
                 _needsGuarantor ? Icons.info_outline_rounded : Icons.check_circle_outline_rounded,
-                color: _needsGuarantor ? AppTheme.warning : const Color(0xFF2ECC71),
+                color: _needsGuarantor ? context.colors.warning : const Color(0xFF10B981),
                 size: 20,
               ),
               const SizedBox(width: 10),
@@ -251,10 +274,10 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                 child: Text(
                   _needsGuarantor
                       ? 'Loan amount exceeds your invested amount (${_fmt.format(data.userTotalInvested)}). A guarantor is required.'
-                      : 'No guarantor needed — loan amount is within your invested amount (${_fmt.format(data.userTotalInvested)}).',
+                      : 'Your investment of ${_fmt.format(data.userTotalInvested)} covers this loan — no guarantor needed.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: _needsGuarantor ? AppTheme.warning : const Color(0xFF2ECC71),
+                    color: _needsGuarantor ? context.colors.warning : const Color(0xFF10B981),
                   ),
                 ),
               ),
@@ -264,120 +287,111 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
 
           // ── Loan Amount ──────────────────────────────
           _Section(title: 'Loan Amount', children: [
-            DropdownButtonFormField<LoanOption>(
-              value: _selectedOption,
-              isExpanded: true,
-              hint: const Text('Select amount'),
-              decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.monetization_on_outlined)),
-              items: data.loanOptions.map((o) => DropdownMenuItem(
-                value: o,
-                child: Text(
-                  '${o.label}  (${o.minTenureRequired} months required)',
-                  overflow: TextOverflow.ellipsis,
+            InkWell(
+              onTap: () => _showAmountBottomSheet(data),
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                decoration: BoxDecoration(
+                  color: context.colors.bgGrey,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: context.colors.divider),
                 ),
-              )).toList(),
-              onChanged: (v) => setState(() {
-                _selectedOption = v;
-                _selectedTenure = null;
-                _selectedGuarantor = null;
-              }),
+                child: Row(
+                  children: [
+                    Icon(Icons.currency_rupee_rounded, color: context.colors.primary, size: 20),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _selectedOption != null 
+                            ? '${_selectedOption!.label} (${_selectedOption!.minTenureRequired} months req)' 
+                            : 'Select amount',
+                        style: TextStyle(
+                          fontSize: 15,
+                          color: _selectedOption != null ? context.colors.textDark : context.colors.textGrey,
+                        ),
+                      ),
+                    ),
+                    Icon(Icons.keyboard_arrow_down_rounded, color: context.colors.textGrey),
+                  ],
+                ),
+              ),
             ),
 
-            // Instant eligibility feedback
+            // Eligibility feedback + repayment summary
             if (_selectedOption != null) ...[
               const SizedBox(height: 10),
-              _selectedOption!.isEligible
-                  ? Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE8F5E9),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: const Color(0xFF2ECC71)),
-                      ),
-                      child: Row(children: [
-                        const Icon(Icons.check_circle_outline,
-                            color: Color(0xFF2ECC71), size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'You\'re eligible!  Fixed EMI: ${_fmt.format(_selectedOption!.repaymentAmount)}/month  ·  Max ${_selectedOption!.maxRepaymentTenure} months',
-                            style: const TextStyle(
-                                color: Color(0xFF2ECC71),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500),
-                          ),
-                        ),
-                      ]),
-                    )
-                  : Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppTheme.error),
-                      ),
-                      child: Row(children: [
-                        const Icon(Icons.lock_outline, color: AppTheme.error, size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'You need ${_selectedOption!.minTenureRequired} months paid to apply for ${_selectedOption!.label}. '
-                            'You currently have ${data.userPaidMonths} months.',
-                            style: const TextStyle(color: AppTheme.error, fontSize: 12),
-                          ),
-                        ),
-                      ]),
-                    ),
-            ],
-          ]),
-          const SizedBox(height: 14),
-
-          // ── Tenure (only if eligible) ────────────────
-          if (_selectedOption != null && _selectedOption!.isEligible)
-            _Section(title: 'Repayment Tenure', children: [
-              DropdownButtonFormField<int>(
-                value: _selectedTenure,
-                isExpanded: true,
-                hint: const Text('Select tenure'),
-                decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.calendar_month_outlined)),
-                items: List.generate(
-                  _selectedOption!.maxRepaymentTenure,
-                  (i) => DropdownMenuItem(
-                      value: i + 1, child: Text('${i + 1} months')),
-                ),
-                onChanged: (v) => setState(() => _selectedTenure = v),
-                validator: (v) => v == null ? 'Select tenure' : null,
-              ),
-              // Fixed repayment summary
-              if (_selectedTenure != null) ...[
-                const SizedBox(height: 12),
+              if (_selectedOption!.isEligible) ...[
+                // Repayment details card
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryLight,
+                    color: context.colors.primaryLight,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: context.colors.primary.withValues(alpha: 0.3)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(children: [
+                        Icon(Icons.check_circle_outline,
+                            color: context.colors.primary, size: 16),
+                        const SizedBox(width: 6),
+                        Text('You are eligible!',
+                            style: TextStyle(
+                                color: context.colors.primary,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13)),
+                      ]),
+                      const SizedBox(height: 10),
+                      // Tenure row
+                      _summaryRow(
+                        Icons.calendar_month_outlined,
+                        'Repayment Tenure',
+                        '${_selectedOption!.maxRepaymentTenure} months',
+                      ),
+                      const SizedBox(height: 6),
+                      // Total repayment row
+                      _summaryRow(
+                        Icons.receipt_long_outlined,
+                        'Single Repayment',
+                        _fmt.format(_selectedOption!.repaymentAmount),
+                        highlight: true,
+                      ),
+                      const SizedBox(height: 6),
+                      // Repayment due date row
+                      _summaryRow(
+                        Icons.event_rounded,
+                        'Due Date',
+                        _repaymentDate(_selectedOption!.maxRepaymentTenure),
+                        highlight: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ] else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: context.colors.error.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: context.colors.error),
                   ),
                   child: Row(children: [
-                    const Icon(Icons.receipt_long_outlined,
-                        color: AppTheme.primary, size: 18),
+                    Icon(Icons.lock_outline, color: context.colors.error, size: 16),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '${_fmt.format(_selectedOption!.repaymentAmount)}/month  ×  $_selectedTenure months  =  ${_fmt.format(_selectedOption!.repaymentAmount * _selectedTenure!)} total',
-                        style: const TextStyle(
-                            color: AppTheme.primary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600),
+                        'You need ${_selectedOption!.minTenureRequired} months paid for ${_selectedOption!.label}. '
+                        'You have ${data.userPaidMonths} months.',
+                        style: TextStyle(color: context.colors.error, fontSize: 12),
                       ),
                     ),
                   ]),
                 ),
-              ],
-            ]),
-          if (_selectedOption != null && _selectedOption!.isEligible)
-            const SizedBox(height: 14),
+            ],
+          ]),
+          const SizedBox(height: 14),
 
           // ── Guarantor (only if needed) ───────────────
           if (_needsGuarantor)
@@ -386,35 +400,60 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                   ? Container(
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2),
+                        color: context.colors.error.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Row(children: [
+                      child: Row(children: [
                         Icon(Icons.warning_amber_rounded,
-                            color: AppTheme.error, size: 18),
-                        SizedBox(width: 8),
+                            color: context.colors.error, size: 18),
+                        const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             'No eligible guarantors available.',
-                            style: TextStyle(color: AppTheme.error, fontSize: 12),
+                            style: TextStyle(color: context.colors.error, fontSize: 12),
                           ),
                         ),
                       ]),
                     )
-                  : DropdownButtonFormField<GuarantorOption>(
-                      value: _selectedGuarantor,
-                      isExpanded: true,
-                      hint: const Text('Select guarantor'),
-                      decoration: const InputDecoration(
-                          prefixIcon: Icon(Icons.people_outlined)),
-                      items: data.availableGuarantors.map((g) => DropdownMenuItem(
-                        value: g,
-                        child: Text('${g.fullName} (${g.phone})',
-                            overflow: TextOverflow.ellipsis),
-                      )).toList(),
-                      onChanged: (v) => setState(() => _selectedGuarantor = v),
-                      validator: (v) =>
-                          _needsGuarantor && v == null ? 'Select guarantor' : null,
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        InkWell(
+                          onTap: () => _showGuarantorBottomSheet(data),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: context.colors.bgGrey,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: (_needsGuarantor && _submitting && _selectedGuarantor == null) ? context.colors.error : context.colors.divider),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.people_outlined, color: context.colors.primary, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedGuarantor != null 
+                                        ? '${_selectedGuarantor!.fullName} (${_selectedGuarantor!.phone})' 
+                                        : 'Select guarantor',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: _selectedGuarantor != null ? context.colors.textDark : context.colors.textGrey,
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.keyboard_arrow_down_rounded, color: context.colors.textGrey),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_needsGuarantor && _submitting && _selectedGuarantor == null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12, top: 8),
+                            child: Text('Please select a guarantor', style: TextStyle(color: context.colors.error, fontSize: 12)),
+                          ),
+                      ],
                     ),
             ]),
           if (_needsGuarantor) const SizedBox(height: 14),
@@ -437,6 +476,176 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       ),
     );
   }
+
+  void _showAmountBottomSheet(LoanFormData data) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.colors.bgGrey,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: context.colors.divider, borderRadius: BorderRadius.circular(2)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Text('Select Loan Amount', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textDark)),
+              ),
+              Divider(height: 1, color: context.colors.divider),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: data.loanOptions.length,
+                  itemBuilder: (ctx, i) {
+                    final o = data.loanOptions[i];
+                    final isSelected = _selectedOption?.id == o.id;
+                    return InkWell(
+                      onTap: () {
+                        setState(() {
+                          _selectedOption = o;
+                          _selectedGuarantor = null;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isSelected ? context.colors.primary.withValues(alpha: 0.05) : Colors.transparent,
+                          border: Border(bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5))),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isSelected ? context.colors.primary : context.colors.surfaceWhite,
+                                shape: BoxShape.circle,
+                                border: isSelected ? null : Border.all(color: context.colors.divider),
+                              ),
+                              child: Icon(Icons.currency_rupee_rounded, 
+                                  color: isSelected ? Colors.white : context.colors.textGrey, size: 18),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(o.label, style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      color: isSelected ? context.colors.primary : context.colors.textDark)),
+                                  const SizedBox(height: 4),
+                                  Text('${o.minTenureRequired} months paid required', 
+                                      style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                            if (isSelected) Icon(Icons.check_circle_rounded, color: context.colors.primary),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showGuarantorBottomSheet(LoanFormData data) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: context.colors.bgGrey,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: context.colors.divider, borderRadius: BorderRadius.circular(2)),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Text('Select Guarantor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textDark)),
+              ),
+              Divider(height: 1, color: context.colors.divider),
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: data.availableGuarantors.length,
+                  itemBuilder: (ctx, i) {
+                    final g = data.availableGuarantors[i];
+                    final isSelected = _selectedGuarantor?.id == g.id;
+                    return InkWell(
+                      onTap: () {
+                        setState(() => _selectedGuarantor = g);
+                        Navigator.pop(ctx);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                        decoration: BoxDecoration(
+                          color: isSelected ? context.colors.primary.withValues(alpha: 0.05) : Colors.transparent,
+                          border: Border(bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5))),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: isSelected ? context.colors.primary : context.colors.surfaceWhite,
+                                shape: BoxShape.circle,
+                                border: isSelected ? null : Border.all(color: context.colors.divider),
+                              ),
+                              child: Icon(Icons.person_rounded, 
+                                  color: isSelected ? Colors.white : context.colors.textGrey, size: 18),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(g.fullName, style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                      color: isSelected ? context.colors.primary : context.colors.textDark)),
+                                  const SizedBox(height: 4),
+                                  Text(g.phone, style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                                ],
+                              ),
+                            ),
+                            if (isSelected) Icon(Icons.check_circle_rounded, color: context.colors.primary),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _Section extends StatelessWidget {
@@ -449,16 +658,16 @@ class _Section extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: context.colors.surfaceWhite,
       borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: AppTheme.divider),
+      border: Border.all(color: context.colors.divider),
     ),
     child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text(title.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: AppTheme.textGrey,
+              color: context.colors.textGrey,
               letterSpacing: 0.5)),
       const SizedBox(height: 12),
       ...children,
@@ -477,13 +686,13 @@ class LoanStatusScreen extends ConsumerWidget {
     final loansAsync = ref.watch(myLoansProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('My Loans')),
       body: loansAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary)),
+        loading: () => Center(
+            child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => ErrorRetry(
-            message: e.toString(),
+            message: apiError(e),
             onRetry: () => ref.invalidate(myLoansProvider)),
         data: (loans) => loans.isEmpty
             ? const EmptyState(
@@ -510,9 +719,9 @@ class _LoanDetailCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -520,11 +729,11 @@ class _LoanDetailCard extends StatelessWidget {
           Row(children: [
             Expanded(
               child: Text(
-                '₹${loan.requestedAmount.toStringAsFixed(0)}',
-                style: const TextStyle(
+                '₹${loan.amount.toStringAsFixed(0)}',
+                style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
-                    color: AppTheme.textDark),
+                    color: context.colors.textDark),
               ),
             ),
             StatusBadge(status: loan.status),
@@ -533,31 +742,20 @@ class _LoanDetailCard extends StatelessWidget {
           InfoRow(
               label: 'Applied',
               value: DateFormat('d MMM yyyy').format(loan.appliedDate)),
-          if (loan.approvedAmount != null)
-            InfoRow(
-                label: 'Approved',
-                value: '₹${loan.approvedAmount!.toStringAsFixed(0)}'),
-          if (loan.monthlyInstallmentAmount != null)
-            InfoRow(
-                label: 'Monthly EMI',
-                value: '₹${loan.monthlyInstallmentAmount!.toStringAsFixed(0)}'),
           if (loan.tenureMonths != null)
             InfoRow(label: 'Tenure', value: '${loan.tenureMonths} months'),
           if (loan.disbursedDate != null)
             InfoRow(
                 label: 'Disbursed',
-                value: DateFormat('d MMM yyyy').format(loan.disbursedDate!)),
-          if (loan.repaymentStartDate != null)
+                value: '${DateFormat('d MMM yyyy').format(loan.disbursedDate!)}${loan.disbursementMode != null ? ' via ${loan.disbursementMode}' : ''}'),
+          if (loan.repaymentDueDate != null)
             InfoRow(
-                label: 'Repayment Start',
-                value: DateFormat('d MMM yyyy').format(loan.repaymentStartDate!)),
-          if (loan.finalRepaymentDueDate != null)
+                label: 'Due Date',
+                value: 'On or before ${DateFormat('d MMM yyyy').format(loan.repaymentDueDate!)}'),
+          if (loan.totalRepaid > 0)
             InfoRow(
-                label: 'Final Due',
-                value: DateFormat('d MMM yyyy').format(loan.finalRepaymentDueDate!)),
-          InfoRow(
-              label: 'Repaid',
-              value: '₹${loan.totalRepaid.toStringAsFixed(0)}'),
+                label: 'Repaid',
+                value: '₹${loan.totalRepaid.toStringAsFixed(0)}'),
           if (loan.outstandingAmount > 0)
             InfoRow(
                 label: 'Outstanding',
@@ -569,6 +767,31 @@ class _LoanDetailCard extends StatelessWidget {
                 label: 'Reason',
                 value: loan.rejectionReason!,
                 last: true),
+
+          // Repay Button
+          if (loan.isDisbursed) ...[
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: loan.hasPendingRepayment
+                    ? null
+                    : () => context.push('/loan/repay/${loan.id}'),
+                icon: Icon(loan.hasPendingRepayment
+                    ? Icons.hourglass_empty_rounded
+                    : Icons.payment_rounded),
+                label: Text(loan.hasPendingRepayment
+                    ? 'Repayment Pending Review'
+                    : 'Repay Loan'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2563EB),
+                  disabledBackgroundColor: context.colors.divider,
+                  disabledForegroundColor: context.colors.textGrey,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

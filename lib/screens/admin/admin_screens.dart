@@ -8,46 +8,177 @@ import '../../core/api/api_client.dart';
 import '../../core/constants.dart';
 import '../../models/loan_models.dart';
 import '../../models/payment_models.dart';
-
 import '../../providers/data_providers.dart';
+import '../../providers/settings_notifier.dart';
+import '../../providers/theme_provider.dart';
 import '../../widgets/shared_widgets.dart';
 
 // ═════════════════════════════════════════════
 // Loan Review
 // ═════════════════════════════════════════════
-class LoanReviewScreen extends ConsumerWidget {
+class LoanReviewScreen extends ConsumerStatefulWidget {
   const LoanReviewScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<LoanReviewScreen> createState() => _LoanReviewScreenState();
+}
+
+class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
+  String _searchQuery = '';
+  double? _amountFilter; // null means 'All'
+
+  @override
+  Widget build(BuildContext context) {
     final loansAsync = ref.watch(allLoansProvider);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Loan Applications')),
       body: loansAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary)),
+        loading: () => Center(
+            child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => ErrorRetry(
-            message: e.toString(),
+            message: apiError(e),
             onRetry: () => ref.invalidate(allLoansProvider)),
-        data: (loans) => loans.isEmpty
-            ? const EmptyState(
-                icon: Icons.account_balance_outlined,
-                title: 'No loan applications')
-            : RefreshIndicator(
-                color: AppTheme.primary,
-                onRefresh: () async => ref.invalidate(allLoansProvider),
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: loans.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) => _LoanReviewCard(
-                    loan: loans[i],
-                    onAction: () => ref.invalidate(allLoansProvider),
+        data: (loans) {
+          final uniqueAmounts = loans.map((l) => l.amount).toSet().toList()..sort();
+          final fmtFilter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+
+          // Auto-reset filter if selected amount is no longer in the loans list
+          if (_amountFilter != null && !uniqueAmounts.contains(_amountFilter)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                setState(() {
+                  _amountFilter = null;
+                });
+              }
+            });
+          }
+
+          final filtered = loans.where((l) {
+            final matchesSearch = l.applicantName.toLowerCase().contains(_searchQuery.toLowerCase()) || 
+                                  l.applicantPhone.contains(_searchQuery);
+            final matchesAmount = _amountFilter == null || l.amount == _amountFilter;
+            return matchesSearch && matchesAmount;
+          }).toList();
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+                child: TextField(
+                  onChanged: (val) => setState(() => _searchQuery = val),
+                  decoration: InputDecoration(
+                    hintText: 'Search by name or phone...',
+                    prefixIcon: Icon(Icons.search, color: context.colors.textGrey),
+                    filled: true,
+                    fillColor: context.colors.surfaceWhite,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: context.colors.divider),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: context.colors.divider),
+                    ),
                   ),
                 ),
               ),
+              Padding(
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                child: SizedBox(
+                  height: 36,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      // 'All' option
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text('All', style: TextStyle(
+                            fontSize: 12,
+                            color: _amountFilter == null ? Colors.white : context.colors.textGrey,
+                            fontWeight: _amountFilter == null ? FontWeight.bold : FontWeight.normal,
+                          )),
+                          selected: _amountFilter == null,
+                          selectedColor: context.colors.primary,
+                          backgroundColor: context.colors.surfaceWhite,
+                          onSelected: (val) {
+                            if (val) {
+                              setState(() {
+                                _amountFilter = null;
+                              });
+                            }
+                          },
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: _amountFilter == null ? context.colors.primary : context.colors.divider,
+                            ),
+                          ),
+                          showCheckmark: false,
+                        ),
+                      ),
+                      // Dynamic amounts
+                      ...uniqueAmounts.map((amount) {
+                        final selected = _amountFilter == amount;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: ChoiceChip(
+                            label: Text(fmtFilter.format(amount), style: TextStyle(
+                              fontSize: 12,
+                              color: selected ? Colors.white : context.colors.textGrey,
+                              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+                            )),
+                            selected: selected,
+                            selectedColor: context.colors.primary,
+                            backgroundColor: context.colors.surfaceWhite,
+                            onSelected: (val) {
+                              setState(() {
+                                _amountFilter = val ? amount : null;
+                              });
+                            },
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(
+                                color: selected ? context.colors.primary : context.colors.divider,
+                              ),
+                            ),
+                            showCheckmark: false,
+                          ),
+                        );
+                      }),
+                    ],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: loans.isEmpty
+                  ? const EmptyState(
+                      icon: Icons.account_balance_outlined,
+                      title: 'No loan applications')
+                  : filtered.isEmpty
+                    ? const EmptyState(
+                        icon: Icons.search_off,
+                        title: 'No matching applications')
+                    : RefreshIndicator(
+                        color: context.colors.primary,
+                        onRefresh: () async => ref.invalidate(allLoansProvider),
+                        child: ListView.separated(
+                          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+                          itemCount: filtered.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (_, i) => _LoanReviewCard(
+                            loan: filtered[i],
+                            onAction: () => ref.invalidate(allLoansProvider),
+                          ),
+                        ),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -65,28 +196,51 @@ class _LoanReviewCard extends StatefulWidget {
 class _LoanReviewCardState extends State<_LoanReviewCard> {
   bool _loading = false;
 
-  Future<void> _review(bool approve) async {
-    DateTime? dueDate;
-    String? reason;
-
-    if (approve) {
-      dueDate = await showDatePicker(
-        context: context,
-        initialDate: DateTime.now().add(const Duration(days: 90)),
-        firstDate: DateTime.now(),
-        lastDate: DateTime.now().add(const Duration(days: 365)),
-        helpText: 'Set Repayment Due Date',
-      );
-      if (dueDate == null) return;
-    } else {
-      reason = await _askReason();
-      if (reason == null) return;
-    }
+  Future<void> _approve() async {
+    // Ask for optional remarks
+    final remarks = await _showRemarksDialog(
+      title: 'Approve Loan',
+      subtitle: 'Add a note for the member (optional)',
+      confirmLabel: 'Approve',
+      confirmColor: const Color(0xFF16A34A),
+      confirmIcon: Icons.check_circle_rounded,
+      required: false,
+    );
+    if (remarks == null) return; // cancelled
 
     setState(() => _loading = true);
     try {
       await LoanApi.reviewLoan(
-          widget.loan.id, approve, reason, dueDate);
+        widget.loan.id,
+        true,
+        remarks.isEmpty ? null : remarks,
+      );
+      widget.onAction();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(apiError(e))));
+      }
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _reject() async {
+    // Ask for required rejection reason
+    final reason = await _showRemarksDialog(
+      title: 'Reject Loan',
+      subtitle: 'Please provide a reason for rejection',
+      confirmLabel: 'Reject',
+      confirmColor: context.colors.error,
+      confirmIcon: Icons.cancel_rounded,
+      required: true,
+    );
+    if (reason == null || reason.isEmpty) return; // cancelled or empty
+
+    setState(() => _loading = true);
+    try {
+      await LoanApi.reviewLoan(widget.loan.id, false, reason);
       widget.onAction();
     } catch (e) {
       if (mounted) {
@@ -99,18 +253,108 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
   }
 
   Future<void> _disburse() async {
-    final dueDate = await showDatePicker(
+    // Confirm before disbursing
+    final mode = await showDialog<String>(
       context: context,
-      initialDate: DateTime.now().add(const Duration(days: 90)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      helpText: 'Set Repayment Due Date',
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: context.colors.surfaceWhite,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF7C3AED).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.payments_rounded, color: Color(0xFF7C3AED)),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Text('Disburse Loan',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: context.colors.textDark)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              Text('Disburse ₹${NumberFormat('#,##,###').format(widget.loan.amount)} to ${widget.loan.applicantName}?',
+                  style: TextStyle(fontSize: 15, color: context.colors.textDark)),
+              const SizedBox(height: 24),
+              Text('Select Disbursement Mode:',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: context.colors.textGrey)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context, 'Cash'),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFF16A34A).withValues(alpha: 0.3)),
+                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF16A34A).withValues(alpha: 0.05),
+                        ),
+                        child: const Column(
+                          children: [
+                            Icon(Icons.money, color: Color(0xFF16A34A), size: 32),
+                            SizedBox(height: 8),
+                            Text('Cash', style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => Navigator.pop(context, 'Online'),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: const Color(0xFF7C3AED).withValues(alpha: 0.3)),
+                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF7C3AED).withValues(alpha: 0.05),
+                        ),
+                        child: const Column(
+                          children: [
+                            Icon(Icons.account_balance, color: Color(0xFF7C3AED), size: 32),
+                            SizedBox(height: 8),
+                            Text('Online', style: TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.w700)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                style: TextButton.styleFrom(
+                  foregroundColor: context.colors.textGrey,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
-    if (dueDate == null) return;
+    if (mode == null) return;
 
     setState(() => _loading = true);
     try {
-      await LoanApi.disburseLoan(widget.loan.id, dueDate);
+      await LoanApi.disburseLoan(widget.loan.id, mode);
       widget.onAction();
     } catch (e) {
       if (mounted) {
@@ -122,26 +366,71 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
     }
   }
 
-  Future<String?> _askReason() async {
+  /// Returns the typed text on confirm, null on cancel.
+  /// If [required] is true, confirm button is disabled until text is entered.
+  Future<String?> _showRemarksDialog({
+    required String title,
+    required String subtitle,
+    required String confirmLabel,
+    required Color confirmColor,
+    required IconData confirmIcon,
+    required bool required,
+  }) async {
     final ctrl = TextEditingController();
     return showDialog<String>(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Rejection Reason'),
-        content: TextField(
-          controller: ctrl,
-          decoration:
-              const InputDecoration(hintText: 'Enter reason...'),
-          maxLines: 3,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Applicant: ${widget.loan.applicantName}'),
+              Text('Amount: ₹${NumberFormat('#,##,###').format(widget.loan.amount)}'),
+              if (widget.loan.tenureMonths != null)
+                Text('Tenure: ${widget.loan.tenureMonths} months'),
+              if (widget.loan.guarantorName != null)
+                Text('Guarantor: ${widget.loan.guarantorName}'),
+              const SizedBox(height: 12),
+              Text(subtitle,
+                  style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ctrl,
+                maxLines: 2,
+                onChanged: (_) => setLocal(() {}),
+                decoration: InputDecoration(
+                  labelText: required ? 'Enter reason...' : 'Add a note... (optional)',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  isDense: true,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: required && ctrl.text.trim().isEmpty
+                  ? null
+                  : () => Navigator.pop(ctx, ctrl.text.trim()),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: confirmColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                minimumSize: const Size(100, 44),
+              ),
+              child: Text(confirmLabel),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel')),
-          ElevatedButton(
-              onPressed: () => Navigator.pop(context, ctrl.text),
-              child: const Text('Reject')),
-        ],
       ),
     );
   }
@@ -153,92 +442,156 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
         NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header
           Row(
             children: [
+              CircleAvatar(
+                backgroundColor: context.colors.primaryLight,
+                child: Text(
+                  l.applicantName.isNotEmpty ? l.applicantName[0] : '?',
+                  style: TextStyle(
+                      color: context.colors.primary, fontWeight: FontWeight.w700),
+                ),
+              ),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(l.applicantName,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
-                            color: AppTheme.textDark)),
+                            color: context.colors.textDark)),
                     Text(l.applicantPhone,
-                        style: const TextStyle(
-                            color: AppTheme.textGrey, fontSize: 12)),
+                        style: TextStyle(
+                            color: context.colors.textGrey, fontSize: 12)),
                   ],
                 ),
               ),
               StatusBadge(status: l.status),
             ],
           ),
-          const Divider(height: 20),
-          InfoRow(
-              label: 'Amount', value: fmt.format(l.requestedAmount)),
-          InfoRow(
-              label: 'Saved',
-              value: fmt.format(l.applicantTotalSaved)),
-          if (l.guarantorName != null)
-            InfoRow(
-                label: 'Guarantor',
-                value: '${l.guarantorName} (${l.guarantorPhone})'),
-          InfoRow(
-              label: 'Applied',
-              value: DateFormat('d MMM yyyy').format(l.appliedDate),
-              last: l.finalRepaymentDueDate == null),
-          if (l.finalRepaymentDueDate != null)
-            InfoRow(
-              label: 'Due Date',
-              value: DateFormat('d MMM yyyy').format(l.finalRepaymentDueDate!),
-              last: true,
+          const Divider(height: 16),
+
+          // Loan details (compact layout)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Amount: ${fmt.format(l.amount)}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
+                    if (l.tenureMonths != null)
+                      Text('${l.tenureMonths} months tenure',
+                          style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                if (l.guarantorName != null) ...[
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Guarantor: ', style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                      Expanded(
+                        child: Text(l.guarantorName!,
+                            style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                ],
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('Applied: ${DateFormat('d MMM yyyy').format(l.appliedDate)}',
+                        style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
+                    if (l.repaymentDueDate != null)
+                      Text('Due: ${DateFormat('d MMM yyyy').format(l.repaymentDueDate!)}',
+                          style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
+                  ],
+                ),
+                if (l.rejectionReason != null) ...[
+                  const SizedBox(height: 6),
+                  Text('Reason: ${l.rejectionReason}',
+                      style: TextStyle(color: context.colors.error, fontSize: 13, fontWeight: FontWeight.w500)),
+                ],
+                if (l.disbursementMode != null) ...[
+                  const SizedBox(height: 6),
+                  Text('Mode: Disbursed via ${l.disbursementMode}',
+                      style: TextStyle(color: context.colors.accent, fontSize: 13, fontWeight: FontWeight.bold)),
+                ],
+              ],
             ),
+          ),
 
           // Actions
           if (_loading)
-            const Padding(
-              padding: EdgeInsets.only(top: 12),
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
               child: Center(
-                  child: CircularProgressIndicator(
-                      color: AppTheme.primary)),
+                  child: CircularProgressIndicator(color: context.colors.primary)),
             )
           else if (l.isPending) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Row(
               children: [
+                // Reject
                 Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _review(false),
+                  child: OutlinedButton.icon(
+                    onPressed: _reject,
+                    icon: const Icon(Icons.cancel_rounded, size: 16),
+                    label: const Text('Reject'),
                     style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.error,
-                        side: const BorderSide(color: AppTheme.error)),
-                    child: const Text('Reject'),
+                      foregroundColor: context.colors.error,
+                      side: BorderSide(color: context.colors.error),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
+                // Approve
                 Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _review(true),
-                    child: const Text('Approve'),
+                  child: ElevatedButton.icon(
+                    onPressed: _approve,
+                    icon: const Icon(Icons.check_circle_rounded, size: 16),
+                    label: const Text('Approve'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF16A34A),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                    ),
                   ),
                 ),
               ],
             ),
           ] else if (l.isApproved) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _disburse,
-              icon: const Icon(Icons.payments_rounded),
+              icon: const Icon(Icons.payments_rounded, size: 16),
               label: const Text('Mark as Disbursed'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+                minimumSize: const Size(double.infinity, 48),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
             ),
           ],
         ],
@@ -247,220 +600,29 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
   }
 }
 
-// ═════════════════════════════════════════════
-// Screenshot Review
-// ═════════════════════════════════════════════
-class ScreenshotReviewScreen extends ConsumerWidget {
-  const ScreenshotReviewScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final screenshotsAsync = ref.watch(pendingScreenshotsProvider);
-
-    return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
-      appBar: AppBar(title: const Text('Screenshot Reviews')),
-      body: screenshotsAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary)),
-        error: (e, _) => ErrorRetry(
-            message: e.toString(),
-            onRetry: () => ref.invalidate(pendingScreenshotsProvider)),
-        data: (items) => items.isEmpty
-            ? const EmptyState(
-                icon: Icons.check_circle_outline_rounded,
-                title: 'All clear!',
-                subtitle: 'No screenshots pending review')
-            : RefreshIndicator(
-                color: AppTheme.primary,
-                onRefresh: () async =>
-                    ref.invalidate(pendingScreenshotsProvider),
-                child: ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) => _ScreenshotCard(
-                    item: items[i],
-                    onAction: () => ref.invalidate(pendingScreenshotsProvider),
-                  ),
-                ),
-              ),
-      ),
-    );
-  }
-}
-
-class _ScreenshotCard extends StatefulWidget {
-  final PendingScreenshot item;
-  final VoidCallback onAction;
-  const _ScreenshotCard({required this.item, required this.onAction});
-
-  @override
-  State<_ScreenshotCard> createState() => _ScreenshotCardState();
-}
-
-class _ScreenshotCardState extends State<_ScreenshotCard> {
-  bool _loading = false;
-
-  Future<void> _verify(bool approve) async {
-    setState(() => _loading = true);
-    try {
-      await PaymentApi.adminVerify(
-          widget.item.tokenId, approve, approve ? 'Verified by admin' : null);
-      widget.onAction();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
-      }
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  void _viewScreenshot() {
-    if (widget.item.screenshotUrl == null) return;
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppBar(
-              title: Text('${widget.item.userName} - ${widget.item.monthName}'),
-              automaticallyImplyLeading: false,
-              actions: [
-                IconButton(
-                    icon: const Icon(Icons.close),
-                    onPressed: () => Navigator.pop(context))
-              ],
-            ),
-            Image.memory(
-              Uri.parse(widget.item.screenshotUrl!).data!.contentAsBytes(),
-              fit: BoxFit.contain,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+// Small helper widget for dialog rows
+class _DialogRow extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool last;
+  const _DialogRow(
+      {required this.label, required this.value}) : last = false;
 
   @override
   Widget build(BuildContext context) {
-    final s = widget.item;
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.divider),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Padding(
+      padding: EdgeInsets.only(bottom: last ? 0 : 6),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: AppTheme.primaryLight,
-                child: Text(s.userName[0],
-                    style: const TextStyle(
-                        color: AppTheme.primary,
-                        fontWeight: FontWeight.w700)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(s.userName,
-                        style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 14,
-                            color: AppTheme.textDark)),
-                    Text('${s.userPhone} • ${s.monthName}',
-                        style: const TextStyle(
-                            color: AppTheme.textGrey, fontSize: 12)),
-                  ],
-                ),
-              ),
-              Text('₹${s.amount.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppTheme.textDark)),
-            ],
-          ),
-
-          if (s.ocrExtractedText != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.bgGrey,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Token expected:',
-                      style: TextStyle(
-                          fontSize: 11, color: AppTheme.textGrey)),
-                  Text(s.token,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: AppTheme.primary,
-                          fontSize: 13,
-                          letterSpacing: 1)),
-                  const SizedBox(height: 4),
-                  const Text('OCR could not confirm this token in screenshot.',
-                      style: TextStyle(
-                          fontSize: 11, color: AppTheme.textGrey)),
-                ],
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: _viewScreenshot,
-            icon: const Icon(Icons.image_outlined, size: 16),
-            label: const Text('View Screenshot'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size(double.infinity, 40),
-              foregroundColor: AppTheme.primary,
-              side: const BorderSide(color: AppTheme.primary),
-            ),
-          ),
-
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.only(top: 12),
-              child: Center(
-                  child: CircularProgressIndicator(
-                      color: AppTheme.primary)),
-            )
-          else ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => _verify(false),
-                    style: OutlinedButton.styleFrom(
-                        foregroundColor: AppTheme.error,
-                        side: const BorderSide(color: AppTheme.error)),
-                    child: const Text('Reject'),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => _verify(true),
-                    child: const Text('Approve'),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          Text(label,
+              style: TextStyle(
+                  fontSize: 12, color: context.colors.textGrey)),
+          Text(value,
+              style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: context.colors.textDark)),
         ],
       ),
     );
@@ -495,10 +657,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _report = await ContributionApi.getYearlyReport(_selectedYear);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(apiError(e))));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(apiError(e))));
+      }
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -516,13 +680,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Reports')),
       body: Column(
         children: [
-          // Controls
           Container(
-            color: AppTheme.white,
+            color: context.colors.surfaceWhite,
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -557,7 +720,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     if (_isMonthly) ...[
                       Expanded(
                         child: DropdownButtonFormField<int>(
-                          value: _selectedMonth,
+                          initialValue: _selectedMonth,
                           decoration: const InputDecoration(
                               contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12, vertical: 10)),
@@ -577,7 +740,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ],
                     Expanded(
                       child: DropdownButtonFormField<int>(
-                        value: _selectedYear,
+                        initialValue: _selectedYear,
                         decoration: const InputDecoration(
                             contentPadding: EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 10)),
@@ -598,13 +761,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ],
             ),
           ),
-
-          // Results
           Expanded(
             child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                        color: AppTheme.primary))
+                ? Center(
+                    child: CircularProgressIndicator(color: context.colors.primary))
                 : _report == null
                     ? const EmptyState(
                         icon: Icons.bar_chart_rounded,
@@ -623,9 +783,7 @@ class _TabBtn extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
-
-  const _TabBtn(
-      {required this.label, required this.selected, required this.onTap});
+  const _TabBtn({required this.label, required this.selected, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -634,13 +792,13 @@ class _TabBtn extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? AppTheme.primary : AppTheme.bgGrey,
+          color: selected ? context.colors.primary : context.colors.bgGrey,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Text(label,
             textAlign: TextAlign.center,
             style: TextStyle(
-                color: selected ? Colors.white : AppTheme.textGrey,
+                color: selected ? Colors.white : context.colors.textGrey,
                 fontWeight: FontWeight.w600)),
       ),
     );
@@ -648,7 +806,7 @@ class _TabBtn extends StatelessWidget {
 }
 
 class _MonthlyReportView extends StatelessWidget {
-  final report;
+  final dynamic report;
   const _MonthlyReportView({required this.report});
 
   @override
@@ -670,7 +828,7 @@ class _MonthlyReportView extends StatelessWidget {
                     label: 'Unpaid',
                     value: '${report.unpaidCount}',
                     icon: Icons.cancel_outlined,
-                    iconColor: AppTheme.error)),
+                    iconColor: context.colors.error)),
             const SizedBox(width: 10),
             Expanded(
                 child: StatCard(
@@ -685,25 +843,25 @@ class _MonthlyReportView extends StatelessWidget {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppTheme.white,
+                    color: context.colors.surfaceWhite,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppTheme.divider),
+                    border: Border.all(color: context.colors.divider),
                   ),
                   child: Row(
                     children: [
                       Expanded(
                         child: Text(c.userName,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontWeight: FontWeight.w500,
-                                color: AppTheme.textDark)),
+                                color: context.colors.textDark)),
                       ),
                       StatusBadge(
                           status: c.isVerified ? 'Verified' : 'Pending'),
                       const SizedBox(width: 8),
                       Text('₹${c.amount.toStringAsFixed(0)}',
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.w600,
-                              color: AppTheme.textDark)),
+                              color: context.colors.textDark)),
                     ],
                   ),
                 ))
@@ -714,7 +872,7 @@ class _MonthlyReportView extends StatelessWidget {
 }
 
 class _YearlyReportView extends StatelessWidget {
-  final report;
+  final dynamic report;
   const _YearlyReportView({required this.report});
 
   @override
@@ -731,9 +889,9 @@ class _YearlyReportView extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: AppTheme.white,
+                color: context.colors.surfaceWhite,
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: AppTheme.divider),
+                border: Border.all(color: context.colors.divider),
               ),
               child: Row(
                 children: [
@@ -742,19 +900,19 @@ class _YearlyReportView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(r.fullName,
-                            style: const TextStyle(
+                            style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textDark)),
+                                color: context.colors.textDark)),
                         Text('${r.monthsPaid}/12 months paid',
-                            style: const TextStyle(
-                                color: AppTheme.textGrey, fontSize: 12)),
+                            style: TextStyle(
+                                color: context.colors.textGrey, fontSize: 12)),
                       ],
                     ),
                   ),
                   Text('₹${r.totalSaved.toStringAsFixed(0)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          color: AppTheme.primary)),
+                          color: context.colors.primary)),
                 ],
               ),
             )),
@@ -780,13 +938,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _loading = false;
   bool _saving = false;
   SocietySettings? _settings;
-  String? _logoBase64;       // current logo from DB
-  bool _logoChanged = false; // user picked a new logo
+  String? _logoBase64;
+  bool _logoChanged = false;
+  bool _enableAi = true;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadSettings();
+    });
   }
 
   String _formatDate(DateTime dt) {
@@ -800,23 +961,26 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _pickLogo() async {
     final picker = ImagePicker();
-    final file = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+    final file = await picker.pickImage(
+        source: ImageSource.gallery, imageQuality: 80);
     if (file == null) return;
     final bytes = await file.readAsBytes();
     final base64Str = 'data:image/png;base64,${base64Encode(bytes)}';
     setState(() { _logoBase64 = base64Str; _logoChanged = true; });
   }
 
-  void _removeLogo() {
-    setState(() { _logoBase64 = null; _logoChanged = true; });
-  }
+  void _removeLogo() =>
+      setState(() { _logoBase64 = null; _logoChanged = true; });
 
   Future<void> _loadSettings() async {
     setState(() => _loading = true);
     try {
-      final s = await SettingsApi.getSettings();
+      final notifier = ref.read(settingsNotifierProvider.notifier);
+      await notifier.fetchSettings();
+      final s = notifier.currentSettings!;
       _settings = s;
       _logoBase64 = s.logoBase64;
+      _enableAi = s.enableAiVerification;
       _nameCtrl.text = s.societyName;
       _upiCtrl.text = s.upiId;
       _upiNameCtrl.text = s.upiDisplayName;
@@ -826,7 +990,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             .showSnackBar(SnackBar(content: Text(apiError(e))));
       }
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -837,6 +1001,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         'societyName': _nameCtrl.text.trim(),
         'upiId': _upiCtrl.text.trim(),
         'upiDisplayName': _upiNameCtrl.text.trim(),
+        'enableAiVerification': _enableAi,
         if (_logoChanged) 'logoBase64': _logoBase64,
       };
       await SettingsApi.updateSettings(payload);
@@ -851,138 +1016,177 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             .showSnackBar(SnackBar(content: Text(apiError(e))));
       }
     } finally {
-      setState(() => _saving = false);
+      if (mounted) setState(() => _saving = false);
     }
+  }
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _upiCtrl.dispose();
+    _upiNameCtrl.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Society Settings')),
       body: _loading
-          ? const Center(
-              child: CircularProgressIndicator(color: AppTheme.primary))
+          ? Center(
+              child: CircularProgressIndicator(color: context.colors.primary))
           : LoadingOverlay(
               isLoading: _saving,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // ── Society Logo ────────────────────────────
+                  // Logo
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.white,
+                      color: context.colors.surfaceWhite,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.divider),
-                    ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      const Text('SOCIETY LOGO',
-                          style: TextStyle(fontWeight: FontWeight.w600,
-                              color: AppTheme.textGrey, fontSize: 12, letterSpacing: 0.5)),
-                      const SizedBox(height: 16),
-                      Row(children: [
-                        // Logo preview
-                        GestureDetector(
-                          onTap: _pickLogo,
-                          child: Container(
-                            width: 80, height: 80,
-                            decoration: BoxDecoration(
-                              color: AppTheme.bgGrey,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppTheme.divider, width: 1.5),
-                            ),
-                            child: _logoBase64 != null
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(11),
-                                    child: Image.memory(
-                                      base64Decode(_logoBase64!.contains(',')
-                                          ? _logoBase64!.split(',')[1]
-                                          : _logoBase64!),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  )
-                                : const Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(Icons.add_photo_alternate_outlined,
-                                          color: AppTheme.textGrey, size: 28),
-                                      SizedBox(height: 4),
-                                      Text('Add Logo',
-                                          style: TextStyle(
-                                              fontSize: 10, color: AppTheme.textGrey)),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            const Text('Society Logo',
-                                style: TextStyle(fontWeight: FontWeight.w600,
-                                    fontSize: 14, color: AppTheme.textDark)),
-                            const SizedBox(height: 4),
-                            const Text('Shown on member dashboard and receipts.\nJPG or PNG, max 2MB.',
-                                style: TextStyle(fontSize: 12, color: AppTheme.textGrey)),
-                            const SizedBox(height: 10),
-                            Row(children: [
-                              OutlinedButton.icon(
-                                onPressed: _pickLogo,
-                                icon: const Icon(Icons.upload_rounded, size: 16),
-                                label: Text(_logoBase64 != null ? 'Change' : 'Upload'),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  textStyle: const TextStyle(fontSize: 12),
-                                ),
-                              ),
-                              if (_logoBase64 != null) ...[
-                                const SizedBox(width: 8),
-                                OutlinedButton.icon(
-                                  onPressed: _removeLogo,
-                                  icon: const Icon(Icons.delete_outline, size: 16),
-                                  label: const Text('Remove'),
-                                  style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    textStyle: const TextStyle(fontSize: 12),
-                                    foregroundColor: AppTheme.error,
-                                    side: const BorderSide(color: AppTheme.error),
-                                  ),
-                                ),
-                              ],
-                            ]),
-                          ]),
-                        ),
-                      ]),
-                      if (_logoChanged)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Row(children: [
-                            const Icon(Icons.info_outline, size: 14, color: AppTheme.warning),
-                            const SizedBox(width: 6),
-                            Text(
-                              _logoBase64 != null ? 'New logo selected — save to apply.' : 'Logo will be removed on save.',
-                              style: const TextStyle(fontSize: 12, color: AppTheme.warning),
-                            ),
-                          ]),
-                        ),
-                    ]),
-                  ),
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.divider),
+                      border: Border.all(color: context.colors.divider),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('General',
+                        Text('SOCIETY LOGO',
                             style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textGrey,
-                                fontSize: 12)),
+                                color: context.colors.textGrey,
+                                fontSize: 12,
+                                letterSpacing: 0.5)),
+                        const SizedBox(height: 16),
+                        Row(children: [
+                          GestureDetector(
+                            onTap: _pickLogo,
+                            child: Container(
+                              width: 80, height: 80,
+                              decoration: BoxDecoration(
+                                color: context.colors.bgGrey,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: context.colors.divider, width: 1.5),
+                              ),
+                              child: _logoBase64 != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(11),
+                                      child: Image.memory(
+                                        base64Decode(_logoBase64!.contains(',')
+                                            ? _logoBase64!.split(',')[1]
+                                            : _logoBase64!),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    )
+                                  : Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.add_photo_alternate_outlined,
+                                            color: context.colors.textGrey, size: 28),
+                                        const SizedBox(height: 4),
+                                        Text('Add Logo',
+                                            style: TextStyle(
+                                                fontSize: 10,
+                                                color: context.colors.textGrey)),
+                                      ],
+                                    ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Society Logo',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14,
+                                        color: context.colors.textDark)),
+                                const SizedBox(height: 4),
+                                Text(
+                                    'Shown on member dashboard.\nJPG or PNG, max 2MB.',
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: context.colors.textGrey)),
+                                const SizedBox(height: 10),
+                                Row(children: [
+                                  OutlinedButton.icon(
+                                    onPressed: _pickLogo,
+                                    icon: const Icon(Icons.upload_rounded,
+                                        size: 16),
+                                    label: Text(_logoBase64 != null
+                                        ? 'Change'
+                                        : 'Upload'),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 6),
+                                      textStyle:
+                                          const TextStyle(fontSize: 12),
+                                    ),
+                                  ),
+                                  if (_logoBase64 != null) ...[
+                                    const SizedBox(width: 8),
+                                    OutlinedButton.icon(
+                                      onPressed: _removeLogo,
+                                      icon: const Icon(Icons.delete_outline,
+                                          size: 16),
+                                      label: const Text('Remove'),
+                                      style: OutlinedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 12, vertical: 6),
+                                        textStyle:
+                                            const TextStyle(fontSize: 12),
+                                        foregroundColor: context.colors.error,
+                                        side: BorderSide(
+                                            color: context.colors.error),
+                                      ),
+                                    ),
+                                  ],
+                                ]),
+                              ],
+                            ),
+                          ),
+                        ]),
+                        if (_logoChanged)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10),
+                            child: Row(children: [
+                              Icon(Icons.info_outline,
+                                  size: 14, color: context.colors.warning),
+                              const SizedBox(width: 6),
+                              Text(
+                                _logoBase64 != null
+                                    ? 'New logo selected — save to apply.'
+                                    : 'Logo will be removed on save.',
+                                style: TextStyle(
+                                    fontSize: 12, color: context.colors.warning),
+                              ),
+                            ]),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // Society name
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.colors.surfaceWhite,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.colors.divider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('GENERAL',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: context.colors.textGrey,
+                                fontSize: 12,
+                                letterSpacing: 0.5)),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _nameCtrl,
@@ -995,28 +1199,73 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(height: 14),
+                  // Automation
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppTheme.white,
+                      color: context.colors.surfaceWhite,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppTheme.divider),
+                      border: Border.all(color: context.colors.divider),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('UPI Payment',
+                        Text('AUTOMATION',
                             style: TextStyle(
                                 fontWeight: FontWeight.w600,
-                                color: AppTheme.textGrey,
-                                fontSize: 12)),
+                                color: context.colors.textGrey,
+                                fontSize: 12,
+                                letterSpacing: 0.5)),
+                        const SizedBox(height: 14),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('AI Auto-Verify', style: TextStyle(fontSize: 14)),
+                                  const SizedBox(height: 2),
+                                  Text('Automatically verify screenshots using Gemini AI', style: TextStyle(fontSize: 12, color: context.colors.textGrey)),
+                                ],
+                              ),
+                            ),
+                            Switch(
+                              value: _enableAi,
+                              activeColor: context.colors.primary,
+                              onChanged: (val) => setState(() => _enableAi = val),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  // UPI
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.colors.surfaceWhite,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: context.colors.divider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('UPI PAYMENT',
+                            style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: context.colors.textGrey,
+                                fontSize: 12,
+                                letterSpacing: 0.5)),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _upiCtrl,
                           decoration: const InputDecoration(
                             labelText: 'UPI ID',
                             hintText: 'e.g. society@okicici',
-                            prefixIcon: Icon(Icons.account_balance_outlined),
+                            prefixIcon:
+                                Icon(Icons.account_balance_outlined),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -1029,40 +1278,86 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           ),
                         ),
                         const SizedBox(height: 8),
-                        const Text(
+                        Text(
                           'This name appears in GPay/PhonePe when members pay.',
                           style: TextStyle(
-                              color: AppTheme.textGrey, fontSize: 12),
+                              color: context.colors.textGrey, fontSize: 12),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Last updated info
+                  // App Theme Settings
+                  const SectionHeader(title: 'App Theme'),
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: context.colors.surfaceWhite,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: context.colors.divider),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final currentTheme = ref.watch(themeProvider);
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              _ThemeOption(
+                                label: 'System',
+                                icon: Icons.brightness_auto,
+                                isSelected: currentTheme == ThemeMode.system,
+                                onTap: () => ref.read(themeProvider.notifier).setTheme(ThemeMode.system),
+                              ),
+                              _ThemeOption(
+                                label: 'Light',
+                                icon: Icons.light_mode,
+                                isSelected: currentTheme == ThemeMode.light,
+                                onTap: () => ref.read(themeProvider.notifier).setTheme(ThemeMode.light),
+                              ),
+                              _ThemeOption(
+                                label: 'Dark',
+                                icon: Icons.dark_mode,
+                                isSelected: currentTheme == ThemeMode.dark,
+                                onTap: () => ref.read(themeProvider.notifier).setTheme(ThemeMode.dark),
+                              ),
+                            ],
+                          );
+                        }
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   if (_settings?.updatedAt != null)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
                       decoration: BoxDecoration(
-                        color: AppTheme.white,
+                        color: context.colors.surfaceWhite,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: AppTheme.divider),
+                        border: Border.all(color: context.colors.divider),
                       ),
                       child: Row(children: [
-                        const Icon(Icons.history_rounded, size: 16, color: AppTheme.textGrey),
+                        Icon(Icons.history_rounded,
+                            size: 16, color: context.colors.textGrey),
                         const SizedBox(width: 8),
                         Expanded(
                           child: RichText(
                             text: TextSpan(
-                              style: const TextStyle(fontSize: 12, color: AppTheme.textGrey),
+                              style: TextStyle(
+                                  fontSize: 12, color: context.colors.textGrey),
                               children: [
                                 const TextSpan(text: 'Last updated by '),
                                 TextSpan(
                                   text: _settings!.updatedByName ?? 'Unknown',
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600, color: AppTheme.textDark),
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: context.colors.textDark),
                                 ),
                                 TextSpan(
-                                  text: ' on ${_formatDate(_settings!.updatedAt!)}',
+                                  text:
+                                      ' on ${_formatDate(_settings!.updatedAt!)}',
                                 ),
                               ],
                             ),
@@ -1080,12 +1375,53 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
     );
   }
+}
+
+class _ThemeOption extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ThemeOption({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
 
   @override
-  void dispose() {
-    _nameCtrl.dispose();
-    _upiCtrl.dispose();
-    _upiNameCtrl.dispose();
-    super.dispose();
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isSelected ? context.colors.primary.withValues(alpha: 0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? context.colors.primary : Colors.transparent,
+          ),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? context.colors.primary : context.colors.textGrey,
+              size: 24,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? context.colors.primary : context.colors.textGrey,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

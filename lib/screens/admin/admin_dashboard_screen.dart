@@ -2,30 +2,163 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
 import '../../core/constants.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/data_providers.dart';
 import '../../widgets/shared_widgets.dart';
+import 'admin_screens.dart';
+import 'screenshot_review_screen.dart';
+import 'statistics_screen.dart';
+import '../../widgets/network_error_widget.dart';
 
-class AdminDashboardScreen extends ConsumerWidget {
+class AdminDashboardScreen extends ConsumerStatefulWidget {
   const AdminDashboardScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
+  int _currentIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Builder(
+        key: ValueKey(_currentIndex),
+        builder: (context) {
+          switch (_currentIndex) {
+            case 0:
+              return _buildDashboardTab(context);
+            case 1:
+              return const LoanReviewScreen();
+            case 2:
+              return const ScreenshotReviewScreen();
+            case 3:
+            default:
+              return const StatisticsScreen();
+          }
+        },
+      ),
+      bottomNavigationBar: NavigationBarTheme(
+        data: NavigationBarThemeData(
+          backgroundColor: const Color(0xFF111428),
+          indicatorColor: const Color(0xFF2A2E50),
+          labelTextStyle: WidgetStateProperty.all(
+            const TextStyle(color: Color(0xFF9094B6), fontSize: 11, fontWeight: FontWeight.w500),
+          ),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const IconThemeData(color: Color(0xFFC084FC));
+            }
+            return const IconThemeData(color: Color(0xFF9094B6));
+          }),
+        ),
+        child: NavigationBar(
+          selectedIndex: _currentIndex,
+          onDestinationSelected: (index) {
+            setState(() {
+              _currentIndex = index;
+            });
+          },
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard),
+              label: 'Dashboard',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.account_balance_outlined),
+              selectedIcon: Icon(Icons.account_balance),
+              label: 'Loans',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.image_search_outlined),
+              selectedIcon: Icon(Icons.image_search),
+              label: 'Reviews',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.bar_chart_outlined),
+              selectedIcon: Icon(Icons.bar_chart),
+              label: 'Stats & Ledger',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDashboardTab(BuildContext context) {
     final dashAsync = ref.watch(adminDashboardProvider);
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Scaffold(
-      backgroundColor: AppTheme.bgGrey,
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
+        leading: dashAsync.valueOrNull?.logoBase64 != null
+            ? Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    image: DecorationImage(
+                      image: MemoryImage(
+                        base64Decode(dashAsync.valueOrNull!.logoBase64!.contains(',')
+                            ? dashAsync.valueOrNull!.logoBase64!.split(',')[1]
+                            : dashAsync.valueOrNull!.logoBase64!),
+                      ),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              )
+            : null,
         actions: [
+          Consumer(
+            builder: (context, ref, child) {
+              final notifs = ref.watch(notificationsProvider).valueOrNull ?? [];
+              final unreadCount = notifs.where((n) => !n.isRead).length;
+
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined),
+                    onPressed: () {
+                      context.push('/notifications');
+                    },
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Text(
+                          '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.push('/admin/settings'),
           ),
           IconButton(
-            icon: const Icon(Icons.logout_rounded),
+            icon: const Icon(Icons.power_settings_new),
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
               if (context.mounted) context.go('/login');
@@ -34,13 +167,12 @@ class AdminDashboardScreen extends ConsumerWidget {
         ],
       ),
       body: dashAsync.when(
-        loading: () => const Center(
-            child: CircularProgressIndicator(color: AppTheme.primary)),
-        error: (e, _) => ErrorRetry(
-            message: e.toString(),
+        loading: () => const ShimmerListLoader(count: 5),
+        error: (e, _) => NetworkErrorWidget(
+            error: e,
             onRetry: () => ref.invalidate(adminDashboardProvider)),
         data: (dash) => RefreshIndicator(
-          color: AppTheme.primary,
+          color: context.colors.primary,
           onRefresh: () async => ref.invalidate(adminDashboardProvider),
           child: ListView(
             padding: const EdgeInsets.all(16),
@@ -49,8 +181,8 @@ class AdminDashboardScreen extends ConsumerWidget {
               // ── Pool Card ─────────────────────────
               Container(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primary, Color(0xFF2ECC71)],
+                  gradient: LinearGradient(
+                    colors: [context.colors.primary, const Color(0xFF2ECC71)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -118,22 +250,22 @@ class AdminDashboardScreen extends ConsumerWidget {
                   _AlertBanner(
                     icon: Icons.pending_actions_rounded,
                     label: '${dash.pendingLoanApplications} loan application(s) awaiting review',
-                    color: AppTheme.warning,
-                    onTap: () => context.push('/admin/loans'),
+                    color: context.colors.warning,
+                    onTap: () => setState(() => _currentIndex = 1),
                   ),
                 if (dash.loansAwaitingDisbursement > 0)
                   _AlertBanner(
                     icon: Icons.payment_rounded,
                     label: '${dash.loansAwaitingDisbursement} approved loan(s) to disburse',
                     color: const Color(0xFF2563EB),
-                    onTap: () => context.push('/admin/loans'),
+                    onTap: () => setState(() => _currentIndex = 1),
                   ),
                 if (dash.pendingScreenshotReviews > 0)
                   _AlertBanner(
                     icon: Icons.image_search_rounded,
                     label: '${dash.pendingScreenshotReviews} screenshot(s) need manual verification',
-                    color: AppTheme.primary,
-                    onTap: () => context.push('/admin/screenshots'),
+                    color: context.colors.primary,
+                    onTap: () => setState(() => _currentIndex = 2),
                   ),
                 const SizedBox(height: 16),
               ],
@@ -147,61 +279,82 @@ class AdminDashboardScreen extends ConsumerWidget {
                 physics: const NeverScrollableScrollPhysics(),
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: 1.1,
+                childAspectRatio: 1.55,
                 children: [
-                  StatCard(
-                    label: 'Total Members',
-                    value: '${dash.totalMembers}',
-                    icon: Icons.people_outline_rounded,
-                    onTap: () => context.push('/admin/members'),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 0),
+                    child: StatCard(
+                      label: 'Total Members',
+                      value: '${dash.totalMembers}',
+                      icon: Icons.people_alt_rounded,
+                      onTap: () => context.push('/admin/members'),
+                    ),
                   ),
-                  StatCard(
-                    label: 'Active Loans',
-                    value: '${dash.activeLoans}',
-                    icon: Icons.account_balance_rounded,
-                    iconColor: const Color(0xFF2563EB),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 80),
+                    child: StatCard(
+                      label: 'Active Loans',
+                      value: '${dash.activeLoans}',
+                      icon: Icons.account_balance_rounded,
+                      iconColor: const Color(0xFF2563EB),
+                      onTap: () => setState(() => _currentIndex = 1),
+                    ),
                   ),
-                  StatCard(
-                    label: 'Total Disbursed',
-                    value: fmt.format(dash.totalDisbursed),
-                    icon: Icons.currency_rupee_rounded,
-                    iconColor: AppTheme.warning,
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 160),
+                    child: StatCard(
+                      label: 'Total Disbursed',
+                      value: fmt.format(dash.totalDisbursed),
+                      icon: Icons.currency_rupee_rounded,
+                      iconColor: context.colors.warning,
+                      onTap: () => setState(() => _currentIndex = 3),
+                    ),
                   ),
-                  StatCard(
-                    label: 'Outstanding',
-                    value: fmt.format(dash.outstandingAmount),
-                    icon: Icons.pending_rounded,
-                    iconColor: AppTheme.error,
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 240),
+                    child: StatCard(
+                      label: 'Outstanding',
+                      value: fmt.format(dash.outstandingAmount),
+                      icon: Icons.pending_rounded,
+                      iconColor: context.colors.error,
+                      onTap: () => setState(() => _currentIndex = 3),
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 20),
 
-              // ── Quick nav ─────────────────────────
-              const SectionHeader(title: 'Manage'),
-              const SizedBox(height: 10),
-              ...[
-                _NavTile(
-                  icon: Icons.account_balance_rounded,
-                  label: 'Loans',
-                  subtitle: '${dash.pendingLoanApplications} pending',
-                  badge: dash.pendingLoanApplications,
-                  onTap: () => context.push('/admin/loans'),
-                ),
-                _NavTile(
-                  icon: Icons.image_search_rounded,
-                  label: 'Screenshot Reviews',
-                  subtitle: '${dash.pendingScreenshotReviews} pending',
-                  badge: dash.pendingScreenshotReviews,
-                  onTap: () => context.push('/admin/screenshots'),
-                ),
-                _NavTile(
-                  icon: Icons.bar_chart_rounded,
-                  label: 'Reports',
-                  subtitle: 'Monthly & yearly',
-                  onTap: () => context.push('/admin/reports'),
+              const SizedBox(height: 16),
+
+              if (ref.read(authProvider).role != 'Auditor') ...[
+                // ── Quick Actions ──────────────────────
+                const SectionHeader(title: 'Quick Actions'),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.payments_rounded,
+                        label: 'Collect Cash',
+                        color: const Color(0xFF2ECC71),
+                        onTap: () async {
+                          final result = await context.push<bool>('/admin/collect-cash');
+                          if (result == true) ref.invalidate(adminDashboardProvider);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.person_add_rounded,
+                        label: 'Add Member',
+                        color: context.colors.primary,
+                        onTap: () => context.push('/admin/members/add'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
+
             ],
           ),
         ),
@@ -267,7 +420,7 @@ class _FinanceStat extends StatelessWidget {
       );
 }
 
-// ── Alert banner ──────────────────────────────────────────────
+// ── Alert banner ───────────────────────────────────────────────
 class _AlertBanner extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -282,15 +435,16 @@ class _AlertBanner extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => AnimatedPressable(
         onTap: onTap,
+        scale: 0.97,
         child: Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.08),
+            color: color.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: color.withOpacity(0.25)),
+            border: Border.all(color: color.withValues(alpha: 0.25)),
           ),
           child: Row(children: [
             Icon(icon, color: color, size: 20),
@@ -307,74 +461,50 @@ class _AlertBanner extends StatelessWidget {
       );
 }
 
-// ── Nav tile ──────────────────────────────────────────────────
-class _NavTile extends StatelessWidget {
+// ── Quick action card ──────────────────────────────────────────
+class _QuickActionCard extends StatelessWidget {
   final IconData icon;
   final String label;
-  final String subtitle;
-  final int badge;
+  final Color color;
   final VoidCallback onTap;
 
-  const _NavTile({
+  const _QuickActionCard({
     required this.icon,
     required this.label,
-    required this.subtitle,
-    this.badge = 0,
+    required this.color,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => AnimatedPressable(
         onTap: onTap,
+        scale: 0.96,
         child: Container(
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 14),
           decoration: BoxDecoration(
-            color: AppTheme.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: AppTheme.divider),
+            color: context.colors.surfaceWhite,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: context.colors.divider),
           ),
-          child: Row(children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppTheme.primaryLight,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: AppTheme.primary, size: 20),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                          color: AppTheme.textDark)),
-                  Text(subtitle,
-                      style: const TextStyle(
-                          color: AppTheme.textGrey, fontSize: 12)),
-                ],
-              ),
-            ),
-            if (badge > 0)
+          child: Column(
+            children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: AppTheme.error,
-                  borderRadius: BorderRadius.circular(12),
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                child: Text('$badge',
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700)),
-              )
-            else
-              const Icon(Icons.chevron_right_rounded, color: AppTheme.textGrey),
-          ]),
+                child: Icon(icon, color: color, size: 24),
+              ),
+              const SizedBox(height: 10),
+              Text(label,
+                  style: TextStyle(
+                      color: context.colors.textDark,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13)),
+            ],
+          ),
         ),
       );
 }
+
