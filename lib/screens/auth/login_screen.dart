@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -172,13 +173,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
                       width: 100,
                       height: 100,
                       padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-                        color: Colors.transparent,
+                      decoration: BoxDecoration(
+                        color: _logoBase64 == null ? context.colors.primary.withValues(alpha: 0.1) : Colors.transparent,
+                        shape: BoxShape.circle,
                       ),
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        fit: BoxFit.contain,
-                      ),
+                      child: _logoBase64 != null
+                          ? Image.memory(
+                              base64Decode(_logoBase64!.contains(',')
+                                  ? _logoBase64!.split(',')[1]
+                                  : _logoBase64!),
+                              fit: BoxFit.cover,
+                            )
+                          : Icon(
+                              Icons.apartment_rounded,
+                              size: 50,
+                              color: context.colors.primary,
+                            ),
                     ),
                   ),
                   const SizedBox(height: 28),

@@ -6,7 +6,8 @@ import '../../models/loan_models.dart';
 import '../../models/payment_models.dart';
 import '../../models/app_notification.dart';
 import '../../models/transaction_models.dart';
-
+import '../../models/expense_models.dart';
+import '../../models/leave_request_models.dart';
 
 // ─────────────────────────────────────────────
 // Dashboard
@@ -62,6 +63,10 @@ class UserApi {
   static Future<List<UserDropdownItem>> getAllForReferral() async {
     final res = await ApiClient.instance.get('/users/all-for-referral');
     return (res.data as List).map((e) => UserDropdownItem.fromJson(e)).toList();
+  }
+
+  static Future<void> submitLeaveRequest(String reason) async {
+    await ApiClient.instance.post('/users/leave-request', data: {'reason': reason});
   }
 }
 
@@ -162,6 +167,20 @@ class LoanApi {
     final res = await ApiClient.instance.patch('/loans/$id/repay', data: {
       'repaidAmount': amount,
       if (remarks != null) 'remarks': remarks,
+    });
+    return LoanApplication.fromJson(res.data);
+  }
+
+  static Future<List<LoanApplication>> getGuarantorRequests() async {
+    final res = await ApiClient.instance.get('/loans/guarantor-requests?limit=100');
+    return (res.data['items'] as List)
+        .map((e) => LoanApplication.fromJson(e))
+        .toList();
+  }
+
+  static Future<LoanApplication> updateGuarantorConsent(int id, bool accept) async {
+    final res = await ApiClient.instance.post('/loans/$id/guarantor-consent', data: {
+      'accept': accept
     });
     return LoanApplication.fromJson(res.data);
   }
@@ -274,9 +293,10 @@ class NotificationApi {
 // Transactions (Ledger & Stats)
 // ─────────────────────────────────────────────
 class TransactionApi {
-  static Future<List<TransactionDto>> getTransactions({int limit = 100}) async {
-    final res = await ApiClient.instance.get('/transaction', queryParameters: {'limit': limit});
-    return (res.data as List).map((e) => TransactionDto.fromJson(e)).toList();
+  static Future<List<TransactionDto>> getTransactions({int page = 1, int limit = 100}) async {
+    final res = await ApiClient.instance.get('/transaction', queryParameters: {'page': page, 'limit': limit});
+    final items = res.data is List ? res.data as List : res.data['items'] as List;
+    return items.map((e) => TransactionDto.fromJson(e)).toList();
   }
 
   static Future<TransactionStatsDto> getStats() async {
@@ -299,5 +319,53 @@ class TransactionApi {
       savePath,
       queryParameters: params,
     );
+  }
+}
+
+// ─────────────────────────────────────────────
+// Expenses
+// ─────────────────────────────────────────────
+class ExpenseApi {
+  static Future<List<ExpenseDto>> getAllExpenses({int page = 1, int limit = 50}) async {
+    final res = await ApiClient.instance.get('/expenses', queryParameters: {'page': page, 'limit': limit});
+    final items = res.data is List ? res.data as List : res.data['items'] as List;
+    return items.map((e) => ExpenseDto.fromJson(e)).toList();
+  }
+
+  static Future<dynamic> createExpense(Map<String, dynamic> data) async {
+    final res = await ApiClient.instance.post('/expenses', data: data);
+    return res.data;
+  }
+
+  static Future<dynamic> updateExpense(int id, Map<String, dynamic> data) async {
+    final res = await ApiClient.instance.put('/expenses/$id', data: data);
+    return res.data;
+  }
+
+  static Future<void> deleteExpense(int id) async {
+    await ApiClient.instance.delete('/expenses/$id');
+  }
+}
+
+// ─────────────────────────────────────────────
+// Leave Requests (Admin)
+// ─────────────────────────────────────────────
+class LeaveRequestApi {
+  static Future<List<LeaveRequestDto>> getLeaveRequests({int page = 1, int limit = 50, String? status}) async {
+    final res = await ApiClient.instance.get('/users/leave-requests', queryParameters: {
+      'page': page,
+      'limit': limit,
+      if (status != null) 'status': status
+    });
+    final items = res.data is List ? res.data as List : res.data['items'] as List;
+    return items.map((e) => LeaveRequestDto.fromJson(e)).toList();
+  }
+
+  static Future<dynamic> processLeaveRequest(int id, bool isApproved, String? remarks) async {
+    final res = await ApiClient.instance.patch('/users/leave-requests/$id/process', data: {
+      'isApproved': isApproved,
+      if (remarks != null) 'remarks': remarks,
+    });
+    return res.data;
   }
 }

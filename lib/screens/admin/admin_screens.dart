@@ -31,10 +31,20 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
   Widget build(BuildContext context) {
     final loansAsync = ref.watch(allLoansProvider);
 
-    return Scaffold(
-      backgroundColor: context.colors.bgGrey,
-      appBar: AppBar(title: const Text('Loan Applications')),
-      body: loansAsync.when(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: context.colors.bgGrey,
+        appBar: AppBar(
+          title: const Text('Loans'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'All Loans'),
+              Tab(text: 'Active Loans'),
+            ],
+          ),
+        ),
+        body: loansAsync.when(
         loading: () => Center(
             child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => ErrorRetry(
@@ -154,31 +164,38 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                 ),
               ),
               Expanded(
-                child: loans.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.account_balance_outlined,
-                      title: 'No loan applications')
-                  : filtered.isEmpty
-                    ? const EmptyState(
-                        icon: Icons.search_off,
-                        title: 'No matching applications')
-                    : RefreshIndicator(
-                        color: context.colors.primary,
-                        onRefresh: () async => ref.invalidate(allLoansProvider),
-                        child: ListView.separated(
-                          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (_, i) => _LoanReviewCard(
-                            loan: filtered[i],
-                            onAction: () => ref.invalidate(allLoansProvider),
-                          ),
-                        ),
-                      ),
+                child: TabBarView(
+                  children: [
+                    // All Loans Tab
+                    _buildLoansList(filtered, context, ref),
+                    // Active Loans Tab
+                    _buildLoansList(filtered.where((l) => l.status == 'Disbursed').toList(), context, ref),
+                  ],
+                ),
               ),
             ],
           );
         },
+      ),
+      ),
+    );
+  }
+
+  Widget _buildLoansList(List<LoanApplication> list, BuildContext context, WidgetRef ref) {
+    if (list.isEmpty) {
+      return const EmptyState(icon: Icons.account_balance_outlined, title: 'No loans found');
+    }
+    return RefreshIndicator(
+      color: context.colors.primary,
+      onRefresh: () async => ref.invalidate(allLoansProvider),
+      child: ListView.separated(
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+        itemCount: list.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (_, i) => _LoanReviewCard(
+          loan: list[i],
+          onAction: () => ref.invalidate(allLoansProvider),
+        ),
       ),
     );
   }
@@ -492,7 +509,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Amount: ${fmt.format(l.amount)}',
+                    Text(l.status == 'Disbursed' ? 'Repayment: ${fmt.format(l.outstandingAmount)}' : 'Amount: ${fmt.format(l.amount)}',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
                     if (l.tenureMonths != null)
                       Text('${l.tenureMonths} months tenure',

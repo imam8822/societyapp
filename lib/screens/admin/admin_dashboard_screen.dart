@@ -43,16 +43,16 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
-          backgroundColor: const Color(0xFF111428),
-          indicatorColor: const Color(0xFF2A2E50),
+          backgroundColor: context.colors.bgGrey,
+          indicatorColor: context.colors.primary.withValues(alpha: 0.15),
           labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(color: Color(0xFF9094B6), fontSize: 11, fontWeight: FontWeight.w500),
+            TextStyle(color: context.colors.textGrey, fontSize: 11, fontWeight: FontWeight.w500),
           ),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: Color(0xFFC084FC));
+              return IconThemeData(color: context.colors.primary);
             }
-            return const IconThemeData(color: Color(0xFF9094B6));
+            return IconThemeData(color: context.colors.textGrey);
           }),
         ),
         child: NavigationBar(
@@ -351,6 +351,43 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                         onTap: () => context.push('/admin/members/add'),
                       ),
                     ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.receipt_long_rounded,
+                        label: 'Expenses',
+                        color: Colors.orange,
+                        onTap: () => context.push('/admin/expenses'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.book_rounded,
+                        label: 'Full Ledger',
+                        color: Colors.purple,
+                        onTap: () => context.push('/admin/ledger'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.exit_to_app_rounded,
+                        label: 'Leave Requests',
+                        color: Colors.redAccent,
+                        onTap: () => context.push('/admin/leave-requests'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    const Expanded(child: SizedBox()), // Empty slot for alignment
                   ],
                 ),
               ],

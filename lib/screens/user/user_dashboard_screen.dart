@@ -11,6 +11,7 @@ import '../../widgets/shared_widgets.dart';
 import '../../models/dashboard_models.dart';
 import '../../models/contribution_models.dart';
 import '../../widgets/network_error_widget.dart';
+import '../../core/api/api_services.dart';
 
 class UserDashboardScreen extends ConsumerStatefulWidget {
   const UserDashboardScreen({super.key});
@@ -21,24 +22,23 @@ class UserDashboardScreen extends ConsumerStatefulWidget {
 
 class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
   int _currentIndex = 0;
-  bool _showBalance = false;
 
   @override
   Widget build(BuildContext context) {
     final dashAsync = ref.watch(userDashboardProvider);
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final now = DateTime.now();    return Scaffold(
-      backgroundColor: const Color(0xFF0C0E1A),
+      backgroundColor: context.colors.bgGrey,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF0C0E1A),
-        foregroundColor: Colors.white,
+        backgroundColor: context.colors.bgGrey,
+        foregroundColor: context.colors.textDark,
         elevation: 0,
         leadingWidth: 56,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+          padding: EdgeInsets.only(left: 16, top: 8, bottom: 8),
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF1E213F),
+              color: context.colors.divider,
               shape: BoxShape.circle,
               image: dashAsync.valueOrNull?.logoBase64 != null
                   ? DecorationImage(
@@ -56,8 +56,8 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                 dashAsync.valueOrNull?.fullName.isNotEmpty == true
                     ? dashAsync.valueOrNull!.fullName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
                     : 'U',
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.colors.textDark,
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
                 ),
@@ -71,8 +71,8 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
               : _currentIndex == 1
                   ? 'Contribution History'
                   : 'My Profile',
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: context.colors.textDark,
             fontSize: 18,
             fontWeight: FontWeight.w700,
           ),
@@ -86,7 +86,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
               return Stack(
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                    icon: Icon(Icons.notifications_outlined, color: context.colors.textDark),
                     onPressed: () {
                       context.push('/notifications');
                     },
@@ -96,15 +96,15 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                       right: 8,
                       top: 8,
                       child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
+                        padding: EdgeInsets.all(4),
+                        decoration: BoxDecoration(
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
                         child: Text(
                           '$unreadCount',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.colors.textDark,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -116,7 +116,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.power_settings_new, color: Colors.white),
+            icon: Icon(Icons.power_settings_new, color: context.colors.textDark),
             onPressed: () async {
               await ref.read(authProvider.notifier).logout();
               if (context.mounted) context.go('/login');
@@ -140,16 +140,16 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
       ),
       bottomNavigationBar: NavigationBarTheme(
         data: NavigationBarThemeData(
-          backgroundColor: const Color(0xFF111428),
-          indicatorColor: const Color(0xFF2A2E50),
+          backgroundColor: context.colors.surfaceWhite,
+          indicatorColor: context.colors.primary.withValues(alpha: 0.15),
           labelTextStyle: WidgetStateProperty.all(
-            const TextStyle(color: Color(0xFF9094B6), fontSize: 11, fontWeight: FontWeight.w500),
+            TextStyle(color: context.colors.textGrey, fontSize: 11, fontWeight: FontWeight.w500),
           ),
           iconTheme: WidgetStateProperty.resolveWith((states) {
             if (states.contains(WidgetState.selected)) {
-              return const IconThemeData(color: Color(0xFFC084FC));
+              return IconThemeData(color: context.colors.primary);
             }
-            return const IconThemeData(color: Color(0xFF9094B6));
+            return IconThemeData(color: context.colors.textGrey);
           }),
         ),
         child: NavigationBar(
@@ -188,10 +188,10 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
           error: e,
           onRetry: () => ref.invalidate(userDashboardProvider)),
       data: (dash) => RefreshIndicator(
-        color: const Color(0xFFC084FC),
+        color: context.colors.primary,
         onRefresh: () async => ref.invalidate(userDashboardProvider),
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           children: [
             // ── Greeting Header ───────────────────
             Row(
@@ -200,15 +200,15 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Welcome back,',
-                      style: TextStyle(color: Color(0xFF9094B6), fontSize: 13),
+                      style: TextStyle(color: context.colors.textGrey, fontSize: 13),
                     ),
-                    const SizedBox(height: 2),
+                    SizedBox(height: 2),
                     Text(
                       dash.fullName,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: context.colors.textDark,
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -216,7 +216,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: const Color(0xFF13271F),
                     borderRadius: BorderRadius.circular(12),
@@ -231,31 +231,34 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
 
             // ── HDFC Style Account Card ───────────
             Container(
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFF1C1E32), Color(0xFF111322)],
+                gradient: LinearGradient(
+                  colors: [
+                    context.colors.primary,
+                    context.colors.primary.withValues(alpha: 0.8),
+                  ],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: const Color(0xFF282C4A)),
+                border: Border.all(color: context.colors.primary.withValues(alpha: 0.3)),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(16),
+                padding: EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
+                        Text(
                           'Invested Balance',
-                          style: TextStyle(
-                            color: Color(0xFF9094B6),
+                          style: const TextStyle(
+                            color: Colors.white70,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
@@ -265,7 +268,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                           child: const Text(
                             'Statement',
                             style: TextStyle(
-                              color: Color(0xFF6366F1),
+                              color: Colors.white,
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
                             ),
@@ -273,69 +276,46 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8),
                     Row(
                       children: [
-                        AnimatedCrossFade(
-                          duration: const Duration(milliseconds: 350),
-                          crossFadeState: _showBalance
-                              ? CrossFadeState.showSecond
-                              : CrossFadeState.showFirst,
-                          firstChild: const Text(
-                            '\u2022\u2022\u2022\u2022\u2022\u2022',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 4,
-                            ),
+                        Text(
+                          fmt.format(dash.totalInvested),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.5,
                           ),
-                          secondChild: Text(
-                            fmt.format(dash.totalInvested),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: -0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: Icon(
-                            _showBalance ? Icons.visibility : Icons.visibility_off,
-                            color: const Color(0xFF9094B6),
-                            size: 20,
-                          ),
-                          onPressed: () {
-                            setState(() {
-                              _showBalance = !_showBalance;
-                            });
-                          },
                         ),
                       ],
                     ),
-                    const SizedBox(height: 12),
-                    const Divider(color: Color(0xFF282C4A), height: 1),
-                    const SizedBox(height: 12),
+                    SizedBox(height: 12),
+                    Divider(color: Colors.white.withValues(alpha: 0.2), height: 1),
+                    SizedBox(height: 12),
                     Row(
                       children: [
                         _buildAccountTabItem(
                           Icons.credit_card_outlined,
                           'Dues Status',
                           dash.currentMonthPaid ? 'Paid' : 'Pending',
-                          dash.currentMonthPaid ? const Color(0xFF2ECC71) : const Color(0xFFEF4444),
+                          dash.currentMonthPaid ? const Color(0xFF2ECC71) : const Color(0xFFFFB3B3),
+                          Colors.white,
                         ),
+                        Container(width: 1, height: 32, color: Colors.white.withValues(alpha: 0.2)),
                         _buildAccountTabItem(
                           Icons.account_balance_outlined,
                           'Deposits',
                           fmt.format(dash.totalInvested),
                           Colors.white,
+                          Colors.white,
                         ),
+                        Container(width: 1, height: 32, color: Colors.white.withValues(alpha: 0.2)),
                         _buildAccountTabItem(
                           Icons.currency_rupee_rounded,
                           'Loans',
                           dash.activeLoan != null ? fmt.format(dash.activeLoan!.outstandingAmount) : '₹0',
+                          Colors.white,
                           Colors.white,
                         ),
                       ],
@@ -344,7 +324,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 14),
+            SizedBox(height: 14),
 
             // ── Pay June Contribution 1-Click Banner ──
             if (!dash.currentMonthPaid)
@@ -356,9 +336,9 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                       onTap: hasPendingReview ? null : () => context.push('/pay'),
                       scale: hasPendingReview ? 1.0 : 0.97,
                       child: Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          gradient: const LinearGradient(
+                          gradient: LinearGradient(
                             colors: [Color(0xFF7C3AED), Color(0xFF5B21B6)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -376,31 +356,31 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                         child: Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.all(10),
+                              padding: EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: Colors.white.withValues(alpha: 0.15),
+                                color: context.colors.textDark.withValues(alpha: 0.15),
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(hasPendingReview ? Icons.hourglass_empty_rounded : Icons.flash_on, color: Colors.yellow, size: 24),
                             ),
-                            const SizedBox(width: 14),
+                            SizedBox(width: 14),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
                                     hasPendingReview ? 'Payment under review' : 'Monthly contribution pending',
-                                    style: const TextStyle(
-                                      color: Colors.white,
+                                    style: TextStyle(
+                                      color: context.colors.textDark,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
                                   ),
-                                  const SizedBox(height: 2),
+                                  SizedBox(height: 2),
                                   Text(
                                     hasPendingReview ? 'Admin is verifying your screenshot' : 'Tap to pay ₹${dash.pendingAmount.toStringAsFixed(0)} via UPI',
-                                    style: const TextStyle(
-                                      color: Colors.white70,
+                                    style: TextStyle(
+                                      color: context.colors.textGrey,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -408,12 +388,12 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                               ),
                             ),
                             if (!hasPendingReview)
-                              const Icon(Icons.chevron_right_rounded, color: Colors.white),
+                              Icon(Icons.chevron_right_rounded, color: context.colors.textDark),
                           ],
                         ),
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20),
                   ],
                 );
               }),
@@ -423,14 +403,14 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
             // ── Active Loan ───────────────────────
             if (dash.activeLoan != null) ...[
               const SectionHeader(title: 'Active Loan'),
-              const SizedBox(height: 10),
+              SizedBox(height: 10),
               _LoanCard(loan: dash.activeLoan!),
-              const SizedBox(height: 16),
+              SizedBox(height: 16),
             ],
 
             // ── Quick Actions Grid ────────────────
             const SectionHeader(title: 'Quick Actions'),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -475,9 +455,15 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                     }
                   },
                 ),
+                _buildQuickActionTile(
+                  icon: Icons.people_outline_rounded,
+                  label: 'Guarantor Req',
+                  color: const Color(0xFF3B82F6),
+                  onTap: () => context.push('/loan/guarantor-requests'),
+                ),
               ],
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: 24),
 
             // ── Recent Transactions ───────────────
             SectionHeader(
@@ -485,7 +471,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
               actionLabel: 'View All',
               onAction: () => setState(() => _currentIndex = 1),
             ),
-            const SizedBox(height: 10),
+            SizedBox(height: 10),
             if (dash.recentContributions.isEmpty)
               const EmptyState(
                 icon: Icons.receipt_long_outlined,
@@ -505,17 +491,17 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
     );
   }
 
-  Widget _buildAccountTabItem(IconData icon, String label, String value, Color valueColor) {
+  Widget _buildAccountTabItem(IconData icon, String label, String value, Color valueColor, [Color? textColor]) {
     return Expanded(
       child: Column(
         children: [
-          Icon(icon, color: const Color(0xFF9094B6), size: 18),
-          const SizedBox(height: 6),
+          Icon(icon, color: textColor ?? context.colors.textGrey, size: 18),
+          SizedBox(height: 6),
           Text(
             label,
-            style: const TextStyle(color: Color(0xFF9094B6), fontSize: 10),
+            style: TextStyle(color: textColor ?? context.colors.textGrey, fontSize: 10),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           FittedBox(
             fit: BoxFit.scaleDown,
             child: Text(
@@ -539,29 +525,29 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
       scale: 0.94,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFF181B2F),
+          color: context.colors.surfaceWhite,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFF282C4A)),
+          border: Border.all(color: context.colors.divider),
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16),
+          padding: EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: color.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 20),
               ),
-              const SizedBox(height: 8),
+              SizedBox(height: 8),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.colors.textDark,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -576,14 +562,14 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
   Widget _buildHistory() {
     final contribAsync = ref.watch(myContributionsProvider);
     return Container(
-      color: const Color(0xFF0C0E1A),
+      color: context.colors.bgGrey,
       child: contribAsync.when(
         loading: () => const ShimmerListLoader(count: 8),
         error: (e, _) => NetworkErrorWidget(
             error: e,
             onRetry: () => ref.invalidate(myContributionsProvider)),
         data: (list) => RefreshIndicator(
-          color: const Color(0xFFC084FC),
+          color: context.colors.primary,
           onRefresh: () async => ref.invalidate(myContributionsProvider),
           child: list.isEmpty
               ? const EmptyState(
@@ -591,9 +577,9 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                   title: 'No contributions yet',
                   subtitle: 'Your monthly payments will appear here')
               : ListView.separated(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   itemCount: list.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, __) => SizedBox(height: 8),
                   itemBuilder: (_, i) => FadeSlideIn(
                         delay: Duration(milliseconds: 50 * i),
                         child: _ContributionHistoryCard(c: list[i]),
@@ -609,17 +595,17 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Container(
-      color: const Color(0xFF0C0E1A),
+      color: context.colors.bgGrey,
       child: profileAsync.when(
         loading: () => const ShimmerListLoader(count: 6),
         error: (e, _) => NetworkErrorWidget(
             error: e,
             onRetry: () => ref.invalidate(myProfileProvider)),
         data: (profile) => RefreshIndicator(
-          color: const Color(0xFFC084FC),
+          color: context.colors.primary,
           onRefresh: () async => ref.invalidate(myProfileProvider),
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             children: [
               Center(
                 child: Column(
@@ -627,8 +613,8 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                     Container(
                       width: 90,
                       height: 90,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF1E213F),
+                      decoration: BoxDecoration(
+                        color: context.colors.divider,
                         shape: BoxShape.circle,
                       ),
                       child: Center(
@@ -636,8 +622,8 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                           profile.fullName.isNotEmpty
                               ? profile.fullName.split(' ').map((e) => e.isNotEmpty ? e[0] : '').take(2).join().toUpperCase()
                               : 'U',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: context.colors.textDark,
                             fontSize: 32,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1,
@@ -645,26 +631,26 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16),
                     Text(
                       profile.fullName,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color: context.colors.textDark,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    SizedBox(height: 6),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1E213F),
+                        color: context.colors.divider,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
                         'Member since ${DateFormat('MMM yyyy').format(profile.joinedDate)}',
-                        style: const TextStyle(
-                          color: Color(0xFFC084FC),
+                        style: TextStyle(
+                          color: context.colors.primary,
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -673,10 +659,10 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               const SectionHeader(title: 'Financial Summary'),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -686,7 +672,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                       icon: Icons.account_balance_wallet_outlined,
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: _DarkStatCard(
                       label: 'Contributions',
@@ -696,45 +682,45 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               const SectionHeader(title: 'Personal Details'),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF181B2F),
+                  color: context.colors.surfaceWhite,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF282C4A)),
+                  border: Border.all(color: context.colors.divider),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.all(16),
                   child: Column(
                     children: [
                       _buildProfileRow(Icons.phone_outlined, 'Phone Number', profile.phone),
-                      const Divider(color: Color(0xFF282C4A), height: 24),
+                      Divider(color: context.colors.divider, height: 24),
                       _buildProfileRow(Icons.email_outlined, 'Email Address', profile.email.isNotEmpty ? profile.email : 'Not Provided'),
-                      const Divider(color: Color(0xFF282C4A), height: 24),
+                      Divider(color: context.colors.divider, height: 24),
                       _buildProfileRow(Icons.shield_outlined, 'Account Role', profile.role),
                       if (profile.referredByName != null && profile.referredByName!.isNotEmpty) ...[
-                        const Divider(color: Color(0xFF282C4A), height: 24),
+                        Divider(color: context.colors.divider, height: 24),
                         _buildProfileRow(Icons.person_add_alt_1_outlined, 'Referred By', profile.referredByName!),
                       ],
                     ],
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: 24),
 
               const SectionHeader(title: 'App Theme'),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Container(
                 decoration: BoxDecoration(
-                  color: const Color(0xFF181B2F),
+                  color: context.colors.surfaceWhite,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFF282C4A)),
+                  border: Border.all(color: context.colors.divider),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(4),
+                  padding: EdgeInsets.all(4),
                   child: Consumer(
                     builder: (context, ref, _) {
                       final currentTheme = ref.watch(themeProvider);
@@ -765,7 +751,64 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 32),
+              SizedBox(height: 24),
+              const SectionHeader(title: 'Account Actions'),
+              SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  color: context.colors.surfaceWhite,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: context.colors.divider),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: () => _showLeaveSocietyDialog(context),
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(Icons.exit_to_app_rounded, color: Color(0xFFEF4444), size: 20),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Leave Society',
+                                  style: TextStyle(
+                                    color: Color(0xFFEF4444),
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'Apply to resign and withdraw funds',
+                                  style: TextStyle(
+                                    color: context.colors.textGrey,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(Icons.chevron_right_rounded, color: context.colors.textGrey),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 32),
             ],
           ),
         ),
@@ -777,31 +820,31 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.all(8),
+          padding: EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: const Color(0xFF1E213F),
+            color: context.colors.divider,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, color: Colors.white70, size: 20),
+          child: Icon(icon, color: context.colors.textGrey, size: 20),
         ),
-        const SizedBox(width: 16),
+        SizedBox(width: 16),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 label,
-                style: const TextStyle(
-                  color: Color(0xFF9094B6),
+                style: TextStyle(
+                  color: context.colors.textGrey,
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 2),
+              SizedBox(height: 2),
               Text(
                 value,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: context.colors.textDark,
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),
@@ -810,6 +853,88 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showLeaveSocietyDialog(BuildContext context) {
+    final reasonController = TextEditingController();
+    bool isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            backgroundColor: context.colors.surfaceWhite,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Text('Leave Society', style: TextStyle(color: context.colors.textDark)),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Are you sure you want to leave the society? Your total invested amount will be refunded upon admin approval.',
+                  style: TextStyle(color: context.colors.textGrey, fontSize: 14),
+                ),
+                SizedBox(height: 16),
+                TextField(
+                  controller: reasonController,
+                  style: TextStyle(color: context.colors.textDark),
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Please enter a reason for leaving...',
+                    hintStyle: TextStyle(color: context.colors.textDark.withValues(alpha: 0.38)),
+                    filled: true,
+                    fillColor: context.colors.bgGrey,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
+                child: Text('Cancel', style: TextStyle(color: context.colors.textGrey)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEF4444),
+                  foregroundColor: context.colors.textDark,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: isSubmitting ? null : () async {
+                  if (reasonController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a reason.')));
+                    return;
+                  }
+                  setState(() => isSubmitting = true);
+                  try {
+                    await UserApi.submitLeaveRequest(reasonController.text.trim());
+                    if (context.mounted) {
+                      Navigator.pop(ctx);
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Leave request submitted successfully. Waiting for admin approval.')));
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+                    }
+                  } finally {
+                    if (context.mounted) {
+                      setState(() => isSubmitting = false);
+                    }
+                  }
+                },
+                child: isSubmitting
+                    ? SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: context.colors.textDark))
+                    : Text('Submit Request'),
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 }
@@ -830,7 +955,7 @@ class _PayNowBanner extends StatelessWidget {
     return GestureDetector(
       onTap: () => context.push('/pay'),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: const Color(0xFF261D15),
           borderRadius: BorderRadius.circular(12),
@@ -839,33 +964,33 @@ class _PayNowBanner extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(10),
               decoration: BoxDecoration(
                 color: const Color(0xFFF97316).withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: const Icon(Icons.payment_rounded,
+              child: Icon(Icons.payment_rounded,
                   color: Color(0xFFF97316), size: 22),
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Monthly contribution pending',
+                  Text('Monthly contribution pending',
                       style: TextStyle(
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: context.colors.textDark,
                           fontSize: 14)),
-                  const SizedBox(height: 2),
+                  SizedBox(height: 2),
                   Text('Tap to pay ${fmt.format(displayAmount)} via UPI',
-                      style: const TextStyle(
-                          color: Color(0xFF9094B6), fontSize: 13)),
+                      style: TextStyle(
+                          color: context.colors.textGrey, fontSize: 13)),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right_rounded,
-                color: Color(0xFF9094B6)),
+            Icon(Icons.chevron_right_rounded,
+                color: context.colors.textGrey),
           ],
         ),
       ),
@@ -891,7 +1016,7 @@ class _ThemeOption extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: isSelected ? context.colors.primary.withValues(alpha: 0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
@@ -906,7 +1031,7 @@ class _ThemeOption extends StatelessWidget {
               color: isSelected ? context.colors.primary : context.colors.textGrey,
               size: 24,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
               label,
               style: TextStyle(
@@ -932,9 +1057,9 @@ class _LoanCard extends StatelessWidget {
         locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF181B2F),
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF282C4A)),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Material(
         color: Colors.transparent,
@@ -942,7 +1067,7 @@ class _LoanCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: () => context.push('/loan/status'),
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(24),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -950,22 +1075,22 @@ class _LoanCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Current Outstanding',
+                      Text('Current Outstanding',
                           style: TextStyle(
-                              color: Color(0xFF9094B6),
+                              color: context.colors.textGrey,
                               fontSize: 13,
                               fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 4),
+                      SizedBox(height: 4),
                       Text(fmt.format(loan.outstandingAmount),
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.w800,
                               letterSpacing: -1,
-                              color: Colors.white)),
-                      const SizedBox(height: 16),
+                              color: context.colors.textDark)),
+                      SizedBox(height: 16),
                       if (loan.repaymentDueDate != null) ...[
                         Container(
-                          padding: const EdgeInsets.symmetric(
+                          padding: EdgeInsets.symmetric(
                               horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF59E0B).withValues(alpha: 0.15),
@@ -974,12 +1099,12 @@ class _LoanCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.calendar_today_rounded,
+                              Icon(Icons.calendar_today_rounded,
                                   color: Color(0xFFF59E0B), size: 14),
-                              const SizedBox(width: 6),
+                              SizedBox(width: 6),
                               Text(
                                 'Due: ${DateFormat('d MMM yyyy').format(loan.repaymentDueDate!)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                     color: Color(0xFFF59E0B),
                                     fontSize: 13,
                                     fontWeight: FontWeight.w700),
@@ -992,7 +1117,7 @@ class _LoanCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
+                  padding: EdgeInsets.symmetric(
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: const Color(0xFF10B981).withValues(alpha: 0.15),
@@ -1000,7 +1125,7 @@ class _LoanCard extends StatelessWidget {
                   ),
                   child: Text(
                     loan.status,
-                    style: const TextStyle(
+                    style: TextStyle(
                         color: Color(0xFF10B981),
                         fontSize: 12,
                         fontWeight: FontWeight.w700),
@@ -1022,11 +1147,11 @@ class _ContributionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF181B2F),
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF282C4A)),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Material(
         color: Colors.transparent,
@@ -1034,7 +1159,7 @@ class _ContributionTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           onTap: () {}, // Future expansion
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(16),
             child: Row(
               children: [
                 Container(
@@ -1056,20 +1181,20 @@ class _ContributionTile extends StatelessWidget {
                     size: 24,
                   ),
                 ),
-                const SizedBox(width: 16),
+                SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(c.monthName,
-                          style: const TextStyle(
+                          style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
-                              color: Colors.white)),
-                      const SizedBox(height: 2),
+                              color: context.colors.textDark)),
+                      SizedBox(height: 2),
                       Text(c.mode,
-                          style: const TextStyle(
-                              color: Color(0xFF9094B6),
+                          style: TextStyle(
+                              color: context.colors.textGrey,
                               fontSize: 13,
                               fontWeight: FontWeight.w500)),
                     ],
@@ -1079,14 +1204,14 @@ class _ContributionTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text('₹${c.amount.toStringAsFixed(0)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
                             letterSpacing: -0.5,
-                            color: Colors.white)),
-                    const SizedBox(height: 4),
+                            color: context.colors.textDark)),
+                    SizedBox(height: 4),
                     Container(
-                      padding: const EdgeInsets.symmetric(
+                      padding: EdgeInsets.symmetric(
                           horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: c.isVerified
@@ -1122,11 +1247,11 @@ class _ContributionHistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF181B2F),
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF282C4A)),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         children: [
@@ -1137,14 +1262,14 @@ class _ContributionHistoryCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(c.monthName,
-                        style: const TextStyle(
+                        style: TextStyle(
                             fontWeight: FontWeight.w600,
                             fontSize: 15,
-                            color: Colors.white)),
-                    const SizedBox(height: 2),
+                            color: context.colors.textDark)),
+                    SizedBox(height: 2),
                     Text(DateFormat('d MMM yyyy').format(c.paidDate),
-                        style: const TextStyle(
-                            color: Color(0xFF9094B6), fontSize: 12)),
+                        style: TextStyle(
+                            color: context.colors.textGrey, fontSize: 12)),
                   ],
                 ),
               ),
@@ -1152,30 +1277,30 @@ class _ContributionHistoryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text('₹${c.amount.toStringAsFixed(0)}',
-                      style: const TextStyle(
+                      style: TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
-                          color: Colors.white)),
-                  const SizedBox(height: 4),
+                          color: context.colors.textDark)),
+                  SizedBox(height: 4),
                   StatusBadge(status: c.isVerified ? 'Verified' : 'Pending'),
                 ],
               ),
             ],
           ),
           if (c.transactionReference != null || c.mode == 'Online') ...[
-            const Divider(height: 20, color: Color(0xFF282C4A)),
+            Divider(height: 20, color: context.colors.divider),
             Row(
               children: [
-                const Icon(Icons.tag_rounded,
-                    size: 14, color: Color(0xFF9094B6)),
-                const SizedBox(width: 4),
+                Icon(Icons.tag_rounded,
+                    size: 14, color: context.colors.textGrey),
+                SizedBox(width: 4),
                 Text(c.transactionReference ?? '-',
-                    style: const TextStyle(
-                        color: Color(0xFF9094B6), fontSize: 12)),
+                    style: TextStyle(
+                        color: context.colors.textGrey, fontSize: 12)),
                 const Spacer(),
                 Text(c.mode,
-                    style: const TextStyle(
-                        color: Color(0xFF9094B6), fontSize: 12)),
+                    style: TextStyle(
+                        color: context.colors.textGrey, fontSize: 12)),
               ],
             ),
           ],
@@ -1200,45 +1325,45 @@ class _DarkStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: const Color(0xFF181B2F),
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF282C4A)),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: (iconColor ?? const Color(0xFFC084FC)).withValues(alpha: 0.15),
+              color: (iconColor ?? context.colors.primary).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: iconColor ?? const Color(0xFFC084FC),
+              color: iconColor ?? context.colors.primary,
               size: 20,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.centerLeft,
             child: Text(
               value,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Colors.white,
+                color: context.colors.textDark,
               ),
             ),
           ),
-          const SizedBox(height: 2),
+          SizedBox(height: 2),
           Text(
             label,
-            style: const TextStyle(
-              color: Color(0xFF9094B6),
+            style: TextStyle(
+              color: context.colors.textGrey,
               fontSize: 11,
               fontWeight: FontWeight.w500,
             ),
@@ -1248,3 +1373,4 @@ class _DarkStatCard extends StatelessWidget {
     );
   }
 }
+

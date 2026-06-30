@@ -13,6 +13,9 @@ import 'package:society_app/screens/user/loan_repay_screen.dart';
 import 'package:society_app/screens/user/user_dashboard_screen.dart';
 import 'package:society_app/screens/user/user_screens.dart';
 import 'package:society_app/screens/notifications_screen.dart';
+import 'package:society_app/screens/admin/admin_expenses_screen.dart';
+import 'package:society_app/screens/admin/admin_ledger_screen.dart';
+import 'package:society_app/screens/admin/admin_leave_requests_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _AuthRouterNotifier(ref);
@@ -43,6 +46,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
           path: '/loan/status', builder: (_, __) => const LoanStatusScreen()),
       GoRoute(
+          path: '/loan/guarantor-requests', builder: (_, __) => const GuarantorRequestsScreen()),
+      GoRoute(
           path: '/loan/repay/:id',
           builder: (_, state) => LoanRepayScreen(
               loanId: int.parse(state.pathParameters['id']!))),
@@ -64,6 +69,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/admin/reports', builder: (_, __) => const ReportsScreen()),
       GoRoute(
           path: '/admin/settings', builder: (_, __) => const SettingsScreen()),
+      GoRoute(
+          path: '/admin/expenses', builder: (_, __) => const AdminExpensesScreen()),
+      GoRoute(
+          path: '/admin/ledger', builder: (_, __) => const AdminLedgerScreen()),
+      GoRoute(
+          path: '/admin/leave-requests', builder: (_, __) => const AdminLeaveRequestsScreen()),
       GoRoute(
           path: '/notifications', builder: (_, __) => const NotificationsScreen()),
     ],

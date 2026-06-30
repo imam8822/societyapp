@@ -22,6 +22,43 @@ class MembersScreen extends ConsumerStatefulWidget {
 class _MembersScreenState extends ConsumerState<MembersScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
+  
+  final List<UserSummary> _members = [];
+  bool _loading = false;
+  bool _hasMore = true;
+  int _page = 1;
+  final int _limit = 20;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers({bool refresh = false}) async {
+    if (refresh) {
+      _page = 1;
+      _hasMore = true;
+      _members.clear();
+    }
+
+    if (!_hasMore || _loading) return;
+
+    setState(() => _loading = true);
+
+    try {
+      final items = await UserApi.getAllUsers(page: _page, limit: _limit);
+      setState(() {
+        if (items.length < _limit) _hasMore = false;
+        _members.addAll(items);
+        _page++;
+      });
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiError(e))));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   @override
   void dispose() {
@@ -31,7 +68,11 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final membersAsync = ref.watch(membersProvider);
+    final filtered = _query.isEmpty
+        ? _members
+        : _members.where((m) =>
+            m.fullName.toLowerCase().contains(_query) ||
+            m.phone.contains(_query)).toList();
 
     return Scaffold(
       backgroundColor: context.colors.bgGrey,
@@ -39,96 +80,93 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await context.push('/admin/members/add');
-          ref.invalidate(membersProvider);
+          _loadMembers(refresh: true);
         },
         backgroundColor: context.colors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.person_add_rounded),
         label: const Text('Add Member'),
       ),
-      body: membersAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
-        error: (e, _) => ErrorRetry(
-          message: apiError(e),
-          onRetry: () => ref.invalidate(membersProvider),
-        ),
-        data: (members) {
-          final filtered = _query.isEmpty
-              ? members
-              : members.where((m) =>
-                  m.fullName.toLowerCase().contains(_query) ||
-                  m.phone.contains(_query)).toList();
-
-          return Column(
-            children: [
-              // ── Search bar ──────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: TextField(
-                  controller: _searchCtrl,
-                  onChanged: (v) => setState(() => _query = v.toLowerCase().trim()),
-                  decoration: InputDecoration(
-                    hintText: 'Search by name or phone...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _query.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.close, size: 18),
-                            onPressed: () {
-                              _searchCtrl.clear();
-                              setState(() => _query = '');
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: context.colors.surfaceWhite,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: context.colors.divider),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: context.colors.divider),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: context.colors.primary, width: 1.5),
+      body: _members.isEmpty && _loading
+          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
+          : Column(
+              children: [
+                // ── Search bar ──────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: (v) => setState(() => _query = v.toLowerCase().trim()),
+                    decoration: InputDecoration(
+                      hintText: 'Search by name or phone...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: _query.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                setState(() => _query = '');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: context.colors.surfaceWhite,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: context.colors.divider),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: context.colors.divider),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: context.colors.primary, width: 1.5),
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // ── Count ───────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                child: Row(children: [
-                  Text(
-                    '${filtered.length} member${filtered.length == 1 ? '' : 's'}',
-                    style: TextStyle(fontSize: 12, color: context.colors.textGrey),
-                  ),
-                ]),
-              ),
+                // ── Count ───────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  child: Row(children: [
+                    Text(
+                      '${filtered.length} member${filtered.length == 1 ? '' : 's'}',
+                      style: TextStyle(fontSize: 12, color: context.colors.textGrey),
+                    ),
+                  ]),
+                ),
 
-              // ── List ────────────────────────────────────
-              Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Text('No members found',
-                            style: TextStyle(color: context.colors.textGrey)))
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(0, 4, 0, 100),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1, indent: 56),
-                        itemBuilder: (_, i) => _MemberTile(
-                          member: filtered[i],
-                          onEdited: () => ref.invalidate(membersProvider),
+                // ── List ────────────────────────────────────
+                Expanded(
+                  child: filtered.isEmpty
+                      ? Center(
+                          child: Text('No members found',
+                              style: TextStyle(color: context.colors.textGrey)))
+                      : RefreshIndicator(
+                          onRefresh: () => _loadMembers(refresh: true),
+                          color: context.colors.primary,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(0, 4, 0, 100),
+                            itemCount: filtered.length + (_hasMore && _query.isEmpty ? 1 : 0),
+                            separatorBuilder: (_, __) => const Divider(height: 1, indent: 56),
+                            itemBuilder: (context, i) {
+                              if (i == filtered.length) {
+                                _loadMembers();
+                                return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+                              }
+                              return _MemberTile(
+                                member: filtered[i],
+                                onEdited: () => _loadMembers(refresh: true),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-              ),
-            ],
-          );
-        },
-      ),
+                ),
+              ],
+            ),
     );
   }
 }
