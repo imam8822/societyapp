@@ -154,6 +154,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             },
           ),
           IconButton(
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Switch to Member View',
+            onPressed: () => context.go('/home'),
+          ),
+          IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () => context.push('/admin/settings'),
           ),
@@ -178,64 +183,103 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             padding: const EdgeInsets.all(16),
             children: [
 
-              // ── Pool Card ─────────────────────────
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [context.colors.primary, const Color(0xFF2ECC71)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              // ── Stats grid (React Style) ────────────────────────
+              const SectionHeader(title: 'Overview'),
+              const SizedBox(height: 10),
+              GridView.count(
+                crossAxisCount: 2,
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.25,
+                children: [
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 0),
+                    child: _ReactStatCard(
+                      title: 'Current Balance',
+                      value: fmt.format(dash.balance),
+                      subtitle: 'Total Collected: ${fmt.format(dash.totalCollected)}',
+                      icon: Icons.account_balance_wallet_rounded,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF10B981), Color(0xFF059669)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      onTap: () => context.push('/admin/ledger'),
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Month payment status
-                      Row(children: [
-                        const Icon(Icons.people_outline_rounded,
-                            color: Colors.white70, size: 15),
-                        const SizedBox(width: 6),
-                        Text(
-                          '${dash.currentMonthPaidCount} of ${dash.activeMembers} paid this month',
-                          style: const TextStyle(
-                              color: Colors.white70, fontSize: 13),
-                        ),
-                      ]),
-
-                      const SizedBox(height: 20),
-                      const Divider(color: Colors.white24, height: 1),
-                      const SizedBox(height: 20),
-
-                      // Two financial stats side by side
-                      Row(children: [
-                        Expanded(
-                          child: _FinanceStat(
-                            label: 'Total Collected',
-                            value: fmt.format(dash.totalCollected),
-                            icon: Icons.arrow_downward_rounded,
-                          ),
-                        ),
-                        Container(
-                          width: 1,
-                          height: 40,
-                          color: Colors.white24,
-                        ),
-                        Expanded(
-                          child: _FinanceStat(
-                            label: 'Balance',
-                            value: fmt.format(dash.balance),
-                            icon: Icons.account_balance_wallet_outlined,
-                            valueColor: Colors.greenAccent.shade200,
-                            alignRight: true,
-                          ),
-                        ),
-                      ]),
-                    ],
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 40),
+                    child: _ReactStatCard(
+                      title: 'Members',
+                      value: '${dash.activeMembers}',
+                      subtitle: 'Total Registered: ${dash.totalMembers}',
+                      icon: Icons.people_alt_rounded,
+                      bgColor: const Color(0xFF181B2F),
+                      iconColor: const Color(0xFF10B981),
+                      onTap: () => context.push('/admin/members'),
+                    ),
                   ),
-                ),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 80),
+                    child: _ReactStatCard(
+                      title: 'Monthly Collections',
+                      value: '${dash.currentMonthPaidCount} Paid',
+                      subtitle: '${dash.currentMonthUnpaidCount} Unpaid',
+                      icon: Icons.trending_up_rounded,
+                      bgColor: const Color(0xFF181B2F),
+                      iconColor: const Color(0xFFF59E0B),
+                      onTap: () {
+                        // Navigate to Unpaid Members list
+                        _showUnpaidMembers(context, dash.unpaidMembers);
+                      },
+                    ),
+                  ),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 120),
+                    child: _ReactStatCard(
+                      title: 'Active Loans (${dash.activeLoans})',
+                      value: fmt.format(dash.outstandingAmount),
+                      subtitle: 'Outstanding Repayment',
+                      icon: Icons.credit_card_rounded,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFEF4444), Color(0xFFB91C1C)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      onTap: () => setState(() => _currentIndex = 1),
+                    ),
+                  ),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 160),
+                    child: _ReactStatCard(
+                      title: 'Penalty Collected',
+                      value: fmt.format(dash.totalPenaltyCollected),
+                      subtitle: 'Total Late Fees',
+                      icon: Icons.show_chart_rounded,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  ),
+                  FadeSlideIn(
+                    delay: const Duration(milliseconds: 200),
+                    child: _ReactStatCard(
+                      title: 'Profit from Loans',
+                      value: fmt.format(dash.totalLoanProfit),
+                      subtitle: 'Additional Revenue',
+                      icon: Icons.emoji_events_rounded,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 16),
@@ -269,59 +313,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                   ),
                 const SizedBox(height: 16),
               ],
-
-              // ── Stats grid ────────────────────────
-              const SectionHeader(title: 'Overview'),
-              const SizedBox(height: 10),
-              GridView.count(
-                crossAxisCount: 2,
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                childAspectRatio: 1.55,
-                children: [
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 0),
-                    child: StatCard(
-                      label: 'Total Members',
-                      value: '${dash.totalMembers}',
-                      icon: Icons.people_alt_rounded,
-                      onTap: () => context.push('/admin/members'),
-                    ),
-                  ),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 80),
-                    child: StatCard(
-                      label: 'Active Loans',
-                      value: '${dash.activeLoans}',
-                      icon: Icons.account_balance_rounded,
-                      iconColor: const Color(0xFF2563EB),
-                      onTap: () => setState(() => _currentIndex = 1),
-                    ),
-                  ),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 160),
-                    child: StatCard(
-                      label: 'Total Disbursed',
-                      value: fmt.format(dash.totalDisbursed),
-                      icon: Icons.currency_rupee_rounded,
-                      iconColor: context.colors.warning,
-                      onTap: () => setState(() => _currentIndex = 3),
-                    ),
-                  ),
-                  FadeSlideIn(
-                    delay: const Duration(milliseconds: 240),
-                    child: StatCard(
-                      label: 'Outstanding',
-                      value: fmt.format(dash.outstandingAmount),
-                      icon: Icons.pending_rounded,
-                      iconColor: context.colors.error,
-                      onTap: () => setState(() => _currentIndex = 3),
-                    ),
-                  ),
-                ],
-              ),
 
               const SizedBox(height: 16),
 
@@ -387,13 +378,194 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    const Expanded(child: SizedBox()), // Empty slot for alignment
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.account_balance_wallet_rounded,
+                        label: 'Adjust Ledger',
+                        color: Colors.blueAccent,
+                        onTap: () => context.push('/admin/adjust-ledger'),
+                      ),
+                    ),
                   ],
                 ),
               ],
 
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showUnpaidMembers(BuildContext context, List<dynamic> unpaidMembers) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          height: MediaQuery.of(ctx).size.height * 0.7,
+          decoration: BoxDecoration(
+            color: context.colors.surfaceWhite,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: context.colors.divider,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text('Unpaid Members',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: context.colors.textDark)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  '${unpaidMembers.length} member${unpaidMembers.length == 1 ? '' : 's'} have not paid this month',
+                  style: TextStyle(color: context.colors.textGrey, fontSize: 12),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Expanded(
+                child: unpaidMembers.isEmpty
+                    ? Center(child: Text('Everyone has paid!', style: TextStyle(color: context.colors.textGrey)))
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        itemCount: unpaidMembers.length,
+                        separatorBuilder: (_, __) => Divider(height: 1, indent: 56, color: context.colors.divider),
+                        itemBuilder: (_, i) {
+                          final m = unpaidMembers[i];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              radius: 18,
+                              backgroundColor: context.colors.error.withValues(alpha: 0.1),
+                              child: Text(
+                                m.fullName[0].toUpperCase(),
+                                style: TextStyle(color: context.colors.error, fontWeight: FontWeight.w700, fontSize: 14),
+                              ),
+                            ),
+                            title: Text(m.fullName,
+                                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: context.colors.textDark)),
+                            subtitle: Text(m.phone, style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
+                            trailing: TextButton(
+                              onPressed: () {
+                                Navigator.pop(ctx);
+                                context.push('/admin/collect-cash');
+                              },
+                              child: const Text('Collect'),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ── React-style Stat Card ──────────────────────────────────────────
+class _ReactStatCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final Color? iconColor;
+  final Color? bgColor;
+  final LinearGradient? gradient;
+  final VoidCallback? onTap;
+
+  const _ReactStatCard({
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    this.iconColor,
+    this.bgColor,
+    this.gradient,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = gradient != null || (bgColor != null && bgColor != context.colors.surfaceWhite);
+    final textColor = isDark ? Colors.white : context.colors.textDark;
+    final subTextColor = isDark ? Colors.white70 : context.colors.textGrey;
+    final iconFgColor = isDark ? (iconColor ?? Colors.white) : (iconColor ?? context.colors.primary);
+
+    return AnimatedPressable(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: gradient == null ? (bgColor ?? context.colors.surfaceWhite) : null,
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(12),
+          border: gradient == null ? Border.all(color: context.colors.divider) : null,
+          boxShadow: gradient != null ? [
+            BoxShadow(
+              color: gradient!.colors.last.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ] : null,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: iconFgColor, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 14, 
+                      fontWeight: FontWeight.w600, 
+                      color: isDark ? Colors.white.withValues(alpha: 0.9) : textColor
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: textColor,
+                ),
+              ),
+            ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: subTextColor,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

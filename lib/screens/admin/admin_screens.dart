@@ -25,7 +25,7 @@ class LoanReviewScreen extends ConsumerStatefulWidget {
 
 class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
   String _searchQuery = '';
-  double? _amountFilter; // null means 'All'
+  String? _statusFilter; // null means 'All'
 
   @override
   Widget build(BuildContext context) {
@@ -51,25 +51,13 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
             message: apiError(e),
             onRetry: () => ref.invalidate(allLoansProvider)),
         data: (loans) {
-          final uniqueAmounts = loans.map((l) => l.amount).toSet().toList()..sort();
-          final fmtFilter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
-
-          // Auto-reset filter if selected amount is no longer in the loans list
-          if (_amountFilter != null && !uniqueAmounts.contains(_amountFilter)) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() {
-                  _amountFilter = null;
-                });
-              }
-            });
-          }
+          final statuses = ['Pending', 'Approved', 'Disbursed', 'Rejected', 'Completed'];
 
           final filtered = loans.where((l) {
             final matchesSearch = l.applicantName.toLowerCase().contains(_searchQuery.toLowerCase()) || 
                                   l.applicantPhone.contains(_searchQuery);
-            final matchesAmount = _amountFilter == null || l.amount == _amountFilter;
-            return matchesSearch && matchesAmount;
+            final matchesStatus = _statusFilter == null || l.status == _statusFilter;
+            return matchesSearch && matchesStatus;
           }).toList();
 
           return Column(
@@ -108,35 +96,35 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                         child: ChoiceChip(
                           label: Text('All', style: TextStyle(
                             fontSize: 12,
-                            color: _amountFilter == null ? Colors.white : context.colors.textGrey,
-                            fontWeight: _amountFilter == null ? FontWeight.bold : FontWeight.normal,
+                            color: _statusFilter == null ? Colors.white : context.colors.textGrey,
+                            fontWeight: _statusFilter == null ? FontWeight.bold : FontWeight.normal,
                           )),
-                          selected: _amountFilter == null,
+                          selected: _statusFilter == null,
                           selectedColor: context.colors.primary,
                           backgroundColor: context.colors.surfaceWhite,
                           onSelected: (val) {
                             if (val) {
                               setState(() {
-                                _amountFilter = null;
+                                _statusFilter = null;
                               });
                             }
                           },
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                             side: BorderSide(
-                              color: _amountFilter == null ? context.colors.primary : context.colors.divider,
+                              color: _statusFilter == null ? context.colors.primary : context.colors.divider,
                             ),
                           ),
                           showCheckmark: false,
                         ),
                       ),
-                      // Dynamic amounts
-                      ...uniqueAmounts.map((amount) {
-                        final selected = _amountFilter == amount;
+                      // Dynamic statuses
+                      ...statuses.map((status) {
+                        final selected = _statusFilter == status;
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
-                            label: Text(fmtFilter.format(amount), style: TextStyle(
+                            label: Text(status, style: TextStyle(
                               fontSize: 12,
                               color: selected ? Colors.white : context.colors.textGrey,
                               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
@@ -146,7 +134,7 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                             backgroundColor: context.colors.surfaceWhite,
                             onSelected: (val) {
                               setState(() {
-                                _amountFilter = val ? amount : null;
+                                _statusFilter = val ? status : null;
                               });
                             },
                             shape: RoundedRectangleBorder(

@@ -16,6 +16,7 @@ import 'package:society_app/screens/notifications_screen.dart';
 import 'package:society_app/screens/admin/admin_expenses_screen.dart';
 import 'package:society_app/screens/admin/admin_ledger_screen.dart';
 import 'package:society_app/screens/admin/admin_leave_requests_screen.dart';
+import 'package:society_app/screens/admin/add_adjustment_screen.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _AuthRouterNotifier(ref);
@@ -75,6 +76,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/admin/ledger', builder: (_, __) => const AdminLedgerScreen()),
       GoRoute(
           path: '/admin/leave-requests', builder: (_, __) => const AdminLeaveRequestsScreen()),
+      GoRoute(
+          path: '/admin/adjust-ledger', builder: (_, __) => const AddAdjustmentScreen()),
       GoRoute(
           path: '/notifications', builder: (_, __) => const NotificationsScreen()),
     ],

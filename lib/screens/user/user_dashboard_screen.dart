@@ -12,6 +12,7 @@ import '../../models/dashboard_models.dart';
 import '../../models/contribution_models.dart';
 import '../../widgets/network_error_widget.dart';
 import '../../core/api/api_services.dart';
+import '../../core/api/api_client.dart';
 
 class UserDashboardScreen extends ConsumerStatefulWidget {
   const UserDashboardScreen({super.key});
@@ -113,6 +114,19 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                     ),
                 ],
               );
+            },
+          ),
+          Consumer(
+            builder: (context, ref, child) {
+              final role = ref.watch(authProvider).role;
+              if (role == 'Admin' || role == 'SuperAdmin' || role == 'Auditor') {
+                return IconButton(
+                  icon: Icon(Icons.admin_panel_settings_outlined, color: context.colors.textDark),
+                  tooltip: 'Switch to Admin View',
+                  onPressed: () => context.go('/admin'),
+                );
+              }
+              return const SizedBox.shrink();
             },
           ),
           IconButton(
@@ -371,7 +385,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                                   Text(
                                     hasPendingReview ? 'Payment under review' : 'Monthly contribution pending',
                                     style: TextStyle(
-                                      color: context.colors.textDark,
+                                      color: Colors.white,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 14,
                                     ),
@@ -380,7 +394,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                                   Text(
                                     hasPendingReview ? 'Admin is verifying your screenshot' : 'Tap to pay ₹${dash.pendingAmount.toStringAsFixed(0)} via UPI',
                                     style: TextStyle(
-                                      color: context.colors.textGrey,
+                                      color: Colors.white70,
                                       fontSize: 12,
                                     ),
                                   ),
@@ -388,7 +402,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                               ),
                             ),
                             if (!hasPendingReview)
-                              Icon(Icons.chevron_right_rounded, color: context.colors.textDark),
+                              Icon(Icons.chevron_right_rounded, color: Colors.white),
                           ],
                         ),
                       ),
@@ -592,6 +606,8 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
 
   Widget _buildProfile() {
     final profileAsync = ref.watch(myProfileProvider);
+    final dashAsync = ref.watch(userDashboardProvider);
+    final hasPendingLeaveRequest = dashAsync.valueOrNull?.hasPendingLeaveRequest ?? false;
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
     return Container(
@@ -603,7 +619,10 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
             onRetry: () => ref.invalidate(myProfileProvider)),
         data: (profile) => RefreshIndicator(
           color: context.colors.primary,
-          onRefresh: () async => ref.invalidate(myProfileProvider),
+          onRefresh: () async {
+            ref.invalidate(myProfileProvider);
+            ref.invalidate(userDashboardProvider);
+          },
           child: ListView(
             padding: EdgeInsets.all(16),
             children: [
@@ -764,7 +783,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(16),
-                    onTap: () => _showLeaveSocietyDialog(context),
+                    onTap: hasPendingLeaveRequest ? null : () => _showLeaveSocietyDialog(context),
                     child: Padding(
                       padding: EdgeInsets.all(16),
                       child: Row(
@@ -772,10 +791,10 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                           Container(
                             padding: EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+                              color: hasPendingLeaveRequest ? Colors.grey.withValues(alpha: 0.15) : const Color(0xFFEF4444).withValues(alpha: 0.15),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: Icon(Icons.exit_to_app_rounded, color: Color(0xFFEF4444), size: 20),
+                            child: Icon(hasPendingLeaveRequest ? Icons.hourglass_empty_rounded : Icons.exit_to_app_rounded, color: hasPendingLeaveRequest ? Colors.grey : Color(0xFFEF4444), size: 20),
                           ),
                           SizedBox(width: 16),
                           Expanded(
@@ -783,16 +802,16 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Leave Society',
+                                  hasPendingLeaveRequest ? 'Leave Request Pending' : 'Leave Society',
                                   style: TextStyle(
-                                    color: Color(0xFFEF4444),
+                                    color: hasPendingLeaveRequest ? Colors.grey : Color(0xFFEF4444),
                                     fontSize: 15,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 SizedBox(height: 2),
                                 Text(
-                                  'Apply to resign and withdraw funds',
+                                  hasPendingLeaveRequest ? 'Awaiting admin approval' : 'Apply to resign and withdraw funds',
                                   style: TextStyle(
                                     color: context.colors.textGrey,
                                     fontSize: 12,
@@ -801,7 +820,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                               ],
                             ),
                           ),
-                          Icon(Icons.chevron_right_rounded, color: context.colors.textGrey),
+                          if (!hasPendingLeaveRequest) Icon(Icons.chevron_right_rounded, color: context.colors.textGrey),
                         ],
                       ),
                     ),
@@ -907,7 +926,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                 ),
                 onPressed: isSubmitting ? null : () async {
                   if (reasonController.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter a reason.')));
+                    AppToast.showError(context, 'Please enter a reason.');
                     return;
                   }
                   setState(() => isSubmitting = true);
@@ -915,11 +934,12 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                     await UserApi.submitLeaveRequest(reasonController.text.trim());
                     if (context.mounted) {
                       Navigator.pop(ctx);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Leave request submitted successfully. Waiting for admin approval.')));
+                      ref.invalidate(userDashboardProvider);
+                      AppToast.showSuccess(context, 'Leave request submitted successfully. Waiting for admin approval.');
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+                      AppToast.showError(context, apiError(e));
                     }
                   } finally {
                     if (context.mounted) {

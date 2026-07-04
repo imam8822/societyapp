@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/api/api_services.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants.dart';
+import '../../providers/data_providers.dart';
 import '../../models/payment_models.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -74,6 +75,8 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
       final base64Str = base64Encode(bytes);
       final result = await PaymentApi.uploadLoanScreenshot(
           widget.loanId, base64Str);
+      ref.invalidate(userDashboardProvider);
+      ref.invalidate(myLoansProvider);
       setState(() {
         _resultMessage = result.message;
         _autoVerified = result.autoVerified;

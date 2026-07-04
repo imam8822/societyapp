@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants.dart';
 import '../../models/user_models.dart';
+import '../../core/api/api_services.dart';
 import 'edit_member_sheet.dart';
 
 class MemberDetailScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class MemberDetailScreen extends StatefulWidget {
 
 class _MemberDetailScreenState extends State<MemberDetailScreen> {
   late UserSummary _member;
+  bool _wasEdited = false;
 
   @override
   void initState() {
@@ -21,8 +23,8 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     _member = widget.member;
   }
 
-  void _openEdit() {
-    showModalBottomSheet(
+  Future<void> _openEdit() async {
+    final edited = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -33,6 +35,16 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
         },
       ),
     );
+
+    if (edited == true) {
+      _wasEdited = true;
+      try {
+        final updated = await UserApi.getUserById(_member.id);
+        if (mounted) setState(() => _member = updated);
+      } catch (e) {
+        // ignore
+      }
+    }
   }
 
   @override
@@ -40,9 +52,14 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
     final fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
     final dateFmt = DateFormat('dd MMM yyyy');
 
-    return Scaffold(
-      backgroundColor: context.colors.bgGrey,
-      body: CustomScrollView(
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, _wasEdited);
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: context.colors.bgGrey,
+        body: CustomScrollView(
         slivers: [
           // ── Header ──────────────────────────────────────
           SliverAppBar(
@@ -241,7 +258,7 @@ class _MemberDetailScreenState extends State<MemberDetailScreen> {
           ),
         ],
       ),
-    );
+    ));
   }
 }
 

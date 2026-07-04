@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,6 +23,15 @@ class MembersScreen extends ConsumerStatefulWidget {
 class _MembersScreenState extends ConsumerState<MembersScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
+  Timer? _debounce;
+  
+  void _onSearchChanged(String v) {
+    setState(() => _query = v.toLowerCase().trim());
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _loadMembers(refresh: true);
+    });
+  }
   
   final List<UserSummary> _members = [];
   bool _loading = false;
@@ -43,25 +53,33 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
     }
 
     if (!_hasMore || _loading) return;
+    _loading = true;
 
-    setState(() => _loading = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
 
     try {
-      final items = await UserApi.getAllUsers(page: _page, limit: _limit);
-      setState(() {
-        if (items.length < _limit) _hasMore = false;
-        _members.addAll(items);
-        _page++;
-      });
+      final items = await UserApi.getAllUsers(search: _query, page: _page, limit: _limit);
+      if (mounted) {
+        setState(() {
+          if (items.length < _limit) _hasMore = false;
+          _members.addAll(items);
+          _page++;
+        });
+      }
     } catch (e) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiError(e))));
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() => _loading = false);
+      }
     }
   }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
@@ -96,7 +114,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: TextField(
                     controller: _searchCtrl,
-                    onChanged: (v) => setState(() => _query = v.toLowerCase().trim()),
+                    onChanged: _onSearchChanged,
                     decoration: InputDecoration(
                       hintText: 'Search by name or phone...',
                       prefixIcon: const Icon(Icons.search, size: 20),
@@ -105,7 +123,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                               icon: const Icon(Icons.close, size: 18),
                               onPressed: () {
                                 _searchCtrl.clear();
-                                setState(() => _query = '');
+                                _onSearchChanged('');
                               },
                             )
                           : null,
@@ -178,7 +196,7 @@ class _MemberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPending = member.pendingAmount > 0;
+    final hasPending = member.isActive && member.pendingAmount > 0;
 
     return InkWell(
       onTap: () async {
@@ -264,6 +282,22 @@ class _MemberTile extends StatelessWidget {
                 ),
               ),
             )
+          else if (!member.isActive)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: context.colors.textGrey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Inactive',
+                style: TextStyle(
+                  color: context.colors.textGrey,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
           else
             const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF2ECC71)),
 
@@ -278,13 +312,13 @@ class _MemberTile extends StatelessWidget {
 // ═════════════════════════════════════════════
 // Add Member Screen
 // ═════════════════════════════════════════════
-class AddMemberScreen extends StatefulWidget {
+class AddMemberScreen extends ConsumerStatefulWidget {
   const AddMemberScreen({super.key});
   @override
-  State<AddMemberScreen> createState() => _AddMemberScreenState();
+  ConsumerState<AddMemberScreen> createState() => _AddMemberScreenState();
 }
 
-class _AddMemberScreenState extends State<AddMemberScreen> {
+class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
@@ -344,6 +378,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
         pendingAmount: double.tryParse(_pendingCtrl.text) ?? 0,
         referredById: _selectedReferral?.id,
       ));
+      ref.invalidate(adminDashboardProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Member added successfully!')));

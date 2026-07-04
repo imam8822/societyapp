@@ -190,17 +190,20 @@ class GuarantorOption {
   final int id;
   final String fullName;
   final String phone;
+  final double availableGuaranteeLimit;
 
   GuarantorOption({
     required this.id,
     required this.fullName,
     required this.phone,
+    required this.availableGuaranteeLimit,
   });
 
   factory GuarantorOption.fromJson(Map<String, dynamic> j) => GuarantorOption(
         id: j['id'],
         fullName: j['fullName'],
         phone: j['phone'],
+        availableGuaranteeLimit: (j['availableGuaranteeLimit'] as num?)?.toDouble() ?? 0,
       );
 }
 

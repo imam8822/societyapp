@@ -249,6 +249,7 @@ class StatCard extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
   final Color? bgColor;
+  final LinearGradient? gradient;
   final VoidCallback? onTap;
 
   const StatCard({
@@ -258,30 +259,44 @@ class StatCard extends StatelessWidget {
     required this.icon,
     this.iconColor,
     this.bgColor,
+    this.gradient,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasGradient = gradient != null;
+    final textColor = hasGradient ? Colors.white : context.colors.textDark;
+    final subTextColor = hasGradient ? Colors.white70 : context.colors.textGrey;
+    final iconBgColor = hasGradient ? Colors.black26 : (iconColor ?? context.colors.primary).withValues(alpha: 0.1);
+    final iconFgColor = hasGradient ? Colors.white : (iconColor ?? context.colors.primary);
+
     return AnimatedPressable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
         decoration: BoxDecoration(
-          color: bgColor ?? context.colors.surfaceWhite,
+          color: gradient == null ? (bgColor ?? context.colors.surfaceWhite) : null,
+          gradient: gradient,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: context.colors.divider),
+          border: gradient == null ? Border.all(color: context.colors.divider) : null,
+          boxShadow: gradient != null ? [
+            BoxShadow(
+              color: gradient!.colors.last.withValues(alpha: 0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
+          ] : null,
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: (iconColor ?? context.colors.primary).withValues(alpha: 0.1),
+                color: iconBgColor,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(icon,
-                  color: iconColor ?? context.colors.primary, size: 20),
+              child: Icon(icon, color: iconFgColor, size: 20),
             ),
             const SizedBox(width: 10),
             Expanded(
@@ -297,7 +312,7 @@ class StatCard extends StatelessWidget {
                         style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: context.colors.textDark)),
+                            color: textColor)),
                   ),
                   const SizedBox(height: 2),
                   FittedBox(
@@ -305,7 +320,7 @@ class StatCard extends StatelessWidget {
                     alignment: Alignment.centerLeft,
                     child: Text(label,
                         style: TextStyle(
-                            fontSize: 12, color: context.colors.textGrey, fontWeight: FontWeight.w500)),
+                            fontSize: 12, color: subTextColor, fontWeight: FontWeight.w500)),
                   ),
                 ],
               ),

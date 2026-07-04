@@ -549,6 +549,7 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                       await PaymentApi.adminVerify(item.contributionId, approve, remark);
                       
                       ref.invalidate(pendingScreenshotsProvider);
+                      ref.invalidate(adminDashboardProvider);
                       if (ctx.mounted) Navigator.pop(ctx);
                       
                       if (context.mounted) {
@@ -916,6 +917,7 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                       await PaymentApi.adminVerifyLoanRepayment(item.loanRepaymentId, approve, remark);
                       
                       ref.invalidate(pendingLoanRepaymentsProvider);
+                      ref.invalidate(adminDashboardProvider);
                       if (ctx.mounted) Navigator.pop(ctx);
                       
                       if (context.mounted) {

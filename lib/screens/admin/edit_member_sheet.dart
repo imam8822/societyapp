@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_services.dart';
 import '../../core/constants.dart';
 import '../../models/user_models.dart';
+import '../../providers/data_providers.dart';
 
-class EditMemberSheet extends StatefulWidget {
+class EditMemberSheet extends ConsumerStatefulWidget {
   final UserSummary member;
   final VoidCallback onSaved;
   const EditMemberSheet({super.key, required this.member, required this.onSaved});
 
   @override
-  State<EditMemberSheet> createState() => _EditMemberSheetState();
+  ConsumerState<EditMemberSheet> createState() => _EditMemberSheetState();
 }
 
-class _EditMemberSheetState extends State<EditMemberSheet> {
+class _EditMemberSheetState extends ConsumerState<EditMemberSheet> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _phoneCtrl;
   late final TextEditingController _emailCtrl;
@@ -56,9 +58,9 @@ class _EditMemberSheetState extends State<EditMemberSheet> {
       if (data.isEmpty) { Navigator.pop(context); return; }
 
       await UserApi.updateUser(widget.member.id, data);
+      ref.invalidate(adminDashboardProvider);
       widget.onSaved();
       if (mounted) {
-        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Member updated successfully')));
       }

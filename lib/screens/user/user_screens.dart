@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:society_app/core/api/api_client.dart';
 import 'package:society_app/core/api/api_services.dart';
 import 'package:society_app/core/constants.dart';
+import 'package:society_app/core/storage/storage_service.dart';
 import 'package:society_app/models/contribution_models.dart';
 import 'package:society_app/models/loan_models.dart';
 import 'package:society_app/providers/data_providers.dart';
@@ -116,13 +117,13 @@ class _ContributionCard extends StatelessWidget {
 // Loads loan options + guarantors from API,
 // shows eligibility inline on option selection
 // ═════════════════════════════════════════════
-class LoanApplyScreen extends StatefulWidget {
+class LoanApplyScreen extends ConsumerStatefulWidget {
   const LoanApplyScreen({super.key});
   @override
-  State<LoanApplyScreen> createState() => _LoanApplyScreenState();
+  ConsumerState<LoanApplyScreen> createState() => _LoanApplyScreenState();
 }
 
-class _LoanApplyScreenState extends State<LoanApplyScreen> {
+class _LoanApplyScreenState extends ConsumerState<LoanApplyScreen> {
   final _fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
   final _formKey = GlobalKey<FormState>();
 
@@ -190,6 +191,8 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
         guarantor2Id: (_needsGuarantor && _selectedOption!.requiredGuarantors == 2) ? _selectedGuarantor2?.id : null,
       ));
       if (mounted) {
+        ref.invalidate(userDashboardProvider);
+        ref.invalidate(myLoansProvider);
         _snack('Loan application submitted!');
         Navigator.pop(context, true);
       }
@@ -354,10 +357,10 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                                 fontSize: 13)),
                       ]),
                       const SizedBox(height: 10),
-                      // Monthly EMI row
+                      // Repayment amount row
                       _summaryRow(
                         Icons.payments_outlined,
-                        'Monthly EMI',
+                        'Repayment Amount',
                         _fmt.format(_selectedOption!.repaymentAmount),
                         highlight: true,
                       ),
@@ -438,7 +441,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                                 Expanded(
                                   child: Text(
                                     _selectedGuarantor != null 
-                                        ? '${_selectedGuarantor!.fullName} (${_selectedGuarantor!.phone})' 
+                                        ? '${_selectedGuarantor!.fullName} (Limit: ₹${_selectedGuarantor!.availableGuaranteeLimit.toStringAsFixed(0)})' 
                                         : 'Select guarantor',
                                     style: TextStyle(
                                       fontSize: 15,
@@ -495,7 +498,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                                 Expanded(
                                   child: Text(
                                     _selectedGuarantor2 != null 
-                                        ? '${_selectedGuarantor2!.fullName} (${_selectedGuarantor2!.phone})' 
+                                        ? '${_selectedGuarantor2!.fullName} (Limit: ₹${_selectedGuarantor2!.availableGuaranteeLimit.toStringAsFixed(0)})' 
                                         : 'Select second guarantor',
                                     style: TextStyle(
                                       fontSize: 15,
@@ -631,86 +634,125 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40, height: 4,
-                decoration: BoxDecoration(color: context.colors.divider, borderRadius: BorderRadius.circular(2)),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Text(isGuarantor2 ? 'Select Second Guarantor' : 'Select Guarantor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textDark)),
-              ),
-              Divider(height: 1, color: context.colors.divider),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: data.availableGuarantors.length,
-                  itemBuilder: (ctx, i) {
-                    final g = data.availableGuarantors[i];
-                    final isSelected = isGuarantor2 
-                        ? _selectedGuarantor2?.id == g.id 
-                        : _selectedGuarantor?.id == g.id;
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          if (isGuarantor2) {
-                            _selectedGuarantor2 = g;
-                          } else {
-                            _selectedGuarantor = g;
-                          }
-                        });
-                        Navigator.pop(ctx);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: isSelected ? context.colors.primary.withValues(alpha: 0.05) : Colors.transparent,
-                          border: Border(bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5))),
+      builder: (ctx) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final filteredGuarantors = data.availableGuarantors.where((g) {
+              return g.fullName.toLowerCase().contains(searchQuery.toLowerCase()) || 
+                     g.phone.contains(searchQuery);
+            }).toList();
+
+            return SafeArea(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 8),
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(color: context.colors.divider, borderRadius: BorderRadius.circular(2)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: Text(isGuarantor2 ? 'Select Second Guarantor' : 'Select Guarantor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textDark)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search by name or phone...',
+                          prefixIcon: Icon(Icons.search, color: context.colors.textGrey),
+                          filled: true,
+                          fillColor: context.colors.surfaceWhite,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
+                        onChanged: (val) {
+                          setModalState(() {
+                            searchQuery = val;
+                          });
+                        },
+                      ),
+                    ),
+                    Divider(height: 1, color: context.colors.divider),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filteredGuarantors.length,
+                        itemBuilder: (ctx, i) {
+                          final g = filteredGuarantors[i];
+                          final isSelected = isGuarantor2 
+                              ? _selectedGuarantor2?.id == g.id 
+                              : _selectedGuarantor?.id == g.id;
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                if (isGuarantor2) {
+                                  _selectedGuarantor2 = g;
+                                } else {
+                                  _selectedGuarantor = g;
+                                }
+                              });
+                              Navigator.pop(ctx);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                               decoration: BoxDecoration(
-                                color: isSelected ? context.colors.primary : context.colors.surfaceWhite,
-                                shape: BoxShape.circle,
-                                border: isSelected ? null : Border.all(color: context.colors.divider),
+                                color: isSelected ? context.colors.primary.withValues(alpha: 0.05) : Colors.transparent,
+                                border: Border(bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5))),
                               ),
-                              child: Icon(Icons.person_rounded, 
-                                  color: isSelected ? Colors.white : context.colors.textGrey, size: 18),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
                                 children: [
-                                  Text(g.fullName, style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                      color: isSelected ? context.colors.primary : context.colors.textDark)),
-                                  const SizedBox(height: 4),
-                                  Text(g.phone, style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? context.colors.primary : context.colors.surfaceWhite,
+                                      shape: BoxShape.circle,
+                                      border: isSelected ? null : Border.all(color: context.colors.divider),
+                                    ),
+                                    child: Icon(Icons.person_rounded, 
+                                        color: isSelected ? Colors.white : context.colors.textGrey, size: 18),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(g.fullName, style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                            color: isSelected ? context.colors.primary : context.colors.textDark)),
+                                        const SizedBox(height: 4),
+                                        Text('Available limit: ₹${g.availableGuaranteeLimit.toStringAsFixed(0)}', 
+                                          style: TextStyle(
+                                            color: g.availableGuaranteeLimit > 0 ? context.colors.textGrey : context.colors.error, 
+                                            fontSize: 13,
+                                            fontWeight: g.availableGuaranteeLimit > 0 ? FontWeight.normal : FontWeight.bold
+                                          )
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isSelected) Icon(Icons.check_circle_rounded, color: context.colors.primary),
                                 ],
                               ),
                             ),
-                            if (isSelected) Icon(Icons.check_circle_rounded, color: context.colors.primary),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          }
+        );
+      },
     );
   }
 }
@@ -868,22 +910,29 @@ class _LoanDetailCard extends StatelessWidget {
 // ═════════════════════════════════════════════
 // Guarantor Requests Screen
 // ═════════════════════════════════════════════
-class GuarantorRequestsScreen extends StatefulWidget {
+class GuarantorRequestsScreen extends ConsumerStatefulWidget {
   const GuarantorRequestsScreen({super.key});
 
   @override
-  State<GuarantorRequestsScreen> createState() => _GuarantorRequestsScreenState();
+  ConsumerState<GuarantorRequestsScreen> createState() => _GuarantorRequestsScreenState();
 }
 
-class _GuarantorRequestsScreenState extends State<GuarantorRequestsScreen> {
+class _GuarantorRequestsScreenState extends ConsumerState<GuarantorRequestsScreen> {
   List<LoanApplication> _requests = [];
   bool _loading = true;
   int? _actioningId;
+  int? _currentUserId;
   final _fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
 
   @override
   void initState() {
     super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final uid = await StorageService.getUserId();
+    if (uid != null) setState(() => _currentUserId = int.tryParse(uid));
     _loadRequests();
   }
 
@@ -907,6 +956,7 @@ class _GuarantorRequestsScreenState extends State<GuarantorRequestsScreen> {
     try {
       await LoanApi.updateGuarantorConsent(loanId, accept);
       if (mounted) {
+        ref.invalidate(userDashboardProvider);
         AppToast.showSuccess(context, 'Consent updated successfully');
         _loadRequests();
       }
@@ -966,46 +1016,83 @@ class _GuarantorRequestsScreenState extends State<GuarantorRequestsScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          if (req.status == 'Pending')
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFFEF4444),
-                                      foregroundColor: Colors.white,
+                          Builder(builder: (context) {
+                            final isG1 = req.guarantorId == _currentUserId;
+                            final isG2 = req.guarantor2Id == _currentUserId;
+                            final myStatus = isG1
+                                ? req.guarantorStatus
+                                : isG2
+                                    ? req.guarantor2Status
+                                    : null;
+                            final myConsentPending = myStatus == null || myStatus == 'Pending';
+
+                            if (myConsentPending) {
+                              return Row(
+                                children: [
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFFEF4444),
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, false),
+                                      child: _actioningId == req.id
+                                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                          : const Text('Reject'),
                                     ),
-                                    onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, false),
-                                    child: _actioningId == req.id
-                                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                        : const Text('Reject'),
                                   ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: ElevatedButton(
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF10B981),
-                                      foregroundColor: Colors.white,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color(0xFF10B981),
+                                        foregroundColor: Colors.white,
+                                      ),
+                                      onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, true),
+                                      child: _actioningId == req.id
+                                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                          : const Text('Accept'),
                                     ),
-                                    onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, true),
-                                    child: _actioningId == req.id
-                                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                        : const Text('Accept'),
                                   ),
-                                ),
-                              ],
-                            )
-                          else
-                            Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
+                                ],
+                              );
+                            }
+
+                            return Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
                               alignment: Alignment.center,
                               decoration: BoxDecoration(
-                                color: context.colors.bgGrey,
+                                color: myStatus == 'Accepted'
+                                    ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                                    : const Color(0xFFEF4444).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: myStatus == 'Accepted'
+                                      ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                                      : const Color(0xFFEF4444).withValues(alpha: 0.4),
+                                ),
                               ),
-                              child: Text('Loan is no longer pending', style: TextStyle(fontWeight: FontWeight.bold, color: context.colors.textGrey)),
-                            ),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    myStatus == 'Accepted' ? Icons.check_circle : Icons.cancel,
+                                    size: 16,
+                                    color: myStatus == 'Accepted' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    myStatus == 'Accepted' ? 'You accepted this guarantee' : 'You rejected this guarantee',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                      color: myStatus == 'Accepted' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
                         ],
                       ),
                     );

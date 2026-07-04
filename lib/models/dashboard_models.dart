@@ -13,6 +13,7 @@ class UserDashboard {
   final bool isEligibleForLoan;
   final bool hasRepaidLoanThisMonth;
   final bool guarantorRequired;
+  final bool hasPendingLeaveRequest;
   final String societyName;
   final String? logoBase64;
   final LoanApplication? activeLoan;
@@ -30,6 +31,7 @@ class UserDashboard {
     required this.isEligibleForLoan,
     required this.hasRepaidLoanThisMonth,
     required this.guarantorRequired,
+    required this.hasPendingLeaveRequest,
     required this.societyName,
     this.logoBase64,
     this.activeLoan,
@@ -48,6 +50,7 @@ class UserDashboard {
         isEligibleForLoan: j['isEligibleForLoan'] ?? false,
         hasRepaidLoanThisMonth: j['hasRepaidLoanThisMonth'] ?? false,
         guarantorRequired: j['guarantorRequired'] ?? true,
+        hasPendingLeaveRequest: j['hasPendingLeaveRequest'] ?? false,
         societyName: j['societyName'] ?? 'My Society',
         logoBase64: j['logoBase64'],
         activeLoan: j['activeLoan'] != null
@@ -74,6 +77,12 @@ class AdminDashboard {
   final int pendingScreenshotReviews;
   final List<LoanApplication> pendingLoans;
   final List<LoanApplication> loansToDisburse;
+  final double totalPenaltyCollected;
+  final double totalLoanProfit;
+  final double totalAdjustments;
+  final double totalRefunds;
+  final double totalExpenses;
+  final List<dynamic> unpaidMembers;
 
   AdminDashboard({
     this.logoBase64,
@@ -92,6 +101,12 @@ class AdminDashboard {
     required this.pendingScreenshotReviews,
     required this.pendingLoans,
     required this.loansToDisburse,
+    required this.totalPenaltyCollected,
+    required this.totalLoanProfit,
+    required this.totalAdjustments,
+    required this.totalRefunds,
+    required this.totalExpenses,
+    required this.unpaidMembers,
   });
 
   factory AdminDashboard.fromJson(Map<String, dynamic> j) => AdminDashboard(
@@ -113,5 +128,11 @@ class AdminDashboard {
             .map((e) => LoanApplication.fromJson(e)).toList(),
         loansToDisburse: (j['loansToDisburse'] as List? ?? [])
             .map((e) => LoanApplication.fromJson(e)).toList(),
+        totalPenaltyCollected: (j['totalPenaltyCollected'] as num?)?.toDouble() ?? 0,
+        totalLoanProfit: (j['totalLoanProfit'] as num?)?.toDouble() ?? 0,
+        totalAdjustments: (j['totalAdjustments'] as num?)?.toDouble() ?? 0,
+        totalRefunds: (j['totalRefunds'] as num?)?.toDouble() ?? 0,
+        totalExpenses: (j['totalExpenses'] as num?)?.toDouble() ?? 0,
+        unpaidMembers: j['unpaidMembers'] ?? [],
       );
 }

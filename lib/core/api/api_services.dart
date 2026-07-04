@@ -28,9 +28,9 @@ class DashboardApi {
 // Users
 // ─────────────────────────────────────────────
 class UserApi {
-  static Future<List<UserSummary>> getAllUsers({bool? active, int page = 1, int limit = 50}) async {
-    final res = await ApiClient.instance.get('/users',
-        queryParameters: {'page': page, 'limit': limit, if (active != null) 'active': active});
+  static Future<List<UserSummary>> getAllUsers({String? search, bool? active, int page = 1, int limit = 50}) async {
+    final res = await ApiClient.instance.get('/users/table',
+        queryParameters: {'page': page, 'limit': limit, if (active != null) 'active': active, if (search != null && search.isNotEmpty) 'search': search});
     final items = res.data is List ? res.data as List : res.data['items'] as List;
     return items.map((e) => UserSummary.fromJson(e)).toList();
   }
@@ -183,6 +183,18 @@ class LoanApi {
       'accept': accept
     });
     return LoanApplication.fromJson(res.data);
+  }
+}
+
+// ─────────────────────────────────────────────
+// Adjustments
+// ─────────────────────────────────────────────
+class AdjustmentApi {
+  static Future<void> recordAdjustment(double amount, String remarks) async {
+    await ApiClient.instance.post('/adjustments', data: {
+      'amount': amount,
+      'remarks': remarks,
+    });
   }
 }
 
