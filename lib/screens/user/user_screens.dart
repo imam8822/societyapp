@@ -833,7 +833,7 @@ class _LoanDetailCardState extends ConsumerState<_LoanDetailCard> {
   Future<void> _updateGuarantor(bool isGuarantor2) async {
     setState(() => _updating = true);
     try {
-      final opts = await LoanApi.getLoanOptions();
+      final opts = await LoanApi.getFormData();
       if (!mounted) return;
       
       final currentG1 = widget.loan.guarantorId;
