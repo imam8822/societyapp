@@ -5,7 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
   // Use .env, fallback to localhost for development if missing
-  static String get baseUrl => dotenv.env['BASE_URL'] ?? 'https://localhost:51019/api';
+  static String get baseUrl => dotenv.env['BASE_URL'] ?? 'https://societyweb.runasp.net/api';
   //static const String baseUrl = 'https://societyweb.runasp.net/api';
 
   static const String tokenKey = 'auth_token';

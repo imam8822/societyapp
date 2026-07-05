@@ -28,7 +28,7 @@ jobs:
           channel: 'stable'
 
       - name: Create dummy .env file
-        run: echo "BASE_URL=https://localhost:51019/api" > .env
+        run: echo "BASE_URL=https://societyweb.runasp.net/api" > .env
 
       - name: Get Flutter Dependencies
         run: flutter pub get
