@@ -171,11 +171,9 @@ class LoanApi {
     return LoanApplication.fromJson(res.data);
   }
 
-  static Future<List<LoanApplication>> getGuarantorRequests() async {
-    final res = await ApiClient.instance.get('/loans/guarantor-requests?limit=100');
-    return (res.data['items'] as List)
-        .map((e) => LoanApplication.fromJson(e))
-        .toList();
+  static Future<List<LoanApplication>> getGuarantorRequests({String status = 'pending'}) async {
+    final res = await ApiClient.instance.get('/loans/guarantor-requests?status=$status&limit=100');
+    return (res.data['items'] as List).map((x) => LoanApplication.fromJson(x)).toList();
   }
 
   static Future<LoanApplication> updateGuarantorConsent(int id, bool accept) async {

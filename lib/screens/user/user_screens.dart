@@ -938,7 +938,7 @@ class _GuarantorRequestsScreenState extends ConsumerState<GuarantorRequestsScree
 
   Future<void> _loadRequests() async {
     try {
-      final reqs = await LoanApi.getGuarantorRequests();
+      final reqs = await LoanApi.getGuarantorRequests(status: 'all');
       setState(() {
         _requests = reqs;
         _loading = false;
@@ -967,137 +967,184 @@ class _GuarantorRequestsScreenState extends ConsumerState<GuarantorRequestsScree
     }
   }
 
+  Widget _buildList(List<LoanApplication> list) {
+    if (list.isEmpty) return const Center(child: Text('No requests found'));
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: list.length,
+      itemBuilder: (ctx, i) {
+        final req = list[i];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.colors.surfaceWhite,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.colors.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: context.colors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.handshake_outlined, color: context.colors.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(req.applicantName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.colors.textDark)),
+                        Text(req.applicantPhone, style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  Text(_fmt.format(req.amount), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.colors.primary)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Builder(builder: (context) {
+                final isG1 = req.guarantorId == _currentUserId;
+                final isG2 = req.guarantor2Id == _currentUserId;
+                final myStatus = isG1
+                    ? req.guarantorStatus
+                    : isG2
+                        ? req.guarantor2Status
+                        : null;
+                final myConsentPending = req.status == 'Pending' && (myStatus == null || myStatus == 'Pending');
+
+                if (myConsentPending) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFEF4444),
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, false),
+                          child: _actioningId == req.id
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Text('Reject'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, true),
+                          child: _actioningId == req.id
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Text('Accept'),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                String displayStatus = 'Loan ${req.status}';
+                if (req.status == 'Pending') {
+                  displayStatus = myStatus == 'Accepted' ? 'You accepted' : 'You rejected';
+                }
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: myStatus == 'Accepted'
+                        ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                        : const Color(0xFFEF4444).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: myStatus == 'Accepted'
+                          ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                          : const Color(0xFFEF4444).withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        myStatus == 'Accepted' ? Icons.check_circle : Icons.cancel,
+                        size: 16,
+                        color: myStatus == 'Accepted' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        displayStatus,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: myStatus == 'Accepted' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: context.colors.bgGrey,
-      appBar: AppBar(title: const Text('Guarantor Requests')),
-      body: _loading
-          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
-          : _requests.isEmpty
-              ? const Center(child: Text('No requests found'))
-              : ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: _requests.length,
-                  itemBuilder: (ctx, i) {
-                    final req = _requests[i];
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: context.colors.surfaceWhite,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: context.colors.divider),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: context.colors.primary.withValues(alpha: 0.1),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(Icons.handshake_outlined, color: context.colors.primary),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(req.applicantName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.colors.textDark)),
-                                    Text(req.applicantPhone, style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
-                                  ],
-                                ),
-                              ),
-                              Text(_fmt.format(req.amount), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.colors.primary)),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          Builder(builder: (context) {
-                            final isG1 = req.guarantorId == _currentUserId;
-                            final isG2 = req.guarantor2Id == _currentUserId;
-                            final myStatus = isG1
-                                ? req.guarantorStatus
-                                : isG2
-                                    ? req.guarantor2Status
-                                    : null;
-                            final myConsentPending = myStatus == null || myStatus == 'Pending';
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: context.colors.bgGrey,
+        appBar: AppBar(title: const Text('Guarantor Requests')),
+        body: Center(child: CircularProgressIndicator(color: context.colors.primary)),
+      );
+    }
 
-                            if (myConsentPending) {
-                              return Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFFEF4444),
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, false),
-                                      child: _actioningId == req.id
-                                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                          : const Text('Reject'),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(0xFF10B981),
-                                        foregroundColor: Colors.white,
-                                      ),
-                                      onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, true),
-                                      child: _actioningId == req.id
-                                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                          : const Text('Accept'),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }
+    final pendingList = _requests.where((req) {
+      final isG1 = req.guarantorId == _currentUserId;
+      final isG2 = req.guarantor2Id == _currentUserId;
+      final myStatus = isG1 ? req.guarantorStatus : isG2 ? req.guarantor2Status : null;
+      return req.status == 'Pending' && (myStatus == null || myStatus == 'Pending');
+    }).toList();
 
-                            return Container(
-                              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-                              alignment: Alignment.center,
-                              decoration: BoxDecoration(
-                                color: myStatus == 'Accepted'
-                                    ? const Color(0xFF10B981).withValues(alpha: 0.12)
-                                    : const Color(0xFFEF4444).withValues(alpha: 0.12),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(
-                                  color: myStatus == 'Accepted'
-                                      ? const Color(0xFF10B981).withValues(alpha: 0.4)
-                                      : const Color(0xFFEF4444).withValues(alpha: 0.4),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    myStatus == 'Accepted' ? Icons.check_circle : Icons.cancel,
-                                    size: 16,
-                                    color: myStatus == 'Accepted' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    myStatus == 'Accepted' ? 'You accepted this guarantee' : 'You rejected this guarantee',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                      color: myStatus == 'Accepted' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+    final historyList = _requests.where((req) {
+      final isG1 = req.guarantorId == _currentUserId;
+      final isG2 = req.guarantor2Id == _currentUserId;
+      final myStatus = isG1 ? req.guarantorStatus : isG2 ? req.guarantor2Status : null;
+      return !(req.status == 'Pending' && (myStatus == null || myStatus == 'Pending'));
+    }).toList();
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: context.colors.bgGrey,
+        appBar: AppBar(
+          title: const Text('Guarantor Requests'),
+          bottom: TabBar(
+            labelColor: context.colors.primary,
+            unselectedLabelColor: context.colors.textGrey,
+            indicatorColor: context.colors.primary,
+            tabs: const [
+              Tab(text: 'Pending'),
+              Tab(text: 'History'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildList(pendingList),
+            _buildList(historyList),
+          ],
+        ),
+      ),
     );
   }
 }
