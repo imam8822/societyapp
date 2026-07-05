@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:societyapp/core/app_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -69,7 +70,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         });
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(apiError(e))));
+      if (mounted) AppUtils.showError(context, apiError(e));
     } finally {
       if (mounted) {
         setState(() => _loading = false);

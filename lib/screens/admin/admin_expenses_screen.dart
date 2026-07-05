@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:societyapp/core/app_utils.dart';
 import 'package:intl/intl.dart';
 import '../../core/api/api_services.dart';
 import '../../models/expense_models.dart';
@@ -45,7 +46,7 @@ class _AdminExpensesScreenState extends State<AdminExpensesScreen> {
       });
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        AppUtils.showError(context, e.toString());
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -88,7 +89,7 @@ class _AdminExpensesScreenState extends State<AdminExpensesScreen> {
       _loadExpenses(refresh: true);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+        AppUtils.showError(context, e.toString());
       }
     }
   }
@@ -225,7 +226,7 @@ class _ExpenseSheetState extends State<_ExpenseSheet> {
       widget.onSaved();
       if (mounted) Navigator.pop(context);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) AppUtils.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _saving = false);
     }

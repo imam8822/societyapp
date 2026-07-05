@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'dart:convert';
+import '../../core/app_utils.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/theme_provider.dart';
@@ -446,21 +446,11 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                   onTap: () {
                     if (dash.activeLoan == null) {
                       if (dash.hasRepaidLoanThisMonth) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('You have already repaid a loan this month. You cannot apply for a new loan until next month.'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                        AppUtils.showError(context, 'You have already repaid a loan this month. You cannot apply for a new loan until next month.');
                         return;
                       }
                       if (dash.unpaidMonthsCount > 2) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('You have ${dash.unpaidMonthsCount} unpaid monthly contributions. Clear your dues to apply.'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
+                        AppUtils.showError(context, 'You have ${dash.unpaidMonthsCount} unpaid monthly contributions. Clear your dues to apply.');
                         return;
                       }
                       context.push('/loan/apply');

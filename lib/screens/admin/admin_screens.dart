@@ -11,6 +11,7 @@ import '../../models/payment_models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/settings_notifier.dart';
 import '../../providers/theme_provider.dart';
+import '../../core/app_utils.dart';
 import '../../widgets/shared_widgets.dart';
 
 // ═════════════════════════════════════════════
@@ -223,8 +224,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
       widget.onAction();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -249,8 +249,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
       widget.onAction();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -363,8 +362,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
       widget.onAction();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -663,8 +661,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -991,8 +988,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _upiNameCtrl.text = s.upiDisplayName;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -1012,13 +1008,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await SettingsApi.updateSettings(payload);
       setState(() => _logoChanged = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Settings saved!')));
+        AppUtils.showSuccess(context, 'Settings saved!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

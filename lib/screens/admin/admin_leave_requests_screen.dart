@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:societyapp/core/app_utils.dart';
 import 'package:intl/intl.dart';
 import '../../core/api/api_services.dart';
 import '../../models/leave_request_models.dart';
@@ -43,7 +44,7 @@ class _AdminLeaveRequestsScreenState extends State<AdminLeaveRequestsScreen> {
         _page++;
       });
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) AppUtils.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -100,7 +101,7 @@ class _AdminLeaveRequestsScreenState extends State<AdminLeaveRequestsScreen> {
                   await LeaveRequestApi.processLeaveRequest(req.id, isApprove, remarksCtrl.text);
                   _loadRequests(refresh: true);
                 } catch (e) {
-                  if (mounted) ScaffoldMessenger.of(this.context).showSnackBar(SnackBar(content: Text(e.toString())));
+                  if (mounted) AppUtils.showError(this.context, e.toString());
                 }
               },
               child: const Text('Submit'),

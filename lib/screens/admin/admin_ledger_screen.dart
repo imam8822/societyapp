@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:societyapp/core/app_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_services.dart';
@@ -46,7 +47,7 @@ class _AdminLedgerScreenState extends State<AdminLedgerScreen> {
         _page++;
       });
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+      if (mounted) AppUtils.showError(context, e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }

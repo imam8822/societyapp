@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_services.dart';
 import '../../core/constants.dart';
-import '../../models/user_models.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/app_utils.dart';
 import '../../providers/data_providers.dart';
+import '../../models/user_models.dart';
 
 class EditMemberSheet extends ConsumerStatefulWidget {
   final UserSummary member;
@@ -61,13 +63,11 @@ class _EditMemberSheetState extends ConsumerState<EditMemberSheet> {
       ref.invalidate(adminDashboardProvider);
       widget.onSaved();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Member updated successfully')));
+        AppUtils.showSuccess(context, 'Member updated successfully');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(e.toString())));
+        AppUtils.showError(context, e.toString());
       }
     } finally {
       if (mounted) setState(() => _loading = false);
