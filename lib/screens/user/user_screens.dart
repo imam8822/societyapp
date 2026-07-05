@@ -819,12 +819,169 @@ class LoanStatusScreen extends ConsumerWidget {
   }
 }
 
-class _LoanDetailCard extends StatelessWidget {
+class _LoanDetailCard extends ConsumerStatefulWidget {
   final LoanApplication loan;
   const _LoanDetailCard({required this.loan});
 
   @override
+  ConsumerState<_LoanDetailCard> createState() => _LoanDetailCardState();
+}
+
+class _LoanDetailCardState extends ConsumerState<_LoanDetailCard> {
+  bool _updating = false;
+
+  Future<void> _updateGuarantor(bool isGuarantor2) async {
+    setState(() => _updating = true);
+    try {
+      final opts = await LoanApi.getLoanOptions();
+      if (!mounted) return;
+      
+      final currentG1 = widget.loan.guarantorId;
+      final currentG2 = widget.loan.guarantor2Id;
+
+      await showModalBottomSheet(
+        context: context,
+        backgroundColor: context.colors.bgGrey,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (ctx) {
+          String searchQuery = '';
+          return StatefulBuilder(
+            builder: (ctx, setModalState) {
+              final filteredGuarantors = opts.availableGuarantors.where((g) {
+                // Cannot select themselves or the other existing guarantor
+                final otherG = isGuarantor2 ? currentG1 : currentG2;
+                if (g.id == otherG) return false;
+                return g.fullName.toLowerCase().contains(searchQuery.toLowerCase()) || 
+                       g.phone.contains(searchQuery);
+              }).toList();
+
+              return SafeArea(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 12, bottom: 8),
+                        width: 40, height: 4,
+                        decoration: BoxDecoration(color: context.colors.divider, borderRadius: BorderRadius.circular(2)),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: Text(isGuarantor2 ? 'Select New Second Guarantor' : 'Select New Guarantor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textDark)),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Search by name or phone...',
+                            prefixIcon: Icon(Icons.search, color: context.colors.textGrey),
+                            filled: true,
+                            fillColor: context.colors.surfaceWhite,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          ),
+                          onChanged: (val) {
+                            setModalState(() {
+                              searchQuery = val;
+                            });
+                          },
+                        ),
+                      ),
+                      Divider(height: 1, color: context.colors.divider),
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: filteredGuarantors.length,
+                          itemBuilder: (ctx, i) {
+                            final g = filteredGuarantors[i];
+                            return InkWell(
+                              onTap: () async {
+                                Navigator.pop(ctx);
+                                try {
+                                  setState(() => _updating = true);
+                                  await LoanApi.updateGuarantors(
+                                    widget.loan.id, 
+                                    isGuarantor2 ? currentG1 : g.id, 
+                                    isGuarantor2 ? g.id : currentG2
+                                  );
+                                  if (mounted) {
+                                    ref.invalidate(myLoansProvider);
+                                    AppToast.showSuccess(context, 'Guarantor updated successfully!');
+                                  }
+                                } catch (e) {
+                                  if (mounted) AppToast.showError(context, apiError(e));
+                                } finally {
+                                  if (mounted) setState(() => _updating = false);
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                decoration: BoxDecoration(
+                                  border: Border(bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5))),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: context.colors.surfaceWhite,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: context.colors.divider),
+                                      ),
+                                      child: Icon(Icons.person_rounded, color: context.colors.textGrey, size: 18),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(g.fullName, style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: context.colors.textDark)),
+                                          const SizedBox(height: 4),
+                                          Text('Available limit: ₹${g.availableGuaranteeLimit.toStringAsFixed(0)}', 
+                                            style: TextStyle(
+                                              color: g.availableGuaranteeLimit > 0 ? context.colors.textGrey : context.colors.error, 
+                                              fontSize: 13,
+                                              fontWeight: g.availableGuaranteeLimit > 0 ? FontWeight.normal : FontWeight.bold
+                                            )
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) AppToast.showError(context, apiError(e));
+    } finally {
+      if (mounted) setState(() => _updating = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final loan = widget.loan;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -869,8 +1026,91 @@ class _LoanDetailCard extends StatelessWidget {
             InfoRow(
                 label: 'Outstanding',
                 value: '₹${loan.outstandingAmount.toStringAsFixed(0)}'),
-          if (loan.guarantorName != null)
-            InfoRow(label: 'Guarantor', value: loan.guarantorName!),
+          
+          if (loan.guarantorName != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Guarantor', style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(loan.guarantorName!, style: TextStyle(color: context.colors.textDark, fontSize: 13, fontWeight: FontWeight.w500), textAlign: TextAlign.right),
+                        if (loan.guarantorStatus != null)
+                          Text(loan.guarantorStatus!, style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600,
+                            color: loan.guarantorStatus == 'Accepted' ? const Color(0xFF10B981) : loan.guarantorStatus == 'Rejected' ? const Color(0xFFEF4444) : const Color(0xFFF59E0B)
+                          )),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (loan.guarantorStatus == 'Rejected' && loan.status == 'Pending')
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _updating ? null : () => _updateGuarantor(false),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Update Guarantor'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.colors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+          ],
+          
+          if (loan.guarantor2Name != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Guarantor 2', style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(loan.guarantor2Name!, style: TextStyle(color: context.colors.textDark, fontSize: 13, fontWeight: FontWeight.w500), textAlign: TextAlign.right),
+                        if (loan.guarantor2Status != null)
+                          Text(loan.guarantor2Status!, style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600,
+                            color: loan.guarantor2Status == 'Accepted' ? const Color(0xFF10B981) : loan.guarantor2Status == 'Rejected' ? const Color(0xFFEF4444) : const Color(0xFFF59E0B)
+                          )),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (loan.guarantor2Status == 'Rejected' && loan.status == 'Pending')
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _updating ? null : () => _updateGuarantor(true),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Update Guarantor 2'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.colors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+          ],
+
           if (loan.rejectionReason != null)
             InfoRow(
                 label: 'Reason',

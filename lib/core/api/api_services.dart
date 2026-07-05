@@ -177,8 +177,14 @@ class LoanApi {
   }
 
   static Future<LoanApplication> updateGuarantorConsent(int id, bool accept) async {
-    final res = await ApiClient.instance.post('/loans/$id/guarantor-consent', data: {
-      'accept': accept
+    final res = await ApiClient.instance.post('/loans/$id/guarantor-consent', {'accept': accept});
+    return LoanApplication.fromJson(res.data);
+  }
+
+  static Future<LoanApplication> updateGuarantors(int id, int? g1, int? g2) async {
+    final res = await ApiClient.instance.put('/loans/$id/guarantors', {
+      if (g1 != null) 'guarantorId': g1,
+      if (g2 != null) 'guarantor2Id': g2,
     });
     return LoanApplication.fromJson(res.data);
   }
