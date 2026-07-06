@@ -6,6 +6,7 @@ import '../../core/constants.dart';
 import '../../core/app_utils.dart';
 import '../../providers/data_providers.dart';
 import '../../core/api/api_client.dart';
+import '../../models/loan_models.dart';
 
 /// A single unpaid month from the API.
 class _UnpaidMonth {
@@ -941,7 +942,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
             final filtered = query.isEmpty
                 ? activeLoans
                 : activeLoans
-                    .where((l) =>
+                    .where((LoanApplication l) =>
                         l.applicantName.toLowerCase().contains(query) ||
                         l.applicantPhone.contains(query))
                     .toList();
