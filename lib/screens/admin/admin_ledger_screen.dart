@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:societyapp/core/app_utils.dart';
+import 'package:society_app/core/app_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_services.dart';

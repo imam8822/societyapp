@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:societyapp/core/app_utils.dart';
+import 'package:society_app/core/app_utils.dart';
 import 'package:intl/intl.dart';
 import '../../core/api/api_services.dart';
 import '../../models/leave_request_models.dart';

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:society_app/core/app_utils.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -91,9 +92,9 @@ class _LoanRepayScreenState extends ConsumerState<LoanRepayScreen> {
 
   void _showSnack(String msg) {
     if (msg.contains('success') || msg.contains('verified') || msg.contains('uploaded') || msg.contains('repaid')) {
-      AppToast.showSuccess(context, msg);
+      AppUtils.showSuccess(context, msg);
     } else {
-      AppToast.showError(context, msg);
+      AppUtils.showError(context, msg);
     }
   }
 

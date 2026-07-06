@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:society_app/core/app_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -152,7 +153,7 @@ class _LoanApplyScreenState extends ConsumerState<LoanApplyScreen> {
       setState(() { _formData = data; _loadingForm = false; });
     } catch (e) {
       setState(() => _loadingForm = false);
-      if (mounted) AppToast.showError(context, apiError(e));
+      if (mounted) AppUtils.showError(context, apiError(e));
     }
   }
 
@@ -205,9 +206,9 @@ class _LoanApplyScreenState extends ConsumerState<LoanApplyScreen> {
 
   void _snack(String msg) {
     if (msg.contains('submitted') || msg.contains('success')) {
-      AppToast.showSuccess(context, msg);
+      AppUtils.showSuccess(context, msg);
     } else {
-      AppToast.showError(context, msg);
+      AppUtils.showError(context, msg);
     }
   }
 
@@ -913,10 +914,10 @@ class _LoanDetailCardState extends ConsumerState<_LoanDetailCard> {
                                   );
                                   if (mounted) {
                                     ref.invalidate(myLoansProvider);
-                                    AppToast.showSuccess(context, 'Guarantor updated successfully!');
+                                    AppUtils.showSuccess(context, 'Guarantor updated successfully!');
                                   }
                                 } catch (e) {
-                                  if (mounted) AppToast.showError(context, apiError(e));
+                                  if (mounted) AppUtils.showError(context, apiError(e));
                                 } finally {
                                   if (mounted) setState(() => _updating = false);
                                 }
@@ -973,7 +974,7 @@ class _LoanDetailCardState extends ConsumerState<_LoanDetailCard> {
         },
       );
     } catch (e) {
-      if (mounted) AppToast.showError(context, apiError(e));
+      if (mounted) AppUtils.showError(context, apiError(e));
     } finally {
       if (mounted) setState(() => _updating = false);
     }
@@ -1186,7 +1187,7 @@ class _GuarantorRequestsScreenState extends ConsumerState<GuarantorRequestsScree
     } catch (e) {
       if (mounted) {
         setState(() => _loading = false);
-        AppToast.showError(context, apiError(e));
+        AppUtils.showError(context, apiError(e));
       }
     }
   }
@@ -1197,11 +1198,11 @@ class _GuarantorRequestsScreenState extends ConsumerState<GuarantorRequestsScree
       await LoanApi.updateGuarantorConsent(loanId, accept);
       if (mounted) {
         ref.invalidate(userDashboardProvider);
-        AppToast.showSuccess(context, 'Consent updated successfully');
+        AppUtils.showSuccess(context, 'Consent updated successfully');
         _loadRequests();
       }
     } catch (e) {
-      if (mounted) AppToast.showError(context, apiError(e));
+      if (mounted) AppUtils.showError(context, apiError(e));
     } finally {
       if (mounted) setState(() => _actioningId = null);
     }

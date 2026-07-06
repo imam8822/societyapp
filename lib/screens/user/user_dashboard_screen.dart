@@ -916,7 +916,7 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                 ),
                 onPressed: isSubmitting ? null : () async {
                   if (reasonController.text.trim().isEmpty) {
-                    AppToast.showError(context, 'Please enter a reason.');
+                    AppUtils.showError(context, 'Please enter a reason.');
                     return;
                   }
                   setState(() => isSubmitting = true);
@@ -925,11 +925,11 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
                     if (context.mounted) {
                       Navigator.pop(ctx);
                       ref.invalidate(userDashboardProvider);
-                      AppToast.showSuccess(context, 'Leave request submitted successfully. Waiting for admin approval.');
+                      AppUtils.showSuccess(context, 'Leave request submitted successfully. Waiting for admin approval.');
                     }
                   } catch (e) {
                     if (context.mounted) {
-                      AppToast.showError(context, apiError(e));
+                      AppUtils.showError(context, apiError(e));
                     }
                   } finally {
                     if (context.mounted) {
