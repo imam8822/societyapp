@@ -445,13 +445,13 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                               radius: 18,
                               backgroundColor: context.colors.error.withValues(alpha: 0.1),
                               child: Text(
-                                m.fullName[0].toUpperCase(),
+                                m['fullName'][0].toUpperCase(),
                                 style: TextStyle(color: context.colors.error, fontWeight: FontWeight.w700, fontSize: 14),
                               ),
                             ),
-                            title: Text(m.fullName,
+                            title: Text(m['fullName'],
                                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: context.colors.textDark)),
-                            subtitle: Text(m.phone, style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
+                            subtitle: Text(m['phone'] ?? '', style: TextStyle(color: context.colors.textGrey, fontSize: 12)),
                             trailing: TextButton(
                               onPressed: () {
                                 Navigator.pop(ctx);
