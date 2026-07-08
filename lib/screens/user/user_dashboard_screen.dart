@@ -14,6 +14,8 @@ import '../../models/contribution_models.dart';
 import '../../widgets/network_error_widget.dart';
 import '../../core/api/api_services.dart';
 import '../../core/api/api_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../core/services/local_auth_service.dart';
 
 class UserDashboardScreen extends ConsumerStatefulWidget {
   const UserDashboardScreen({super.key});
@@ -721,6 +723,11 @@ class _UserDashboardScreenState extends ConsumerState<UserDashboardScreen> {
               ),
               SizedBox(height: 24),
 
+              const SectionHeader(title: 'Security Settings'),
+              SizedBox(height: 12),
+              _SecuritySettingsCard(),
+              SizedBox(height: 24),
+
               const SectionHeader(title: 'App Theme'),
               SizedBox(height: 12),
               Container(
@@ -1380,6 +1387,92 @@ class _DarkStatCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SecuritySettingsCard extends StatefulWidget {
+  const _SecuritySettingsCard();
+
+  @override
+  State<_SecuritySettingsCard> createState() => _SecuritySettingsCardState();
+}
+
+class _SecuritySettingsCardState extends State<_SecuritySettingsCard> {
+  bool _biometricEnabled = false;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+      _loading = false;
+    });
+  }
+
+  Future<void> _toggleBiometric(bool val) async {
+    final prefs = await SharedPreferences.getInstance();
+    
+    if (val) {
+      final canCheck = await LocalAuthService.canCheckBiometrics();
+      if (!canCheck) {
+        if (mounted) AppUtils.showError(context, 'Biometrics not available on this device');
+        return;
+      }
+      final authenticated = await LocalAuthService.authenticate();
+      if (!authenticated) {
+        if (mounted) AppUtils.showError(context, 'Authentication failed');
+        return;
+      }
+    }
+    
+    await prefs.setBool('biometric_enabled', val);
+    setState(() {
+      _biometricEnabled = val;
+    });
+    if (mounted) AppUtils.showSuccess(context, val ? 'Biometric login enabled' : 'Biometric login disabled');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) return const SizedBox.shrink();
+    
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Fingerprint / Face ID Login', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black)),
+                  const SizedBox(height: 4),
+                  Text('Use biometrics instead of password', 
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                ],
+              ),
+            ),
+            Switch(
+              value: _biometricEnabled,
+              activeColor: const Color(0xFF16A34A),
+              onChanged: _toggleBiometric,
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import 'package:society_app/screens/admin/members_screen.dart';
 import 'package:society_app/screens/admin/screenshot_review_screen.dart';
 import 'package:society_app/screens/admin/collect_cash_screen.dart';
 import 'package:society_app/screens/auth/login_screen.dart';
+import 'package:society_app/screens/auth/biometric_lock_screen.dart';
 import 'package:society_app/screens/user/pay_screen.dart';
 import 'package:society_app/screens/user/loan_repay_screen.dart';
 import 'package:society_app/screens/user/user_dashboard_screen.dart';
@@ -27,16 +28,20 @@ final routerProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final loggedIn = notifier.isLoggedIn;
       final role = notifier.role;
+      final isBiometricLocked = notifier.isBiometricLocked;
       final onLogin = state.matchedLocation == '/login';
+      final onLock = state.matchedLocation == '/lock';
 
       if (!loggedIn && !onLogin) return '/login';
-      if (loggedIn && onLogin) {
+      if (loggedIn && isBiometricLocked && !onLock) return '/lock';
+      if (loggedIn && !isBiometricLocked && (onLogin || onLock)) {
         return (role == 'Admin' || role == 'SuperAdmin' || role == 'Auditor') ? '/admin' : '/home';
       }
       return null;
     },
     routes: [
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/lock', builder: (_, __) => const BiometricLockScreen()),
       GoRoute(path: '/home', builder: (_, __) => const UserDashboardScreen()),
       GoRoute(path: '/pay', builder: (_, __) => const PayScreen()),
       GoRoute(
@@ -90,13 +95,15 @@ class _AuthRouterNotifier extends ChangeNotifier {
     final auth = ref.read(authProvider);
     _isLoggedIn = auth.isLoggedIn;
     _role = auth.role;
+    _isBiometricLocked = auth.isBiometricLocked;
 
     // Only notify router when isLoggedIn actually changes
     // Ignores isLoading/error changes — prevents form reset
     ref.listen<AuthState>(authProvider, (prev, next) {
-      if (prev?.isLoggedIn != next.isLoggedIn) {
+      if (prev?.isLoggedIn != next.isLoggedIn || prev?.isBiometricLocked != next.isBiometricLocked) {
         _isLoggedIn = next.isLoggedIn;
         _role = next.role;
+        _isBiometricLocked = next.isBiometricLocked;
         notifyListeners();
       }
     });
@@ -104,7 +111,9 @@ class _AuthRouterNotifier extends ChangeNotifier {
 
   bool _isLoggedIn = false;
   String? _role;
+  bool _isBiometricLocked = false;
 
   bool get isLoggedIn => _isLoggedIn;
   String? get role => _role;
+  bool get isBiometricLocked => _isBiometricLocked;
 }
