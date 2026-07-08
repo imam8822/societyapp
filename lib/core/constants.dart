@@ -4,11 +4,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
-  // Use .env, fallback to localhost for development if missing
-  static String get baseUrl => dotenv.env['BASE_URL'] ?? 'https://localhost:51019';
-  // static String get baseUrl => dotenv.env['BASE_URL'] ?? 'https://societyweb.runasp.net/api';
-  
-  //static const String baseUrl = 'https://societyweb.runasp.net/api';
+  // Use .env for local development (which overrides this), fallback to hosted URL for production
+  static String get baseUrl => dotenv.env['BASE_URL'] ?? 'https://societyweb.runasp.net/api';
+
 
   static const String tokenKey = 'auth_token';
   static const String refreshTokenKey = 'auth_refresh_token';
