@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:society_app/core/app_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:society_app/core/api/api_client.dart';
 import 'package:society_app/core/api/api_services.dart';
 import 'package:society_app/core/constants.dart';
+import 'package:society_app/core/storage/storage_service.dart';
 import 'package:society_app/models/contribution_models.dart';
 import 'package:society_app/models/loan_models.dart';
 import 'package:society_app/providers/data_providers.dart';
@@ -116,13 +118,13 @@ class _ContributionCard extends StatelessWidget {
 // Loads loan options + guarantors from API,
 // shows eligibility inline on option selection
 // ═════════════════════════════════════════════
-class LoanApplyScreen extends StatefulWidget {
+class LoanApplyScreen extends ConsumerStatefulWidget {
   const LoanApplyScreen({super.key});
   @override
-  State<LoanApplyScreen> createState() => _LoanApplyScreenState();
+  ConsumerState<LoanApplyScreen> createState() => _LoanApplyScreenState();
 }
 
-class _LoanApplyScreenState extends State<LoanApplyScreen> {
+class _LoanApplyScreenState extends ConsumerState<LoanApplyScreen> {
   final _fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
   final _formKey = GlobalKey<FormState>();
 
@@ -132,6 +134,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
 
   LoanOption? _selectedOption;
   GuarantorOption? _selectedGuarantor;
+  GuarantorOption? _selectedGuarantor2;
 
   @override
   void initState() {
@@ -150,7 +153,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       setState(() { _formData = data; _loadingForm = false; });
     } catch (e) {
       setState(() => _loadingForm = false);
-      if (mounted) AppToast.showError(context, apiError(e));
+      if (mounted) AppUtils.showError(context, apiError(e));
     }
   }
 
@@ -172,14 +175,25 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       _snack('Please select a guarantor');
       return;
     }
+    if (_needsGuarantor && _selectedOption!.requiredGuarantors == 2 && _selectedGuarantor2 == null) {
+      _snack('Please select a second guarantor');
+      return;
+    }
+    if (_needsGuarantor && _selectedOption!.requiredGuarantors == 2 && _selectedGuarantor?.id == _selectedGuarantor2?.id) {
+      _snack('Guarantor 1 and Guarantor 2 must be different people');
+      return;
+    }
 
     setState(() => _submitting = true);
     try {
       await LoanApi.applyLoan(ApplyLoanRequest(
         loanOptionId: _selectedOption!.id,
         guarantorId: _needsGuarantor ? _selectedGuarantor?.id : null,
+        guarantor2Id: (_needsGuarantor && _selectedOption!.requiredGuarantors == 2) ? _selectedGuarantor2?.id : null,
       ));
       if (mounted) {
+        ref.invalidate(userDashboardProvider);
+        ref.invalidate(myLoansProvider);
         _snack('Loan application submitted!');
         Navigator.pop(context, true);
       }
@@ -192,9 +206,9 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
 
   void _snack(String msg) {
     if (msg.contains('submitted') || msg.contains('success')) {
-      AppToast.showSuccess(context, msg);
+      AppUtils.showSuccess(context, msg);
     } else {
-      AppToast.showError(context, msg);
+      AppUtils.showError(context, msg);
     }
   }
 
@@ -304,7 +318,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                     Expanded(
                       child: Text(
                         _selectedOption != null 
-                            ? '${_selectedOption!.label} (${_selectedOption!.minTenureRequired} months req)' 
+                            ? '${_selectedOption!.label}' 
                             : 'Select amount',
                         style: TextStyle(
                           fontSize: 15,
@@ -344,17 +358,10 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                                 fontSize: 13)),
                       ]),
                       const SizedBox(height: 10),
-                      // Tenure row
+                      // Repayment amount row
                       _summaryRow(
-                        Icons.calendar_month_outlined,
-                        'Repayment Tenure',
-                        '${_selectedOption!.maxRepaymentTenure} months',
-                      ),
-                      const SizedBox(height: 6),
-                      // Total repayment row
-                      _summaryRow(
-                        Icons.receipt_long_outlined,
-                        'Single Repayment',
+                        Icons.payments_outlined,
+                        'Repayment Amount',
                         _fmt.format(_selectedOption!.repaymentAmount),
                         highlight: true,
                       ),
@@ -395,7 +402,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
 
           // ── Guarantor (only if needed) ───────────────
           if (_needsGuarantor)
-            _Section(title: 'Guarantor', children: [
+            _Section(title: _selectedOption!.requiredGuarantors == 2 ? 'Guarantor 1' : 'Guarantor', children: [
               data.availableGuarantors.isEmpty
                   ? Container(
                       padding: const EdgeInsets.all(12),
@@ -419,7 +426,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         InkWell(
-                          onTap: () => _showGuarantorBottomSheet(data),
+                          onTap: () => _showGuarantorBottomSheet(data, isGuarantor2: false),
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -435,7 +442,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                                 Expanded(
                                   child: Text(
                                     _selectedGuarantor != null 
-                                        ? '${_selectedGuarantor!.fullName} (${_selectedGuarantor!.phone})' 
+                                        ? '${_selectedGuarantor!.fullName} (Limit: ₹${_selectedGuarantor!.availableGuaranteeLimit.toStringAsFixed(0)})' 
                                         : 'Select guarantor',
                                     style: TextStyle(
                                       fontSize: 15,
@@ -456,6 +463,64 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                       ],
                     ),
             ]),
+          if (_needsGuarantor && _selectedOption!.requiredGuarantors == 2) ...[
+            const SizedBox(height: 14),
+            _Section(title: 'Guarantor 2', children: [
+              data.availableGuarantors.isEmpty
+                  ? Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: context.colors.error.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(children: [
+                        Icon(Icons.warning_amber_rounded, color: context.colors.error, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text('No eligible guarantors available.', style: TextStyle(color: context.colors.error, fontSize: 12))),
+                      ]),
+                    )
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        InkWell(
+                          onTap: () => _showGuarantorBottomSheet(data, isGuarantor2: true),
+                          borderRadius: BorderRadius.circular(12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: context.colors.bgGrey,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: (_submitting && _selectedGuarantor2 == null) ? context.colors.error : context.colors.divider),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(Icons.people_outlined, color: context.colors.primary, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    _selectedGuarantor2 != null 
+                                        ? '${_selectedGuarantor2!.fullName} (Limit: ₹${_selectedGuarantor2!.availableGuaranteeLimit.toStringAsFixed(0)})' 
+                                        : 'Select second guarantor',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      color: _selectedGuarantor2 != null ? context.colors.textDark : context.colors.textGrey,
+                                    ),
+                                  ),
+                                ),
+                                Icon(Icons.keyboard_arrow_down_rounded, color: context.colors.textGrey),
+                              ],
+                            ),
+                          ),
+                        ),
+                        if (_submitting && _selectedGuarantor2 == null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12, top: 8),
+                            child: Text('Please select a second guarantor', style: TextStyle(color: context.colors.error, fontSize: 12)),
+                          ),
+                      ],
+                    ),
+            ]),
+          ],
           if (_needsGuarantor) const SizedBox(height: 14),
 
           const SizedBox(height: 24),
@@ -513,6 +578,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                         setState(() {
                           _selectedOption = o;
                           _selectedGuarantor = null;
+                          _selectedGuarantor2 = null;
                         });
                         Navigator.pop(ctx);
                       },
@@ -543,9 +609,6 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
                                       fontSize: 16,
                                       fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
                                       color: isSelected ? context.colors.primary : context.colors.textDark)),
-                                  const SizedBox(height: 4),
-                                  Text('${o.minTenureRequired} months paid required', 
-                                      style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
                                 ],
                               ),
                             ),
@@ -564,7 +627,7 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
     );
   }
 
-  void _showGuarantorBottomSheet(LoanFormData data) {
+  void _showGuarantorBottomSheet(LoanFormData data, {bool isGuarantor2 = false}) {
     showModalBottomSheet(
       context: context,
       backgroundColor: context.colors.bgGrey,
@@ -572,78 +635,125 @@ class _LoanApplyScreenState extends State<LoanApplyScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.7),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12, bottom: 8),
-                width: 40, height: 4,
-                decoration: BoxDecoration(color: context.colors.divider, borderRadius: BorderRadius.circular(2)),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                child: Text('Select Guarantor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textDark)),
-              ),
-              Divider(height: 1, color: context.colors.divider),
-              Flexible(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: data.availableGuarantors.length,
-                  itemBuilder: (ctx, i) {
-                    final g = data.availableGuarantors[i];
-                    final isSelected = _selectedGuarantor?.id == g.id;
-                    return InkWell(
-                      onTap: () {
-                        setState(() => _selectedGuarantor = g);
-                        Navigator.pop(ctx);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                        decoration: BoxDecoration(
-                          color: isSelected ? context.colors.primary.withValues(alpha: 0.05) : Colors.transparent,
-                          border: Border(bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5))),
+      builder: (ctx) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            final filteredGuarantors = data.availableGuarantors.where((g) {
+              return g.fullName.toLowerCase().contains(searchQuery.toLowerCase()) || 
+                     g.phone.contains(searchQuery);
+            }).toList();
+
+            return SafeArea(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 8),
+                      width: 40, height: 4,
+                      decoration: BoxDecoration(color: context.colors.divider, borderRadius: BorderRadius.circular(2)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                      child: Text(isGuarantor2 ? 'Select Second Guarantor' : 'Select Guarantor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textDark)),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                      child: TextField(
+                        decoration: InputDecoration(
+                          hintText: 'Search by name or phone...',
+                          prefixIcon: Icon(Icons.search, color: context.colors.textGrey),
+                          filled: true,
+                          fillColor: context.colors.surfaceWhite,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
                         ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
+                        onChanged: (val) {
+                          setModalState(() {
+                            searchQuery = val;
+                          });
+                        },
+                      ),
+                    ),
+                    Divider(height: 1, color: context.colors.divider),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filteredGuarantors.length,
+                        itemBuilder: (ctx, i) {
+                          final g = filteredGuarantors[i];
+                          final isSelected = isGuarantor2 
+                              ? _selectedGuarantor2?.id == g.id 
+                              : _selectedGuarantor?.id == g.id;
+                          return InkWell(
+                            onTap: () {
+                              setState(() {
+                                if (isGuarantor2) {
+                                  _selectedGuarantor2 = g;
+                                } else {
+                                  _selectedGuarantor = g;
+                                }
+                              });
+                              Navigator.pop(ctx);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                               decoration: BoxDecoration(
-                                color: isSelected ? context.colors.primary : context.colors.surfaceWhite,
-                                shape: BoxShape.circle,
-                                border: isSelected ? null : Border.all(color: context.colors.divider),
+                                color: isSelected ? context.colors.primary.withValues(alpha: 0.05) : Colors.transparent,
+                                border: Border(bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5))),
                               ),
-                              child: Icon(Icons.person_rounded, 
-                                  color: isSelected ? Colors.white : context.colors.textGrey, size: 18),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                              child: Row(
                                 children: [
-                                  Text(g.fullName, style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                                      color: isSelected ? context.colors.primary : context.colors.textDark)),
-                                  const SizedBox(height: 4),
-                                  Text(g.phone, style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                                  Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? context.colors.primary : context.colors.surfaceWhite,
+                                      shape: BoxShape.circle,
+                                      border: isSelected ? null : Border.all(color: context.colors.divider),
+                                    ),
+                                    child: Icon(Icons.person_rounded, 
+                                        color: isSelected ? Colors.white : context.colors.textGrey, size: 18),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(g.fullName, style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                            color: isSelected ? context.colors.primary : context.colors.textDark)),
+                                        const SizedBox(height: 4),
+                                        Text('Available limit: ₹${g.availableGuaranteeLimit.toStringAsFixed(0)}', 
+                                          style: TextStyle(
+                                            color: g.availableGuaranteeLimit > 0 ? context.colors.textGrey : context.colors.error, 
+                                            fontSize: 13,
+                                            fontWeight: g.availableGuaranteeLimit > 0 ? FontWeight.normal : FontWeight.bold
+                                          )
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (isSelected) Icon(Icons.check_circle_rounded, color: context.colors.primary),
                                 ],
                               ),
                             ),
-                            if (isSelected) Icon(Icons.check_circle_rounded, color: context.colors.primary),
-                          ],
-                        ),
+                          );
+                        },
                       ),
-                    );
-                  },
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
+            );
+          }
+        );
+      },
     );
   }
 }
@@ -710,12 +820,169 @@ class LoanStatusScreen extends ConsumerWidget {
   }
 }
 
-class _LoanDetailCard extends StatelessWidget {
+class _LoanDetailCard extends ConsumerStatefulWidget {
   final LoanApplication loan;
   const _LoanDetailCard({required this.loan});
 
   @override
+  ConsumerState<_LoanDetailCard> createState() => _LoanDetailCardState();
+}
+
+class _LoanDetailCardState extends ConsumerState<_LoanDetailCard> {
+  bool _updating = false;
+
+  Future<void> _updateGuarantor(bool isGuarantor2) async {
+    setState(() => _updating = true);
+    try {
+      final opts = await LoanApi.getFormData();
+      if (!mounted) return;
+      
+      final currentG1 = widget.loan.guarantorId;
+      final currentG2 = widget.loan.guarantor2Id;
+
+      await showModalBottomSheet(
+        context: context,
+        backgroundColor: context.colors.bgGrey,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (ctx) {
+          String searchQuery = '';
+          return StatefulBuilder(
+            builder: (ctx, setModalState) {
+              final filteredGuarantors = opts.availableGuarantors.where((g) {
+                // Cannot select themselves or the other existing guarantor
+                final otherG = isGuarantor2 ? currentG1 : currentG2;
+                if (g.id == otherG) return false;
+                return g.fullName.toLowerCase().contains(searchQuery.toLowerCase()) || 
+                       g.phone.contains(searchQuery);
+              }).toList();
+
+              return SafeArea(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        margin: const EdgeInsets.only(top: 12, bottom: 8),
+                        width: 40, height: 4,
+                        decoration: BoxDecoration(color: context.colors.divider, borderRadius: BorderRadius.circular(2)),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: Text(isGuarantor2 ? 'Select New Second Guarantor' : 'Select New Guarantor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: context.colors.textDark)),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                        child: TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Search by name or phone...',
+                            prefixIcon: Icon(Icons.search, color: context.colors.textGrey),
+                            filled: true,
+                            fillColor: context.colors.surfaceWhite,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                          ),
+                          onChanged: (val) {
+                            setModalState(() {
+                              searchQuery = val;
+                            });
+                          },
+                        ),
+                      ),
+                      Divider(height: 1, color: context.colors.divider),
+                      Flexible(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: filteredGuarantors.length,
+                          itemBuilder: (ctx, i) {
+                            final g = filteredGuarantors[i];
+                            return InkWell(
+                              onTap: () async {
+                                Navigator.pop(ctx);
+                                try {
+                                  setState(() => _updating = true);
+                                  await LoanApi.updateGuarantors(
+                                    widget.loan.id, 
+                                    isGuarantor2 ? currentG1 : g.id, 
+                                    isGuarantor2 ? g.id : currentG2
+                                  );
+                                  if (mounted) {
+                                    ref.invalidate(myLoansProvider);
+                                    AppUtils.showSuccess(context, 'Guarantor updated successfully!');
+                                  }
+                                } catch (e) {
+                                  if (mounted) AppUtils.showError(context, apiError(e));
+                                } finally {
+                                  if (mounted) setState(() => _updating = false);
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                decoration: BoxDecoration(
+                                  border: Border(bottom: BorderSide(color: context.colors.divider.withValues(alpha: 0.5))),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(10),
+                                      decoration: BoxDecoration(
+                                        color: context.colors.surfaceWhite,
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: context.colors.divider),
+                                      ),
+                                      child: Icon(Icons.person_rounded, color: context.colors.textGrey, size: 18),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(g.fullName, style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w500,
+                                              color: context.colors.textDark)),
+                                          const SizedBox(height: 4),
+                                          Text('Available limit: ₹${g.availableGuaranteeLimit.toStringAsFixed(0)}', 
+                                            style: TextStyle(
+                                              color: g.availableGuaranteeLimit > 0 ? context.colors.textGrey : context.colors.error, 
+                                              fontSize: 13,
+                                              fontWeight: g.availableGuaranteeLimit > 0 ? FontWeight.normal : FontWeight.bold
+                                            )
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          );
+        },
+      );
+    } catch (e) {
+      if (mounted) AppUtils.showError(context, apiError(e));
+    } finally {
+      if (mounted) setState(() => _updating = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final loan = widget.loan;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -760,8 +1027,91 @@ class _LoanDetailCard extends StatelessWidget {
             InfoRow(
                 label: 'Outstanding',
                 value: '₹${loan.outstandingAmount.toStringAsFixed(0)}'),
-          if (loan.guarantorName != null)
-            InfoRow(label: 'Guarantor', value: loan.guarantorName!),
+          
+          if (loan.guarantorName != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Guarantor', style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(loan.guarantorName!, style: TextStyle(color: context.colors.textDark, fontSize: 13, fontWeight: FontWeight.w500), textAlign: TextAlign.right),
+                        if (loan.guarantorStatus != null)
+                          Text(loan.guarantorStatus!, style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600,
+                            color: loan.guarantorStatus == 'Accepted' ? const Color(0xFF10B981) : loan.guarantorStatus == 'Rejected' ? const Color(0xFFEF4444) : const Color(0xFFF59E0B)
+                          )),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (loan.guarantorStatus == 'Rejected' && loan.status == 'Pending')
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _updating ? null : () => _updateGuarantor(false),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Update Guarantor'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.colors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+          ],
+          
+          if (loan.guarantor2Name != null) ...[
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0, top: 8.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text('Guarantor 2', style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                  ),
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(loan.guarantor2Name!, style: TextStyle(color: context.colors.textDark, fontSize: 13, fontWeight: FontWeight.w500), textAlign: TextAlign.right),
+                        if (loan.guarantor2Status != null)
+                          Text(loan.guarantor2Status!, style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w600,
+                            color: loan.guarantor2Status == 'Accepted' ? const Color(0xFF10B981) : loan.guarantor2Status == 'Rejected' ? const Color(0xFFEF4444) : const Color(0xFFF59E0B)
+                          )),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (loan.guarantor2Status == 'Rejected' && loan.status == 'Pending')
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _updating ? null : () => _updateGuarantor(true),
+                  icon: const Icon(Icons.edit, size: 16),
+                  label: const Text('Update Guarantor 2'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: context.colors.primary,
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ),
+          ],
+
           if (loan.rejectionReason != null)
             InfoRow(
                 label: 'Reason',
@@ -793,6 +1143,248 @@ class _LoanDetailCard extends StatelessWidget {
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+// ═════════════════════════════════════════════
+// Guarantor Requests Screen
+// ═════════════════════════════════════════════
+class GuarantorRequestsScreen extends ConsumerStatefulWidget {
+  const GuarantorRequestsScreen({super.key});
+
+  @override
+  ConsumerState<GuarantorRequestsScreen> createState() => _GuarantorRequestsScreenState();
+}
+
+class _GuarantorRequestsScreenState extends ConsumerState<GuarantorRequestsScreen> {
+  List<LoanApplication> _requests = [];
+  bool _loading = true;
+  int? _actioningId;
+  int? _currentUserId;
+  final _fmt = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final uid = await StorageService.getUserId();
+    if (uid != null) setState(() => _currentUserId = int.tryParse(uid));
+    _loadRequests();
+  }
+
+  Future<void> _loadRequests() async {
+    try {
+      final reqs = await LoanApi.getGuarantorRequests(status: 'all');
+      setState(() {
+        _requests = reqs;
+        _loading = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loading = false);
+        AppUtils.showError(context, apiError(e));
+      }
+    }
+  }
+
+  Future<void> _handleConsent(int loanId, bool accept) async {
+    setState(() => _actioningId = loanId);
+    try {
+      await LoanApi.updateGuarantorConsent(loanId, accept);
+      if (mounted) {
+        ref.invalidate(userDashboardProvider);
+        AppUtils.showSuccess(context, 'Consent updated successfully');
+        _loadRequests();
+      }
+    } catch (e) {
+      if (mounted) AppUtils.showError(context, apiError(e));
+    } finally {
+      if (mounted) setState(() => _actioningId = null);
+    }
+  }
+
+  Widget _buildList(List<LoanApplication> list) {
+    if (list.isEmpty) return const Center(child: Text('No requests found'));
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: list.length,
+      itemBuilder: (ctx, i) {
+        final req = list[i];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: context.colors.surfaceWhite,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: context.colors.divider),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: context.colors.primary.withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(Icons.handshake_outlined, color: context.colors.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(req.applicantName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.colors.textDark)),
+                        Text(req.applicantPhone, style: TextStyle(color: context.colors.textGrey, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                  Text(_fmt.format(req.amount), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: context.colors.primary)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Builder(builder: (context) {
+                final isG1 = req.guarantorId == _currentUserId;
+                final isG2 = req.guarantor2Id == _currentUserId;
+                final myStatus = isG1
+                    ? req.guarantorStatus
+                    : isG2
+                        ? req.guarantor2Status
+                        : null;
+                final myConsentPending = req.status == 'Pending' && (myStatus == null || myStatus == 'Pending');
+
+                if (myConsentPending) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFEF4444),
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, false),
+                          child: _actioningId == req.id
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Text('Reject'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF10B981),
+                            foregroundColor: Colors.white,
+                          ),
+                          onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, true),
+                          child: _actioningId == req.id
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              : const Text('Accept'),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                String displayStatus = 'Loan ${req.status}';
+                if (req.status == 'Pending') {
+                  displayStatus = myStatus == 'Accepted' ? 'You accepted' : 'You rejected';
+                }
+
+                return Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: myStatus == 'Accepted'
+                        ? const Color(0xFF10B981).withValues(alpha: 0.12)
+                        : const Color(0xFFEF4444).withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: myStatus == 'Accepted'
+                          ? const Color(0xFF10B981).withValues(alpha: 0.4)
+                          : const Color(0xFFEF4444).withValues(alpha: 0.4),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        myStatus == 'Accepted' ? Icons.check_circle : Icons.cancel,
+                        size: 16,
+                        color: myStatus == 'Accepted' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        displayStatus,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: myStatus == 'Accepted' ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_loading) {
+      return Scaffold(
+        backgroundColor: context.colors.bgGrey,
+        appBar: AppBar(title: const Text('Guarantor Requests')),
+        body: Center(child: CircularProgressIndicator(color: context.colors.primary)),
+      );
+    }
+
+    final pendingList = _requests.where((req) {
+      final isG1 = req.guarantorId == _currentUserId;
+      final isG2 = req.guarantor2Id == _currentUserId;
+      final myStatus = isG1 ? req.guarantorStatus : isG2 ? req.guarantor2Status : null;
+      return req.status == 'Pending' && (myStatus == null || myStatus == 'Pending');
+    }).toList();
+
+    final historyList = _requests.where((req) {
+      final isG1 = req.guarantorId == _currentUserId;
+      final isG2 = req.guarantor2Id == _currentUserId;
+      final myStatus = isG1 ? req.guarantorStatus : isG2 ? req.guarantor2Status : null;
+      return !(req.status == 'Pending' && (myStatus == null || myStatus == 'Pending'));
+    }).toList();
+
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: context.colors.bgGrey,
+        appBar: AppBar(
+          title: const Text('Guarantor Requests'),
+          bottom: TabBar(
+            labelColor: context.colors.primary,
+            unselectedLabelColor: context.colors.textGrey,
+            indicatorColor: context.colors.primary,
+            tabs: const [
+              Tab(text: 'Pending'),
+              Tab(text: 'History'),
+            ],
+          ),
+        ),
+        body: TabBarView(
+          children: [
+            _buildList(pendingList),
+            _buildList(historyList),
+          ],
+        ),
       ),
     );
   }

@@ -11,6 +11,7 @@ import '../../models/payment_models.dart';
 import '../../providers/data_providers.dart';
 import '../../providers/settings_notifier.dart';
 import '../../providers/theme_provider.dart';
+import '../../core/app_utils.dart';
 import '../../widgets/shared_widgets.dart';
 
 // ═════════════════════════════════════════════
@@ -25,41 +26,39 @@ class LoanReviewScreen extends ConsumerStatefulWidget {
 
 class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
   String _searchQuery = '';
-  double? _amountFilter; // null means 'All'
+  String? _statusFilter; // null means 'All'
 
   @override
   Widget build(BuildContext context) {
     final loansAsync = ref.watch(allLoansProvider);
 
-    return Scaffold(
-      backgroundColor: context.colors.bgGrey,
-      appBar: AppBar(title: const Text('Loan Applications')),
-      body: loansAsync.when(
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: context.colors.bgGrey,
+        appBar: AppBar(
+          title: const Text('Loans'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'All Loans'),
+              Tab(text: 'Active Loans'),
+            ],
+          ),
+        ),
+        body: loansAsync.when(
         loading: () => Center(
             child: CircularProgressIndicator(color: context.colors.primary)),
         error: (e, _) => ErrorRetry(
             message: apiError(e),
             onRetry: () => ref.invalidate(allLoansProvider)),
         data: (loans) {
-          final uniqueAmounts = loans.map((l) => l.amount).toSet().toList()..sort();
-          final fmtFilter = NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
-
-          // Auto-reset filter if selected amount is no longer in the loans list
-          if (_amountFilter != null && !uniqueAmounts.contains(_amountFilter)) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted) {
-                setState(() {
-                  _amountFilter = null;
-                });
-              }
-            });
-          }
+          final statuses = ['Pending', 'Approved', 'Disbursed', 'Rejected', 'Completed'];
 
           final filtered = loans.where((l) {
             final matchesSearch = l.applicantName.toLowerCase().contains(_searchQuery.toLowerCase()) || 
                                   l.applicantPhone.contains(_searchQuery);
-            final matchesAmount = _amountFilter == null || l.amount == _amountFilter;
-            return matchesSearch && matchesAmount;
+            final matchesStatus = _statusFilter == null || l.status == _statusFilter;
+            return matchesSearch && matchesStatus;
           }).toList();
 
           return Column(
@@ -98,35 +97,35 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                         child: ChoiceChip(
                           label: Text('All', style: TextStyle(
                             fontSize: 12,
-                            color: _amountFilter == null ? Colors.white : context.colors.textGrey,
-                            fontWeight: _amountFilter == null ? FontWeight.bold : FontWeight.normal,
+                            color: _statusFilter == null ? Colors.white : context.colors.textGrey,
+                            fontWeight: _statusFilter == null ? FontWeight.bold : FontWeight.normal,
                           )),
-                          selected: _amountFilter == null,
+                          selected: _statusFilter == null,
                           selectedColor: context.colors.primary,
                           backgroundColor: context.colors.surfaceWhite,
                           onSelected: (val) {
                             if (val) {
                               setState(() {
-                                _amountFilter = null;
+                                _statusFilter = null;
                               });
                             }
                           },
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(20),
                             side: BorderSide(
-                              color: _amountFilter == null ? context.colors.primary : context.colors.divider,
+                              color: _statusFilter == null ? context.colors.primary : context.colors.divider,
                             ),
                           ),
                           showCheckmark: false,
                         ),
                       ),
-                      // Dynamic amounts
-                      ...uniqueAmounts.map((amount) {
-                        final selected = _amountFilter == amount;
+                      // Dynamic statuses
+                      ...statuses.map((status) {
+                        final selected = _statusFilter == status;
                         return Padding(
                           padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
-                            label: Text(fmtFilter.format(amount), style: TextStyle(
+                            label: Text(status, style: TextStyle(
                               fontSize: 12,
                               color: selected ? Colors.white : context.colors.textGrey,
                               fontWeight: selected ? FontWeight.bold : FontWeight.normal,
@@ -136,7 +135,7 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                             backgroundColor: context.colors.surfaceWhite,
                             onSelected: (val) {
                               setState(() {
-                                _amountFilter = val ? amount : null;
+                                _statusFilter = val ? status : null;
                               });
                             },
                             shape: RoundedRectangleBorder(
@@ -154,31 +153,38 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
                 ),
               ),
               Expanded(
-                child: loans.isEmpty
-                  ? const EmptyState(
-                      icon: Icons.account_balance_outlined,
-                      title: 'No loan applications')
-                  : filtered.isEmpty
-                    ? const EmptyState(
-                        icon: Icons.search_off,
-                        title: 'No matching applications')
-                    : RefreshIndicator(
-                        color: context.colors.primary,
-                        onRefresh: () async => ref.invalidate(allLoansProvider),
-                        child: ListView.separated(
-                          padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
-                          itemCount: filtered.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
-                          itemBuilder: (_, i) => _LoanReviewCard(
-                            loan: filtered[i],
-                            onAction: () => ref.invalidate(allLoansProvider),
-                          ),
-                        ),
-                      ),
+                child: TabBarView(
+                  children: [
+                    // All Loans Tab
+                    _buildLoansList(filtered, context, ref),
+                    // Active Loans Tab
+                    _buildLoansList(filtered.where((l) => l.status == 'Disbursed').toList(), context, ref),
+                  ],
+                ),
               ),
             ],
           );
         },
+      ),
+      ),
+    );
+  }
+
+  Widget _buildLoansList(List<LoanApplication> list, BuildContext context, WidgetRef ref) {
+    if (list.isEmpty) {
+      return const EmptyState(icon: Icons.account_balance_outlined, title: 'No loans found');
+    }
+    return RefreshIndicator(
+      color: context.colors.primary,
+      onRefresh: () async => ref.invalidate(allLoansProvider),
+      child: ListView.separated(
+        padding: const EdgeInsets.only(left: 16, right: 16, bottom: 16),
+        itemCount: list.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (_, i) => _LoanReviewCard(
+          loan: list[i],
+          onAction: () => ref.invalidate(allLoansProvider),
+        ),
       ),
     );
   }
@@ -218,8 +224,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
       widget.onAction();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -244,8 +249,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
       widget.onAction();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -358,8 +362,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
       widget.onAction();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -492,7 +495,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Amount: ${fmt.format(l.amount)}',
+                    Text(l.status == 'Disbursed' ? 'Repayment: ${fmt.format(l.outstandingAmount)}' : 'Amount: ${fmt.format(l.amount)}',
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.white)),
                     if (l.tenureMonths != null)
                       Text('${l.tenureMonths} months tenure',
@@ -658,8 +661,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -986,8 +988,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _upiNameCtrl.text = s.upiDisplayName;
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -1007,13 +1008,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await SettingsApi.updateSettings(payload);
       setState(() => _logoChanged = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Settings saved!')));
+        AppUtils.showSuccess(context, 'Settings saved!');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(apiError(e))));
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _saving = false);

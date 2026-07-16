@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import '../core/app_utils.dart';
 import '../core/api/api_client.dart';
 import '../core/api/api_services.dart';
 import '../core/constants.dart';
@@ -60,27 +60,11 @@ class _ExportStatementDialogState extends ConsumerState<ExportStatementDialog> {
       if (mounted) {
         Navigator.pop(context); // close dialog
         
-        // Open the file locally
-        final uri = Uri.file(savePath);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Export Successful! Saved to: $fileName'),
-            backgroundColor: context.colors.primary,
-            duration: const Duration(seconds: 5),
-          ),
-        );
+        AppUtils.showSuccess(context, 'Export Successful! Saved to: $fileName');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Export failed: ${apiError(e)}'), 
-            backgroundColor: context.colors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            margin: const EdgeInsets.only(bottom: 20, left: 16, right: 16),
-          ),
-        );
+        AppUtils.showError(context, 'Export failed: ${apiError(e)}');
       }
     } finally {
       if (mounted) setState(() => _isExporting = false);

@@ -4,6 +4,7 @@ import '../core/api/auth_api.dart';
 import '../core/api/api_client.dart';
 import '../core/storage/storage_service.dart';
 import '../core/api/api_services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthState {
   final bool isLoggedIn;
@@ -11,6 +12,7 @@ class AuthState {
   final String? error;
   final String? role;
   final String? userName;
+  final bool isBiometricLocked;
 
   const AuthState({
     this.isLoggedIn = false,
@@ -18,6 +20,7 @@ class AuthState {
     this.error,
     this.role,
     this.userName,
+    this.isBiometricLocked = false,
   });
 
   AuthState copyWith({
@@ -26,6 +29,7 @@ class AuthState {
     String? error,
     String? role,
     String? userName,
+    bool? isBiometricLocked,
   }) =>
       AuthState(
         isLoggedIn: isLoggedIn ?? this.isLoggedIn,
@@ -33,6 +37,7 @@ class AuthState {
         error: error,
         role: role ?? this.role,
         userName: userName ?? this.userName,
+        isBiometricLocked: isBiometricLocked ?? this.isBiometricLocked,
       );
 }
 
@@ -46,7 +51,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (loggedIn) {
       final role = await StorageService.getRole();
       final name = await StorageService.getUserName();
-      state = state.copyWith(isLoggedIn: true, role: role, userName: name);
+      final prefs = await SharedPreferences.getInstance();
+      final biometricEnabled = prefs.getBool('biometric_enabled') ?? false;
+      state = state.copyWith(
+        isLoggedIn: true, 
+        role: role, 
+        userName: name,
+        isBiometricLocked: biometricEnabled,
+      );
     }
   }
 
@@ -89,6 +101,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     await StorageService.clearAll();
     ApiClient.reset();
     state = const AuthState();
+  }
+
+  void unlockBiometric() {
+    state = state.copyWith(isBiometricLocked: false);
   }
 }
 

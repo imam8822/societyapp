@@ -1,3 +1,5 @@
+import 'user_models.dart';
+
 class Contribution {
   final int id;
   final int userId;
@@ -42,8 +44,10 @@ class Contribution {
         screenshotUrl: j['screenshotUrl'],
         transactionReference: j['transactionReference'],
         remarks: j['remarks'],
-        isVerified: j['isVerified'],
-        paidDate: DateTime.parse(j['paidDate']),
+        isVerified: j['isVerified'] ?? false,
+        paidDate: j['paidDate'] != null
+            ? DateTime.parse(j['paidDate'])
+            : DateTime.now(),
         verifiedByAdmin: j['verifiedByAdmin'],
         verifiedAt: j['verifiedAt'] != null
             ? DateTime.parse(j['verifiedAt'])
@@ -101,6 +105,8 @@ class MonthlyReport {
   final int unpaidCount;
   final double totalCollected;
   final List<Contribution> contributions;
+  final List<UserDropdownItem> unpaidMembers;
+  final int totalCount;
 
   MonthlyReport({
     required this.month,
@@ -110,19 +116,38 @@ class MonthlyReport {
     required this.unpaidCount,
     required this.totalCollected,
     required this.contributions,
+    required this.unpaidMembers,
+    required this.totalCount,
   });
 
-  factory MonthlyReport.fromJson(Map<String, dynamic> j) => MonthlyReport(
-        month: j['month'],
-        year: j['year'],
-        totalMembers: j['totalMembers'],
-        paidCount: j['paidCount'],
-        unpaidCount: j['unpaidCount'],
-        totalCollected: (j['totalCollected'] as num?)?.toDouble() ?? 0,
-        contributions: (j['contributions'] as List)
-            .map((e) => Contribution.fromJson(e))
-            .toList(),
-      );
+  factory MonthlyReport.fromJson(Map<String, dynamic> j) {
+    var rawContribs = j['contributions'];
+    List<dynamic> contribList = [];
+    int tCount = 0;
+    if (rawContribs != null) {
+      if (rawContribs is List) {
+        contribList = rawContribs;
+        tCount = rawContribs.length;
+      } else if (rawContribs is Map && rawContribs['items'] != null) {
+        contribList = rawContribs['items'] as List;
+        tCount = rawContribs['totalCount'] ?? contribList.length;
+      }
+    }
+
+    return MonthlyReport(
+      month: j['month'] ?? 1,
+      year: j['year'] ?? 2026,
+      totalMembers: j['totalMembers'] ?? 0,
+      paidCount: j['paidCount'] ?? 0,
+      unpaidCount: j['unpaidCount'] ?? 0,
+      totalCollected: (j['totalCollected'] as num?)?.toDouble() ?? 0,
+      contributions: contribList.map((e) => Contribution.fromJson(e)).toList(),
+      unpaidMembers: (j['unpaidMembers'] as List? ?? [])
+          .map((e) => UserDropdownItem.fromJson(e))
+          .toList(),
+      totalCount: tCount,
+    );
+  }
 }
 
 class YearlyReport {

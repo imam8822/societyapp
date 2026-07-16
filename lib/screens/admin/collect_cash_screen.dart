@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_services.dart';
-import '../../models/loan_models.dart';
+import '../../core/constants.dart';
+import '../../core/app_utils.dart';
 import '../../providers/data_providers.dart';
 import '../../core/api/api_client.dart';
-import '../../core/constants.dart';
+import '../../models/loan_models.dart';
 
 /// A single unpaid month from the API.
 class _UnpaidMonth {
@@ -387,16 +388,11 @@ class _ContributionsTabState extends State<_ContributionsTab> {
   // ── Submit ──────────────────────────────────────────
   Future<void> _submit() async {
     if (_selectedMember == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a member')),
-      );
+      AppUtils.showError(context, 'Please select a member');
       return;
     }
     if (_selectedMonthIndices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Please select at least one month')),
-      );
+      AppUtils.showError(context, 'Please select at least one month');
       return;
     }
 
@@ -420,23 +416,12 @@ class _ContributionsTabState extends State<_ContributionsTab> {
           });
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                '${_selectedMonthIndices.length} month(s) recorded for ${_selectedMember!.fullName}'),
-            backgroundColor: context.colors.primary,
-          ),
-        );
+        AppUtils.showSuccess(context, 'Contribution of ${_fmt.format(_grandTotal)} recorded for ${_selectedMember!.fullName}');
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(apiError(e)),
-            backgroundColor: context.colors.error,
-          ),
-        );
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -957,7 +942,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
             final filtered = query.isEmpty
                 ? activeLoans
                 : activeLoans
-                    .where((l) =>
+                    .where((LoanApplication l) =>
                         l.applicantName.toLowerCase().contains(query) ||
                         l.applicantPhone.contains(query))
                     .toList();
@@ -1062,9 +1047,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
     
     final amount = double.tryParse(_amountCtrl.text.trim()) ?? 0;
     if (amount <= 0 || amount > _selectedLoan!.outstandingAmount) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Enter a valid amount (Max: ${_fmt.format(_selectedLoan!.outstandingAmount)})')),
-      );
+      AppUtils.showError(context, 'Enter a valid amount (Max: ${_fmt.format(_selectedLoan!.outstandingAmount)})');
       return;
     }
 
@@ -1077,12 +1060,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
       );
       
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Repayment of ${_fmt.format(amount)} recorded for ${_selectedLoan!.applicantName}'),
-            backgroundColor: context.colors.primary,
-          ),
-        );
+        AppUtils.showSuccess(context, 'Repayment of ${_fmt.format(amount)} recorded for ${_selectedLoan!.applicantName}');
         ref.invalidate(allLoansProvider);
         ref.invalidate(adminDashboardProvider);
         setState(() {
@@ -1093,12 +1071,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(apiError(e)),
-            backgroundColor: context.colors.error,
-          ),
-        );
+        AppUtils.showError(context, apiError(e));
       }
     } finally {
       if (mounted) setState(() => _loading = false);

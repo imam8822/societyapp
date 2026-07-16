@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import '../../core/app_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -549,26 +550,19 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                       await PaymentApi.adminVerify(item.contributionId, approve, remark);
                       
                       ref.invalidate(pendingScreenshotsProvider);
+                      ref.invalidate(adminDashboardProvider);
                       if (ctx.mounted) Navigator.pop(ctx);
                       
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(approve
-                                ? 'Payment approved for ${item.userName}'
-                                : 'Payment rejected for ${item.userName}'),
-                            backgroundColor: approve ? context.colors.primary : context.colors.error,
-                          ),
-                        );
+                        if (approve) {
+                          AppUtils.showSuccess(context, 'Payment approved for ${item.userName}');
+                        } else {
+                          AppUtils.showInfo(context, 'Payment rejected for ${item.userName}');
+                        }
                       }
                     } catch (e) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: ${e.toString()}'),
-                            backgroundColor: context.colors.error,
-                          ),
-                        );
+                        AppUtils.showError(context, 'Error: ${e.toString()}');
                       }
                     } finally {
                       if (ctx.mounted) setState(() => isProcessing = false);
@@ -916,26 +910,19 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                       await PaymentApi.adminVerifyLoanRepayment(item.loanRepaymentId, approve, remark);
                       
                       ref.invalidate(pendingLoanRepaymentsProvider);
+                      ref.invalidate(adminDashboardProvider);
                       if (ctx.mounted) Navigator.pop(ctx);
                       
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(approve
-                                ? 'Repayment approved for ${item.userName}'
-                                : 'Repayment rejected for ${item.userName}'),
-                            backgroundColor: approve ? context.colors.primary : context.colors.error,
-                          ),
-                        );
+                        if (approve) {
+                          AppUtils.showSuccess(context, 'Repayment approved for ${item.userName}');
+                        } else {
+                          AppUtils.showInfo(context, 'Repayment rejected for ${item.userName}');
+                        }
                       }
                     } catch (e) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: ${e.toString()}'),
-                            backgroundColor: context.colors.error,
-                          ),
-                        );
+                        AppUtils.showError(context, 'Error: ${e.toString()}');
                       }
                     } finally {
                       if (ctx.mounted) setState(() => isProcessing = false);

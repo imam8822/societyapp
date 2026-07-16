@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:society_app/core/app_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,16 +24,74 @@ class MembersScreen extends ConsumerStatefulWidget {
 class _MembersScreenState extends ConsumerState<MembersScreen> {
   final _searchCtrl = TextEditingController();
   String _query = '';
+  Timer? _debounce;
+  
+  void _onSearchChanged(String v) {
+    setState(() => _query = v.toLowerCase().trim());
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      _loadMembers(refresh: true);
+    });
+  }
+  
+  final List<UserSummary> _members = [];
+  bool _loading = false;
+  bool _hasMore = true;
+  int _page = 1;
+  final int _limit = 20;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers({bool refresh = false}) async {
+    if (refresh) {
+      _page = 1;
+      _hasMore = true;
+      _members.clear();
+    }
+
+    if (!_hasMore || _loading) return;
+    _loading = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+
+    try {
+      final items = await UserApi.getAllUsers(search: _query, page: _page, limit: _limit);
+      if (mounted) {
+        setState(() {
+          if (items.length < _limit) _hasMore = false;
+          _members.addAll(items);
+          _page++;
+        });
+      }
+    } catch (e) {
+      if (mounted) AppUtils.showError(context, apiError(e));
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final membersAsync = ref.watch(membersProvider);
+    final filtered = _query.isEmpty
+        ? _members
+        : _members.where((m) =>
+            m.fullName.toLowerCase().contains(_query) ||
+            m.phone.contains(_query)).toList();
 
     return Scaffold(
       backgroundColor: context.colors.bgGrey,
@@ -39,96 +99,93 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           await context.push('/admin/members/add');
-          ref.invalidate(membersProvider);
+          _loadMembers(refresh: true);
         },
         backgroundColor: context.colors.primary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.person_add_rounded),
         label: const Text('Add Member'),
       ),
-      body: membersAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
-        error: (e, _) => ErrorRetry(
-          message: apiError(e),
-          onRetry: () => ref.invalidate(membersProvider),
-        ),
-        data: (members) {
-          final filtered = _query.isEmpty
-              ? members
-              : members.where((m) =>
-                  m.fullName.toLowerCase().contains(_query) ||
-                  m.phone.contains(_query)).toList();
-
-          return Column(
-            children: [
-              // ── Search bar ──────────────────────────────
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: TextField(
-                  controller: _searchCtrl,
-                  onChanged: (v) => setState(() => _query = v.toLowerCase().trim()),
-                  decoration: InputDecoration(
-                    hintText: 'Search by name or phone...',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    suffixIcon: _query.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.close, size: 18),
-                            onPressed: () {
-                              _searchCtrl.clear();
-                              setState(() => _query = '');
-                            },
-                          )
-                        : null,
-                    filled: true,
-                    fillColor: context.colors.surfaceWhite,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: context.colors.divider),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: context.colors.divider),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: context.colors.primary, width: 1.5),
+      body: _members.isEmpty && _loading
+          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
+          : Column(
+              children: [
+                // ── Search bar ──────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: _onSearchChanged,
+                    decoration: InputDecoration(
+                      hintText: 'Search by name or phone...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      suffixIcon: _query.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.close, size: 18),
+                              onPressed: () {
+                                _searchCtrl.clear();
+                                _onSearchChanged('');
+                              },
+                            )
+                          : null,
+                      filled: true,
+                      fillColor: context.colors.surfaceWhite,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: context.colors.divider),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: context.colors.divider),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: context.colors.primary, width: 1.5),
+                      ),
                     ),
                   ),
                 ),
-              ),
 
-              // ── Count ───────────────────────────────────
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                child: Row(children: [
-                  Text(
-                    '${filtered.length} member${filtered.length == 1 ? '' : 's'}',
-                    style: TextStyle(fontSize: 12, color: context.colors.textGrey),
-                  ),
-                ]),
-              ),
+                // ── Count ───────────────────────────────────
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                  child: Row(children: [
+                    Text(
+                      '${filtered.length} member${filtered.length == 1 ? '' : 's'}',
+                      style: TextStyle(fontSize: 12, color: context.colors.textGrey),
+                    ),
+                  ]),
+                ),
 
-              // ── List ────────────────────────────────────
-              Expanded(
-                child: filtered.isEmpty
-                    ? Center(
-                        child: Text('No members found',
-                            style: TextStyle(color: context.colors.textGrey)))
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(0, 4, 0, 100),
-                        itemCount: filtered.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1, indent: 56),
-                        itemBuilder: (_, i) => _MemberTile(
-                          member: filtered[i],
-                          onEdited: () => ref.invalidate(membersProvider),
+                // ── List ────────────────────────────────────
+                Expanded(
+                  child: filtered.isEmpty
+                      ? Center(
+                          child: Text('No members found',
+                              style: TextStyle(color: context.colors.textGrey)))
+                      : RefreshIndicator(
+                          onRefresh: () => _loadMembers(refresh: true),
+                          color: context.colors.primary,
+                          child: ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(0, 4, 0, 100),
+                            itemCount: filtered.length + (_hasMore && _query.isEmpty ? 1 : 0),
+                            separatorBuilder: (_, __) => const Divider(height: 1, indent: 56),
+                            itemBuilder: (context, i) {
+                              if (i == filtered.length) {
+                                _loadMembers();
+                                return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+                              }
+                              return _MemberTile(
+                                member: filtered[i],
+                                onEdited: () => _loadMembers(refresh: true),
+                              );
+                            },
+                          ),
                         ),
-                      ),
-              ),
-            ],
-          );
-        },
-      ),
+                ),
+              ],
+            ),
     );
   }
 }
@@ -140,7 +197,7 @@ class _MemberTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPending = member.pendingAmount > 0;
+    final hasPending = member.isActive && member.pendingAmount > 0;
 
     return InkWell(
       onTap: () async {
@@ -226,6 +283,22 @@ class _MemberTile extends StatelessWidget {
                 ),
               ),
             )
+          else if (!member.isActive)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: context.colors.textGrey.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Inactive',
+                style: TextStyle(
+                  color: context.colors.textGrey,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            )
           else
             const Icon(Icons.check_circle_outline, size: 16, color: Color(0xFF2ECC71)),
 
@@ -240,13 +313,13 @@ class _MemberTile extends StatelessWidget {
 // ═════════════════════════════════════════════
 // Add Member Screen
 // ═════════════════════════════════════════════
-class AddMemberScreen extends StatefulWidget {
+class AddMemberScreen extends ConsumerStatefulWidget {
   const AddMemberScreen({super.key});
   @override
-  State<AddMemberScreen> createState() => _AddMemberScreenState();
+  ConsumerState<AddMemberScreen> createState() => _AddMemberScreenState();
 }
 
-class _AddMemberScreenState extends State<AddMemberScreen> {
+class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
@@ -306,6 +379,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
         pendingAmount: double.tryParse(_pendingCtrl.text) ?? 0,
         referredById: _selectedReferral?.id,
       ));
+      ref.invalidate(adminDashboardProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Member added successfully!')));

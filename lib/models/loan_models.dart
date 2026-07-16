@@ -6,6 +6,13 @@ class LoanApplication {
   final int? guarantorId;
   final String? guarantorName;
   final String? guarantorPhone;
+  final String? guarantorStatus;
+  
+  final int? guarantor2Id;
+  final String? guarantor2Name;
+  final String? guarantor2Phone;
+  final String? guarantor2Status;
+  
   final bool guarantorRequired;
   final double amount;
   final String status;
@@ -22,6 +29,11 @@ class LoanApplication {
   final double outstandingAmount;
   final double applicantTotalSaved;
   final bool hasPendingRepayment;
+  // Rush / emergency fields
+  final String applicationType;   // 'Regular' | 'MonthEndRush'
+  final bool isEmergency;
+  final int? monthEndSlotMonth;
+  final int? monthEndSlotYear;
 
   LoanApplication({
     required this.id,
@@ -31,6 +43,11 @@ class LoanApplication {
     this.guarantorId,
     this.guarantorName,
     this.guarantorPhone,
+    this.guarantorStatus,
+    this.guarantor2Id,
+    this.guarantor2Name,
+    this.guarantor2Phone,
+    this.guarantor2Status,
     required this.guarantorRequired,
     required this.amount,
     required this.status,
@@ -47,6 +64,10 @@ class LoanApplication {
     required this.outstandingAmount,
     required this.applicantTotalSaved,
     required this.hasPendingRepayment,
+    this.applicationType = 'Regular',
+    this.isEmergency = false,
+    this.monthEndSlotMonth,
+    this.monthEndSlotYear,
   });
 
   factory LoanApplication.fromJson(Map<String, dynamic> j) => LoanApplication(
@@ -57,6 +78,11 @@ class LoanApplication {
         guarantorId: j['guarantorId'],
         guarantorName: j['guarantorName'],
         guarantorPhone: j['guarantorPhone'],
+        guarantorStatus: j['guarantorStatus'],
+        guarantor2Id: j['guarantor2Id'],
+        guarantor2Name: j['guarantor2Name'],
+        guarantor2Phone: j['guarantor2Phone'],
+        guarantor2Status: j['guarantor2Status'],
         guarantorRequired: j['guarantorRequired'] ?? false,
         amount: (j['amount'] as num).toDouble(),
         status: j['status'] ?? 'Pending',
@@ -82,6 +108,10 @@ class LoanApplication {
         applicantTotalSaved:
             (j['applicantTotalSaved'] as num?)?.toDouble() ?? 0,
         hasPendingRepayment: j['hasPendingRepayment'] ?? false,
+        applicationType: j['applicationType'] ?? 'Regular',
+        isEmergency: j['isEmergency'] ?? false,
+        monthEndSlotMonth: j['monthEndSlotMonth'],
+        monthEndSlotYear: j['monthEndSlotYear'],
       );
 
   bool get isPending => status == 'Pending';
@@ -90,20 +120,27 @@ class LoanApplication {
   bool get isDisbursed => status == 'Disbursed';
   bool get isRepaid => status == 'Repaid';
   bool get isActive => isPending || isApproved || isDisbursed;
+  bool get isRushApplication => applicationType == 'MonthEndRush';
 }
 
 class ApplyLoanRequest {
   final int loanOptionId;
   final int? guarantorId;
+  final int? guarantor2Id;
+  final bool isEmergency;
 
   ApplyLoanRequest({
     required this.loanOptionId,
     this.guarantorId,
+    this.guarantor2Id,
+    this.isEmergency = false,
   });
 
   Map<String, dynamic> toJson() => {
         'loanOptionId': loanOptionId,
         if (guarantorId != null) 'guarantorId': guarantorId,
+        if (guarantor2Id != null) 'guarantor2Id': guarantor2Id,
+        'isEmergency': isEmergency,
       };
 }
 
@@ -111,11 +148,15 @@ class LoanOption {
   final int id;
   final String label;
   final double amount;
-  final int minTenureRequired;   // months user must have contributed to be eligible
-  final int maxRepaymentTenure;  // deadline — repay on or before 15th of this month from disbursal
-  final double repaymentAmount;  // fixed TOTAL single repayment amount (not monthly)
-  final bool isEligible;         // user has >= minTenureRequired months paid
-  final bool guarantorRequired;  // loan amount > user's total invested
+  final int minTenureRequired;
+  final int maxRepaymentTenure;
+  final double repaymentAmount;
+  final bool isEligible;
+  final bool guarantorRequired;
+  final int requiredGuarantors;
+  /// Null = no restriction. Non-null = capped slots per month (last-day rush window).
+  final int? quota;
+  final bool isActive;
 
   LoanOption({
     required this.id,
@@ -126,6 +167,9 @@ class LoanOption {
     required this.repaymentAmount,
     required this.isEligible,
     required this.guarantorRequired,
+    required this.requiredGuarantors,
+    this.quota,
+    this.isActive = true,
   });
 
   factory LoanOption.fromJson(Map<String, dynamic> j) => LoanOption(
@@ -134,27 +178,35 @@ class LoanOption {
         amount: (j['amount'] as num?)?.toDouble() ?? 0,
         minTenureRequired: j['minTenureRequired'] ?? 6,
         maxRepaymentTenure: j['maxRepaymentTenure'] ?? 12,
-        repaymentAmount: (j['repaymentAmount'] as num?)?.toDouble() ?? 0,
+        repaymentAmount: (j['repaymentAmount'] as num).toDouble(),
         isEligible: j['isEligible'] ?? false,
         guarantorRequired: j['guarantorRequired'] ?? false,
+        requiredGuarantors: j['requiredGuarantors'] ?? 1,
+        quota: j['quota'],
+        isActive: j['isActive'] ?? true,
       );
+
+  bool get hasQuota => quota != null;
 }
 
 class GuarantorOption {
   final int id;
   final String fullName;
   final String phone;
+  final double availableGuaranteeLimit;
 
   GuarantorOption({
     required this.id,
     required this.fullName,
     required this.phone,
+    required this.availableGuaranteeLimit,
   });
 
   factory GuarantorOption.fromJson(Map<String, dynamic> j) => GuarantorOption(
         id: j['id'],
         fullName: j['fullName'],
         phone: j['phone'],
+        availableGuaranteeLimit: (j['availableGuaranteeLimit'] as num?)?.toDouble() ?? 0,
       );
 }
 

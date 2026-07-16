@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:society_app/core/app_utils.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/api/api_services.dart';
 import '../../core/api/api_client.dart';
 import '../../core/constants.dart';
+import '../../providers/data_providers.dart';
 import '../../models/payment_models.dart';
 import '../../widgets/shared_widgets.dart';
 
@@ -73,6 +75,8 @@ class _PayScreenState extends ConsumerState<PayScreen> {
       final base64Str = base64Encode(bytes);
       // No tokenId needed — backend finds active token by userId
       final result = await PaymentApi.uploadScreenshot(base64Str);
+      ref.invalidate(userDashboardProvider);
+      ref.invalidate(myContributionsProvider);
       setState(() {
         _resultMessage = result.message;
         _autoVerified = result.autoVerified;
@@ -87,9 +91,9 @@ class _PayScreenState extends ConsumerState<PayScreen> {
 
   void _showSnack(String msg) {
     if (msg.contains('success') || msg.contains('verified') || msg.contains('uploaded')) {
-      AppToast.showSuccess(context, msg);
+      AppUtils.showSuccess(context, msg);
     } else {
-      AppToast.showError(context, msg);
+      AppUtils.showError(context, msg);
     }
   }
 
