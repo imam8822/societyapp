@@ -156,6 +156,7 @@ class LoanOption {
   final int requiredGuarantors;
   /// Null = no restriction. Non-null = capped slots per month (last-day rush window).
   final int? quota;
+  final bool isActive;
 
   LoanOption({
     required this.id,
@@ -168,6 +169,7 @@ class LoanOption {
     required this.guarantorRequired,
     required this.requiredGuarantors,
     this.quota,
+    this.isActive = true,
   });
 
   factory LoanOption.fromJson(Map<String, dynamic> j) => LoanOption(
@@ -181,6 +183,7 @@ class LoanOption {
         guarantorRequired: j['guarantorRequired'] ?? false,
         requiredGuarantors: j['requiredGuarantors'] ?? 1,
         quota: j['quota'],
+        isActive: j['isActive'] ?? true,
       );
 
   bool get hasQuota => quota != null;

@@ -388,6 +388,28 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.monetization_on_outlined,
+                        label: 'Contributions',
+                        color: Colors.teal,
+                        onTap: () => context.push('/admin/contributions'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: _QuickActionCard(
+                        icon: Icons.tune_rounded,
+                        label: 'Loan Options',
+                        color: Colors.blueGrey,
+                        onTap: () => context.push('/admin/loan-options'),
+                      ),
+                    ),
+                  ],
+                ),
               ],
 
             ],
