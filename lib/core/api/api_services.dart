@@ -101,9 +101,33 @@ class ContributionApi {
     return Contribution.fromJson(res.data);
   }
 
-  static Future<MonthlyReport> getMonthlyReport(int month, int year) async {
+  static Future<void> bulkVerifyContributions(List<int> contributionIds, bool approve, String? remarks) async {
+    await ApiClient.instance.patch('/contributions/verify/bulk', data: {
+      'contributionIds': contributionIds,
+      'approve': approve,
+      if (remarks != null) 'remarks': remarks,
+    });
+  }
+
+  static Future<MonthlyReport> getMonthlyReport(
+    int month,
+    int year, {
+    String? search,
+    int page = 1,
+    int limit = 50,
+    String? sortBy,
+    bool sortDesc = false,
+  }) async {
     final res = await ApiClient.instance.get('/contributions/report/monthly',
-        queryParameters: {'month': month, 'year': year});
+        queryParameters: {
+          'month': month,
+          'year': year,
+          'page': page,
+          'limit': limit,
+          if (search != null && search.isNotEmpty) 'search': search,
+          if (sortBy != null) 'sortBy': sortBy,
+          'sortDesc': sortDesc,
+        });
     return MonthlyReport.fromJson(res.data);
   }
 
@@ -187,6 +211,21 @@ class LoanApi {
       if (g2 != null) 'guarantor2Id': g2,
     });
     return LoanApplication.fromJson(res.data);
+  }
+
+  static Future<List<LoanOption>> getAdminLoanOptions() async {
+    final res = await ApiClient.instance.get('/loans/options');
+    return (res.data as List).map((e) => LoanOption.fromJson(e)).toList();
+  }
+
+  static Future<LoanOption> createLoanOption(Map<String, dynamic> data) async {
+    final res = await ApiClient.instance.post('/loans/options', data: data);
+    return LoanOption.fromJson(res.data);
+  }
+
+  static Future<LoanOption> updateLoanOption(int id, Map<String, dynamic> data) async {
+    final res = await ApiClient.instance.put('/loans/options/$id', data: data);
+    return LoanOption.fromJson(res.data);
   }
 }
 

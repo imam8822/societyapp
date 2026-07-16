@@ -19,6 +19,9 @@ import 'package:society_app/screens/admin/admin_ledger_screen.dart';
 import 'package:society_app/screens/admin/admin_leave_requests_screen.dart';
 import 'package:society_app/screens/admin/add_adjustment_screen.dart';
 
+import 'package:society_app/screens/admin/loan_options_screen.dart';
+import 'package:society_app/screens/admin/contributions_report_screen.dart';
+
 final routerProvider = Provider<GoRouter>((ref) {
   final notifier = _AuthRouterNotifier(ref);
 
@@ -83,6 +86,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           path: '/admin/leave-requests', builder: (_, __) => const AdminLeaveRequestsScreen()),
       GoRoute(
           path: '/admin/adjust-ledger', builder: (_, __) => const AddAdjustmentScreen()),
+      GoRoute(
+          path: '/admin/loan-options',
+          builder: (_, __) => const LoanOptionsScreen()),
+      GoRoute(
+          path: '/admin/contributions',
+          builder: (_, __) => const ContributionsReportScreen()),
       GoRoute(
           path: '/notifications', builder: (_, __) => const NotificationsScreen()),
     ],
