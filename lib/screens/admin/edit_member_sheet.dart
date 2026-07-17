@@ -1,3 +1,4 @@
+import 'package:society_app/widgets/shared_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/api/api_services.dart';
@@ -303,8 +304,7 @@ class _EditMemberSheetState extends ConsumerState<EditMemberSheet> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2))
+                            child: const AppSpinner(color: Colors.white, strokeWidth: 2))
                         : const Text('Save Changes'),
                   ),
                 ),

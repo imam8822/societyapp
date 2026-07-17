@@ -55,12 +55,13 @@ class _PayScreenState extends ConsumerState<PayScreen> {
 
   Future<void> _openUpi() async {
     if (_token == null) return;
-    final uri = Uri.parse(_token!.upiDeepLink);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      _showSnack('Could not open UPI app. Please install GPay or PhonePe.');
-    }
+    AppUtils.showUpiAppsBottomSheet(context, _token!.upiDeepLink, (Uri uri) async {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        _showSnack('Could not open the selected UPI app. Please install it.');
+      }
+    });
   }
 
   Future<void> _uploadScreenshot() async {
@@ -103,7 +104,7 @@ class _PayScreenState extends ConsumerState<PayScreen> {
       backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Pay Monthly Contribution')),
       body: LoadingOverlay(
-        isLoading: _loading,
+        isLoading: _loading && _token != null,
         child: _loading && _token == null
             ? ListView(
                 padding: const EdgeInsets.all(16),

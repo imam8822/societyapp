@@ -1,3 +1,4 @@
+import 'package:society_app/widgets/shared_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -121,6 +122,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
   bool _loadingData = true;
   List<_PendingMember> _members = [];
   double _monthlyAmount = 0;
+  DateTime _paidDate = DateTime.now();
 
   final _fmt = NumberFormat.currency(
       locale: 'en_IN', symbol: '₹', decimalDigits: 0);
@@ -184,7 +186,13 @@ class _ContributionsTabState extends State<_ContributionsTab> {
     if (_selectedMember == null) return 0;
     double sum = 0;
     for (final i in _selectedMonthIndices) {
-      sum += _selectedMember!.unpaidMonths[i].penaltyAmount;
+      final m = _selectedMember!.unpaidMonths[i];
+      final monthDate = DateTime(m.year, m.month, 1);
+      final pMonthStart = DateTime(_paidDate.year, _paidDate.month, 1);
+      final pastDue = monthDate.isBefore(pMonthStart) || 
+                      (monthDate.year == _paidDate.year && monthDate.month == _paidDate.month && _paidDate.day > 15);
+      final actualPenalty = pastDue ? m.penaltyAmount : 0.0;
+      sum += actualPenalty;
     }
     return sum;
   }
@@ -400,10 +408,16 @@ class _ContributionsTabState extends State<_ContributionsTab> {
     try {
       final months = _selectedMonthIndices.map((i) {
         final m = _selectedMember!.unpaidMonths[i];
+        final monthDate = DateTime(m.year, m.month, 1);
+        final pMonthStart = DateTime(_paidDate.year, _paidDate.month, 1);
+        final pastDue = monthDate.isBefore(pMonthStart) || 
+                        (monthDate.year == _paidDate.year && monthDate.month == _paidDate.month && _paidDate.day > 15);
+        final actualPenalty = pastDue ? m.penaltyAmount : 0.0;
+
         return {
           'month': m.month,
           'year': m.year,
-          'penaltyAmount': m.penaltyAmount,
+          'penaltyAmount': actualPenalty,
         };
       }).toList();
 
@@ -413,6 +427,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
             'months': months,
             if (_remarksCtrl.text.trim().isNotEmpty)
               'remarks': _remarksCtrl.text.trim(),
+            'paidDate': _paidDate.toIso8601String(),
           });
 
       if (mounted) {
@@ -432,8 +447,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
   Widget build(BuildContext context) {
     return _loadingData
           ? Center(
-              child: CircularProgressIndicator(
-                  color: context.colors.primary))
+              child: const AppSpinner())
           : _members.isEmpty
               ? Center(
                   child: Column(
@@ -753,6 +767,49 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                         ),
                         const SizedBox(height: 14),
 
+                        // ── Payment Date ──────────────────────
+                        _sectionCard(
+                          title: 'Payment Date',
+                          child: InkWell(
+                            onTap: () async {
+                              final picked = await showDatePicker(
+                                context: context,
+                                initialDate: _paidDate,
+                                firstDate: DateTime(2000),
+                                lastDate: DateTime.now(),
+                              );
+                              if (picked != null) {
+                                setState(() => _paidDate = picked);
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: context.colors.divider),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.calendar_today_rounded, size: 20, color: Colors.grey),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(DateFormat('dd MMM yyyy').format(_paidDate), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),
+                                        if (_paidDate.day <= 15)
+                                          const Text('Date is on/before 15th (Penalty waived)', style: TextStyle(color: Colors.green, fontSize: 11)),
+                                      ],
+                                    ),
+                                  ),
+                                  const Icon(Icons.keyboard_arrow_down_rounded, color: Colors.grey),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
                         // ── Summary ──────────────────────
                         _sectionCard(
                           title: 'Payment Summary',
@@ -815,10 +872,7 @@ class _ContributionsTabState extends State<_ContributionsTab> {
                                     height: 20,
                                     width: 20,
                                     child:
-                                        CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            color:
-                                                Colors.white),
+                                        const AppSpinner(color: Colors.white, strokeWidth: 2),
                                   )
                                 : const Icon(
                                     Icons
@@ -1083,7 +1137,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
     final allLoansAsync = ref.watch(allLoansProvider);
     
     return allLoansAsync.when(
-      loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
+      loading: () => Center(child: const AppSpinner()),
       error: (e, _) => Center(child: Text(apiError(e))),
       data: (loans) {
         // Filter for active (Disbursed) loans with outstanding amount > 0
@@ -1245,7 +1299,7 @@ class _LoanRepaymentsTabState extends ConsumerState<_LoanRepaymentsTab> {
                         child: ElevatedButton.icon(
                           onPressed: _loading ? null : _submit,
                           icon: _loading
-                              ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              ? const SizedBox(height: 20, width: 20, child: const AppSpinner(color: Colors.white, strokeWidth: 2))
                               : const Icon(Icons.check_circle_rounded, size: 20),
                           label: Text(
                             _loading ? 'Recording...' : 'Record Repayment',

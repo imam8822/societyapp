@@ -1,3 +1,4 @@
+import 'package:society_app/widgets/shared_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
@@ -183,7 +184,7 @@ class _ExportStatementDialogState extends ConsumerState<ExportStatementDialog> {
                 child: _isExporting
                     ? const SizedBox(
                         width: 16, height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        child: const AppSpinner(color: Colors.white, strokeWidth: 2),
                       )
                     : const Text('Export'),
               ),

@@ -107,7 +107,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
         label: const Text('Add Member'),
       ),
       body: _members.isEmpty && _loading
-          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
+          ? Center(child: const AppSpinner())
           : Column(
               children: [
                 // ── Search bar ──────────────────────────────
@@ -174,7 +174,7 @@ class _MembersScreenState extends ConsumerState<MembersScreen> {
                             itemBuilder: (context, i) {
                               if (i == filtered.length) {
                                 _loadMembers();
-                                return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+                                return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: const AppSpinner()));
                               }
                               return _MemberTile(
                                 member: filtered[i],

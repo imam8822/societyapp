@@ -1,3 +1,4 @@
+import 'package:society_app/widgets/shared_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -79,7 +80,7 @@ class NotificationsScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const Center(child: const AppSpinner()),
         error: (err, stack) => Center(child: Text('Error: $err')),
       ),
     );

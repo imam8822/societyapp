@@ -66,7 +66,7 @@ class _LoanOptionsScreenState extends State<LoanOptionsScreen> {
         foregroundColor: Colors.white,
       ),
       body: _loading && _options.isEmpty
-          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
+          ? Center(child: const AppSpinner())
           : RefreshIndicator(
               onRefresh: _loadOptions,
               color: context.colors.primary,
@@ -424,7 +424,7 @@ class _LoanOptionFormSheetState extends State<_LoanOptionFormSheet> {
                         ? const SizedBox(
                             height: 20,
                             width: 20,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: const AppSpinner(color: Colors.white, strokeWidth: 2),
                           )
                         : Text(widget.option == null ? 'Create' : 'Save Changes'),
                   ),

@@ -1446,9 +1446,9 @@ class _SecuritySettingsCardState extends State<_SecuritySettingsCard> {
     
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: context.colors.surfaceWhite,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
+        border: Border.all(color: context.colors.divider),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1459,10 +1459,10 @@ class _SecuritySettingsCardState extends State<_SecuritySettingsCard> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Fingerprint / Face ID Login', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black)),
+                  Text('Fingerprint / Face ID Login', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: context.colors.textDark)),
                   const SizedBox(height: 4),
                   Text('Use biometrics instead of password', 
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 12, color: context.colors.textGrey)),
                 ],
               ),
             ),

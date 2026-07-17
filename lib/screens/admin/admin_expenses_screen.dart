@@ -108,7 +108,7 @@ class _AdminExpensesScreenState extends State<AdminExpensesScreen> {
         ],
       ),
       body: _expenses.isEmpty && _loading
-          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
+          ? Center(child: const AppSpinner())
           : _expenses.isEmpty
               ? const EmptyState(icon: Icons.receipt_long, title: 'No expenses found')
               : RefreshIndicator(
@@ -121,7 +121,7 @@ class _AdminExpensesScreenState extends State<AdminExpensesScreen> {
                     itemBuilder: (context, index) {
                       if (index == _expenses.length) {
                         _loadExpenses();
-                        return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+                        return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: const AppSpinner()));
                       }
                       final e = _expenses[index];
                       return Container(
@@ -260,7 +260,7 @@ class _ExpenseSheetState extends State<_ExpenseSheet> {
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: _saving ? null : _save,
-            child: _saving ? const CircularProgressIndicator() : const Text('Save Expense'),
+            child: _saving ? const AppSpinner() : const Text('Save Expense'),
           ),
         ],
       ),
