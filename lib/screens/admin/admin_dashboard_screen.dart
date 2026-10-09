@@ -97,24 +97,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
       backgroundColor: context.colors.bgGrey,
       appBar: AppBar(
         title: const Text('Admin Dashboard'),
-        leading: dashAsync.valueOrNull?.logoBase64 != null
-            ? Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    image: DecorationImage(
-                      image: MemoryImage(
-                        base64Decode(dashAsync.valueOrNull!.logoBase64!.contains(',')
-                            ? dashAsync.valueOrNull!.logoBase64!.split(',')[1]
-                            : dashAsync.valueOrNull!.logoBase64!),
-                      ),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              )
-            : null,
+        // Removed leading logo (moved to drawer)
         actions: [
           Consumer(
             builder: (context, ref, child) {
@@ -158,19 +141,10 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
             tooltip: 'Switch to Member View',
             onPressed: () => context.go('/home'),
           ),
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => context.push('/admin/settings'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.power_settings_new),
-            onPressed: () async {
-              await ref.read(authProvider.notifier).logout();
-              if (context.mounted) context.go('/login');
-            },
-          ),
+
         ],
       ),
+      drawer: _AdminDrawer(logoBase64: dashAsync.valueOrNull?.logoBase64),
       body: dashAsync.when(
         loading: () => const ShimmerListLoader(count: 5),
         error: (e, _) => NetworkErrorWidget(
@@ -739,3 +713,205 @@ class _QuickActionCard extends StatelessWidget {
       );
 }
 
+
+
+class _AdminDrawer extends ConsumerWidget {
+  final String? logoBase64;
+  const _AdminDrawer({this.logoBase64});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Drawer(
+      backgroundColor: context.colors.bgGrey,
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top + 24, bottom: 32, left: 24, right: 24),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [context.colors.primary, const Color(0xFF059669)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Row(
+              children: [
+                if (logoBase64 != null)
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                      image: DecorationImage(
+                        image: MemoryImage(
+                          const Base64Codec().decode(logoBase64!.contains(',')
+                              ? logoBase64!.split(',')[1]
+                              : logoBase64!),
+                        ),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                if (logoBase64 != null) const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Admin Panel',
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Manage Society',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.8),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: [
+                _DrawerItem(
+                  icon: Icons.book_rounded,
+                  title: 'Full Ledger',
+                  color: const Color(0xFF8B5CF6),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/admin/ledger');
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.account_balance_wallet_rounded,
+                  title: 'Adjust Ledger',
+                  color: const Color(0xFF3B82F6),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/admin/adjust-ledger');
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.monetization_on_rounded,
+                  title: 'Contributions',
+                  color: const Color(0xFF14B8A6),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/admin/contributions');
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.tune_rounded,
+                  title: 'Loan Options',
+                  color: const Color(0xFF64748B),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/admin/loan-options');
+                  },
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Divider(color: context.colors.divider),
+                ),
+                _DrawerItem(
+                  icon: Icons.settings_rounded,
+                  title: 'Settings',
+                  color: const Color(0xFFF59E0B),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.push('/admin/settings');
+                  },
+                ),
+                _DrawerItem(
+                  icon: Icons.swap_horiz_rounded,
+                  title: 'Switch to Member View',
+                  color: const Color(0xFFEC4899),
+                  onTap: () {
+                    Navigator.pop(context);
+                    context.go('/home');
+                  },
+                ),
+              ],
+            ),
+          ),
+          Divider(color: context.colors.divider, height: 1),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                await ref.read(authProvider.notifier).logout();
+                if (context.mounted) context.go('/login');
+              },
+              icon: const Icon(Icons.power_settings_new),
+              label: const Text('Logout', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.withOpacity(0.1),
+                foregroundColor: Colors.red,
+                elevation: 0,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _DrawerItem({
+    required this.icon,
+    required this.title,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, color: color, size: 22),
+        ),
+        title: Text(
+          title,
+          style: TextStyle(
+            color: context.colors.textDark,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        onTap: onTap,
+        hoverColor: color.withOpacity(0.05),
+      ),
+    );
+  }
+}

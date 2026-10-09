@@ -118,7 +118,7 @@ class _AdminLeaveRequestsScreenState extends State<AdminLeaveRequestsScreen> {
       backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Leave Requests')),
       body: _requests.isEmpty && _loading
-          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
+          ? Center(child: const AppSpinner())
           : _requests.isEmpty
               ? const EmptyState(icon: Icons.exit_to_app, title: 'No leave requests')
               : RefreshIndicator(
@@ -131,7 +131,7 @@ class _AdminLeaveRequestsScreenState extends State<AdminLeaveRequestsScreen> {
                     itemBuilder: (context, index) {
                       if (index == _requests.length) {
                         _loadRequests();
-                        return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+                        return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: const AppSpinner()));
                       }
                       final req = _requests[index];
                       return Container(

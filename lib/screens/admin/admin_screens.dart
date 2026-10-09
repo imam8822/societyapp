@@ -47,7 +47,7 @@ class _LoanReviewScreenState extends ConsumerState<LoanReviewScreen> {
         ),
         body: loansAsync.when(
         loading: () => Center(
-            child: CircularProgressIndicator(color: context.colors.primary)),
+            child: const AppSpinner()),
         error: (e, _) => ErrorRetry(
             message: apiError(e),
             onRetry: () => ref.invalidate(allLoansProvider)),
@@ -545,7 +545,7 @@ class _LoanReviewCardState extends State<_LoanReviewCard> {
             Padding(
               padding: const EdgeInsets.only(top: 16),
               child: Center(
-                  child: CircularProgressIndicator(color: context.colors.primary)),
+                  child: const AppSpinner()),
             )
           else if (l.isPending) ...[
             const SizedBox(height: 16),
@@ -766,7 +766,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
           Expanded(
             child: _loading
                 ? Center(
-                    child: CircularProgressIndicator(color: context.colors.primary))
+                    child: const AppSpinner())
                 : _report == null
                     ? const EmptyState(
                         icon: Icons.bar_chart_rounded,
@@ -1034,7 +1034,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       appBar: AppBar(title: const Text('Society Settings')),
       body: _loading
           ? Center(
-              child: CircularProgressIndicator(color: context.colors.primary))
+              child: const AppSpinner())
           : LoadingOverlay(
               isLoading: _saving,
               child: ListView(

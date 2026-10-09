@@ -315,7 +315,7 @@ class _ContributionsReportScreenState extends State<ContributionsReportScreen> {
           // Report list
           Expanded(
             child: _loading && _report == null
-                ? Center(child: CircularProgressIndicator(color: context.colors.primary))
+                ? Center(child: const AppSpinner())
                 : RefreshIndicator(
                     onRefresh: _loadReport,
                     color: context.colors.primary,

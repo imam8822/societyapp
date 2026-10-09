@@ -74,7 +74,7 @@ class _AdminLedgerScreenState extends State<AdminLedgerScreen> {
         ],
       ),
       body: _transactions.isEmpty && _loading
-          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
+          ? Center(child: const AppSpinner())
           : _transactions.isEmpty
               ? const EmptyState(icon: Icons.receipt_long, title: 'No transactions found')
               : RefreshIndicator(
@@ -143,7 +143,7 @@ class _AdminLedgerScreenState extends State<AdminLedgerScreen> {
                             (context, index) {
                               if (index == _transactions.length) {
                                 _loadTransactions();
-                                return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: CircularProgressIndicator()));
+                                return const Center(child: Padding(padding: EdgeInsets.all(8.0), child: const AppSpinner()));
                               }
                               final t = _transactions[index];
                               final isOutflow = t.type == 'LoanDisbursement' || t.type == 'Refund' || t.type == 'Expense' || (t.type == 'Adjustment' && t.amount < 0);

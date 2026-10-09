@@ -63,7 +63,7 @@ class _ContributionsTab extends ConsumerWidget {
 
     return state.when(
       loading: () =>
-          Center(child: CircularProgressIndicator(color: context.colors.primary)),
+          Center(child: const AppSpinner()),
       error: (e, _) => ErrorRetry(
         message: apiError(e),
         onRetry: () => ref.invalidate(pendingScreenshotsProvider),
@@ -109,7 +109,7 @@ class _LoanRepaymentsTab extends ConsumerWidget {
 
     return state.when(
       loading: () =>
-          Center(child: CircularProgressIndicator(color: context.colors.primary)),
+          Center(child: const AppSpinner()),
       error: (e, _) => ErrorRetry(
         message: apiError(e),
         onRetry: () => ref.invalidate(pendingLoanRepaymentsProvider),
@@ -571,7 +571,7 @@ class _ScreenshotCardState extends ConsumerState<_ScreenshotCard> {
                   child: isProcessing
                       ? const SizedBox(
                           height: 20, width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: const AppSpinner(color: Colors.white, strokeWidth: 2),
                         )
                       : Text(approve ? 'Approve' : 'Reject'),
                 ),
@@ -931,7 +931,7 @@ class _LoanRepaymentCardState extends ConsumerState<_LoanRepaymentCard> {
                   child: isProcessing
                       ? const SizedBox(
                           height: 20, width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: const AppSpinner(color: Colors.white, strokeWidth: 2),
                         )
                       : Text(approve ? 'Approve' : 'Reject'),
                 ),

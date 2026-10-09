@@ -190,7 +190,7 @@ class _AddAdjustmentScreenState extends ConsumerState<AddAdjustmentScreen> {
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: _loading 
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    ? const SizedBox(height: 20, width: 20, child: const AppSpinner(color: Colors.white, strokeWidth: 2))
                     : const Text('Confirm Adjustment', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
                 ),
               ),

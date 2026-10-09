@@ -27,7 +27,7 @@ class ContributionHistoryScreen extends ConsumerWidget {
       backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Contribution History')),
       body: contribAsync.when(
-        loading: () => Center(child: CircularProgressIndicator(color: context.colors.primary)),
+        loading: () => Center(child: const AppSpinner()),
         error: (e, _) => ErrorRetry(
             message: apiError(e),
             onRetry: () => ref.invalidate(myContributionsProvider)),
@@ -245,7 +245,7 @@ class _LoanApplyScreenState extends ConsumerState<LoanApplyScreen> {
       backgroundColor: context.colors.bgGrey,
       appBar: AppBar(title: const Text('Apply for Loan')),
       body: _loadingForm
-          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
+          ? Center(child: const AppSpinner())
           : _formData == null
               ? Center(
                   child: ErrorRetry(
@@ -532,8 +532,7 @@ class _LoanApplyScreenState extends ConsumerState<LoanApplyScreen> {
             child: _submitting
                 ? const SizedBox(
                     height: 20, width: 20,
-                    child: CircularProgressIndicator(
-                        color: Colors.white, strokeWidth: 2))
+                    child: const AppSpinner(color: Colors.white, strokeWidth: 2))
                 : const Text('Submit Application'),
           ),
           const SizedBox(height: 40),
@@ -800,7 +799,7 @@ class LoanStatusScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('My Loans')),
       body: loansAsync.when(
         loading: () => Center(
-            child: CircularProgressIndicator(color: context.colors.primary)),
+            child: const AppSpinner()),
         error: (e, _) => ErrorRetry(
             message: apiError(e),
             onRetry: () => ref.invalidate(myLoansProvider)),
@@ -1271,7 +1270,7 @@ class _GuarantorRequestsScreenState extends ConsumerState<GuarantorRequestsScree
                           ),
                           onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, false),
                           child: _actioningId == req.id
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              ? const SizedBox(width: 20, height: 20, child: const AppSpinner(color: Colors.white, strokeWidth: 2))
                               : const Text('Reject'),
                         ),
                       ),
@@ -1284,7 +1283,7 @@ class _GuarantorRequestsScreenState extends ConsumerState<GuarantorRequestsScree
                           ),
                           onPressed: _actioningId == req.id ? null : () => _handleConsent(req.id, true),
                           child: _actioningId == req.id
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                              ? const SizedBox(width: 20, height: 20, child: const AppSpinner(color: Colors.white, strokeWidth: 2))
                               : const Text('Accept'),
                         ),
                       ),
@@ -1345,7 +1344,7 @@ class _GuarantorRequestsScreenState extends ConsumerState<GuarantorRequestsScree
       return Scaffold(
         backgroundColor: context.colors.bgGrey,
         appBar: AppBar(title: const Text('Guarantor Requests')),
-        body: Center(child: CircularProgressIndicator(color: context.colors.primary)),
+        body: Center(child: const AppSpinner()),
       );
     }
 

@@ -93,7 +93,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ],
       ),
       body: _loading
-          ? Center(child: CircularProgressIndicator(color: context.colors.primary))
+          ? Center(child: const AppSpinner())
           : _error != null
               ? Center(
                   child: Column(
